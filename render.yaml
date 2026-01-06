@@ -1,24 +1,15 @@
 services:
-  # PostgreSQL Database
-  - type: pserv
-    name: pro-insurance-db
-    env: docker
-    plan: free
-    ipAllowList: []
-    
-  # Backend API Server
   - type: web
     name: pro-insurance-backend
     env: node
-    region: oregon
-    plan: free
-    buildCommand: cd backend && npm install && npx prisma generate && npm run build
-    startCommand: cd backend && npx prisma migrate deploy && npm start
+    plan: starter
+    buildCommand: npm install && cd backend && npm install && npx prisma generate
+    startCommand: cd backend && npx prisma migrate deploy && node dist/index.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
       - key: DATABASE_URL
         fromDatabase:
           name: pro-insurance-db
@@ -35,10 +26,8 @@ services:
         sync: false
       - key: EMAIL_PASSWORD
         sync: false
-    healthCheckPath: /api/health
 
 databases:
   - name: pro-insurance-db
     databaseName: pro_insurance
     user: pro_insurance_user
-    plan: free
