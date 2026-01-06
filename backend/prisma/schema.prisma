@@ -1,0 +1,176 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Insurance Companies
+model InsuranceCompany {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @unique
+  code           String   @unique
+  contactPerson  String?  @map("contact_person")
+  email          String?
+  phone          String?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  policies         Policy[]
+  commissions      Commission[]
+  commissionRules  CommissionRule[]
+
+  @@map("insurance_companies")
+}
+
+// Sub-Brokers (Users)
+model SubBroker {
+  id           String   @id @default(uuid()) @db.Uuid
+  brokerCode   String   @unique @map("broker_code")
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String   @map("password_hash")
+  address      String?
+  panNumber    String?  @map("pan_number")
+  bankDetails  Json?    @map("bank_details")
+  role         Role     @default(SUB_BROKER)
+  isActive     Boolean  @default(true) @map("is_active")
+  joiningDate  DateTime @default(now()) @map("joining_date")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  policies         Policy[]
+  commissions      Commission[]
+  commissionRules  CommissionRule[]
+
+  @@map("sub_brokers")
+}
+
+enum Role {
+  ADMIN
+  SUB_BROKER
+}
+
+// Policies
+model Policy {
+  id                 String    @id @default(uuid()) @db.Uuid
+  policyNumber       String    @unique @map("policy_number")
+  companyId          String    @map("company_id") @db.Uuid
+  subBrokerId        String    @map("sub_broker_id") @db.Uuid
+  customerName       String    @map("customer_name")
+  customerEmail      String?   @map("customer_email")
+  customerPhone      String?   @map("customer_phone")
+  customerAddress    String?   @map("customer_address")
+  policyType         String    @map("policy_type")
+  planName           String?   @map("plan_name")
+  sumAssured         Decimal?  @map("sum_assured") @db.Decimal(15, 2)
+  premiumAmount      Decimal   @map("premium_amount") @db.Decimal(10, 2)
+  premiumFrequency   String    @default("yearly") @map("premium_frequency")
+  startDate          DateTime  @map("start_date") @db.Date
+  endDate            DateTime  @map("end_date") @db.Date
+  issueDate          DateTime? @map("issue_date") @db.Date
+  status             String    @default("active")
+  policyDocumentUrl  String?   @map("policy_document_url")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  company      InsuranceCompany @relation(fields: [companyId], references: [id])
+  subBroker    SubBroker        @relation(fields: [subBrokerId], references: [id])
+  commissions  Commission[]
+  renewals     Renewal[]
+
+  @@index([companyId])
+  @@index([subBrokerId])
+  @@index([endDate])
+  @@index([status])
+  @@map("policies")
+}
+
+// Commissions
+model Commission {
+  id                    String    @id @default(uuid()) @db.Uuid
+  policyId              String    @map("policy_id") @db.Uuid
+  subBrokerId           String    @map("sub_broker_id") @db.Uuid
+  companyId             String    @map("company_id") @db.Uuid
+  commissionPercentage  Decimal   @map("commission_percentage") @db.Decimal(5, 2)
+  baseAmount            Decimal   @map("base_amount") @db.Decimal(10, 2)
+  commissionAmount      Decimal   @map("commission_amount") @db.Decimal(10, 2)
+  paymentStatus         String    @default("pending") @map("payment_status")
+  paymentDate           DateTime? @map("payment_date") @db.Date
+  paymentMethod         String?   @map("payment_method")
+  transactionReference  String?   @map("transaction_reference")
+  commissionType        String    @default("new_business") @map("commission_type")
+  remarks               String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  policy    Policy           @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  subBroker SubBroker        @relation(fields: [subBrokerId], references: [id])
+  company   InsuranceCompany @relation(fields: [companyId], references: [id])
+
+  @@index([policyId])
+  @@index([subBrokerId])
+  @@index([paymentStatus])
+  @@map("commissions")
+}
+
+// Renewals
+model Renewal {
+  id                       String    @id @default(uuid()) @db.Uuid
+  policyId                 String    @map("policy_id") @db.Uuid
+  renewalDate              DateTime  @map("renewal_date") @db.Date
+  reminder30DaysSent       Boolean   @default(false) @map("reminder_30_days_sent")
+  reminder30DaysSentAt     DateTime? @map("reminder_30_days_sent_at")
+  reminder15DaysSent       Boolean   @default(false) @map("reminder_15_days_sent")
+  reminder15DaysSentAt     DateTime? @map("reminder_15_days_sent_at")
+  reminder7DaysSent        Boolean   @default(false) @map("reminder_7_days_sent")
+  reminder7DaysSentAt      DateTime? @map("reminder_7_days_sent_at")
+  reminder1DaySent         Boolean   @default(false) @map("reminder_1_day_sent")
+  reminder1DaySentAt       DateTime? @map("reminder_1_day_sent_at")
+  renewalStatus            String    @default("pending") @map("renewal_status")
+  renewedAt                DateTime? @map("renewed_at")
+  renewedPolicyId          String?   @map("renewed_policy_id") @db.Uuid
+  remarks                  String?
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@index([renewalDate])
+  @@index([renewalStatus])
+  @@map("renewals")
+}
+
+// Commission Rules
+model CommissionRule {
+  id            String    @id @default(uuid()) @db.Uuid
+  companyId     String    @map("company_id") @db.Uuid
+  policyType    String    @map("policy_type")
+  tierRules     Json      @map("tier_rules")
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+  isDefault     Boolean   @default(false) @map("is_default")
+  createdBy     String?   @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  company   InsuranceCompany @relation(fields: [companyId], references: [id])
+  creator   SubBroker?       @relation(fields: [createdBy], references: [id])
+
+  @@unique([companyId, policyType, effectiveFrom])
+  @@map("commission_rules")
+}
