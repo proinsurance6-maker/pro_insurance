@@ -59,7 +59,7 @@ export default function CompaniesPage() {
     if (!confirm('Are you sure you want to delete this company?')) return;
     
     try {
-      await companyAPI.delete(id);
+      await companyAPI.delete(String(id));
       loadCompanies();
     } catch (error) {
       console.error('Failed to delete company:', error);
