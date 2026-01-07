@@ -218,7 +218,6 @@ export default function BrokersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Button
-                          size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(broker.id)}
                         >
