@@ -50,7 +50,7 @@ export default function RenewalsPage() {
 
   const markAsRenewed = async (id: number) => {
     try {
-      await renewalAPI.markRenewed(id);
+      await renewalAPI.markAsRenewed(String(id), {});
       loadRenewals();
     } catch (error) {
       console.error('Failed to mark as renewed:', error);
