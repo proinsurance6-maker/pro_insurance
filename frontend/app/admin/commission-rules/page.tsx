@@ -68,7 +68,7 @@ export default function CommissionRulesPage() {
     if (!confirm('Are you sure you want to delete this commission rule?')) return;
     
     try {
-      await commissionRuleAPI.delete(id);
+      await commissionRuleAPI.delete(String(id));
       loadData();
     } catch (error) {
       console.error('Failed to delete rule:', error);
