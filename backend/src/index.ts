@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
@@ -48,7 +48,7 @@ startCronJobs();
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL}`);
+  console.log(`🔗 Frontend URL: ${process.env.CORS_ORIGIN || process.env.FRONTEND_URL}`);
 });
 
 export default app;
