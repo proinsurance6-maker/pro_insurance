@@ -12,7 +12,11 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["insurance", "broker", "management"],
+  "keywords": [
+    "insurance",
+    "broker",
+    "management"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
