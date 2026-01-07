@@ -223,7 +223,6 @@ export default function RenewalsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {!renewal.isRenewed && (
                             <Button
-                              size="sm"
                               onClick={() => markAsRenewed(renewal.id)}
                             >
                               Mark Renewed

@@ -137,7 +137,6 @@ export default function PoliciesPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => router.push(`/policies/${policy.id}`)}
                         >
                           View

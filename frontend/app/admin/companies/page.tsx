@@ -202,7 +202,6 @@ export default function CompaniesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Button
-                          size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(company.id)}
                         >

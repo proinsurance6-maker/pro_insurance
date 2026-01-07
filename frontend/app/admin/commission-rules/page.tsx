@@ -201,7 +201,6 @@ export default function CommissionRulesPage() {
                       </p>
                     </div>
                     <Button
-                      size="sm"
                       variant="destructive"
                       onClick={() => handleDelete(rule.id)}
                     >
