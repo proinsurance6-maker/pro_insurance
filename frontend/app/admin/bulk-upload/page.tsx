@@ -38,10 +38,7 @@ export default function BulkUploadPage() {
     setResult(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const res = await policyAPI.bulkUpload(formData);
+      const res = await policyAPI.bulkUpload(file);
       setResult(res.data);
       setFile(null);
     } catch (err: any) {
