@@ -1,3 +1,3 @@
 # Deployment trigger file
-# Updated: 2026-01-07 10:30 AM
-# Purpose: Trigger Vercel redeploy with correct root directory settings
+# Updated: 2026-01-07 14:30 PM
+# Purpose: Trigger Vercel redeploy with Next.js framework and build settings configured
