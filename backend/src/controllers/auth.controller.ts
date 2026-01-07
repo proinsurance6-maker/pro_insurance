@@ -30,6 +30,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     }
 
     // Generate token
+    const tokenOptions: jwt.SignOptions = { expiresIn: '15m' };
     const token = jwt.sign(
       {
         userId: user.id,
@@ -38,13 +39,14 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
         brokerCode: user.brokerCode,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: (process.env.JWT_EXPIRY || '15m') as string | number }
+      tokenOptions
     );
 
+    const refreshTokenOptions: jwt.SignOptions = { expiresIn: '7d' };
     const refreshToken = jwt.sign(
       { userId: user.id },
       process.env.JWT_REFRESH_SECRET!,
-      { expiresIn: (process.env.JWT_REFRESH_EXPIRY || '7d') as string | number }
+      refreshTokenOptions
     );
 
     res.json({

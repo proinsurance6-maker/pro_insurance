@@ -9,7 +9,7 @@ export interface AuthRequest extends Request {
     role: string;
     brokerCode: string;
   };
-  file?: Express.Multer.File;
+  file?: any;
 }
 
 export const authenticate = async (
