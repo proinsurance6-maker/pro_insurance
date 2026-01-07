@@ -38,13 +38,13 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
         brokerCode: user.brokerCode,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRY || '15m' }
+      { expiresIn: (process.env.JWT_EXPIRY || '15m') as string | number }
     );
 
     const refreshToken = jwt.sign(
       { userId: user.id },
       process.env.JWT_REFRESH_SECRET!,
-      { expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d' }
+      { expiresIn: (process.env.JWT_REFRESH_EXPIRY || '7d') as string | number }
     );
 
     res.json({
