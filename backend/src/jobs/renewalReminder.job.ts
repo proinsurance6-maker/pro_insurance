@@ -134,7 +134,7 @@ export const checkAndSendRenewalReminders = async () => {
       where: { id: renewal.id },
       data: {
         reminder1DaySent: true,
-        reminder1DaysSentAt: new Date(),
+        reminder1DaySentAt: new Date(),
       },
     });
   }

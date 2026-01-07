@@ -281,11 +281,11 @@ export const bulkUpload = async (req: AuthRequest, res: Response, next: NextFunc
       try {
         // Validate company and broker exist
         const company = await prisma.insuranceCompany.findUnique({
-          where: { code: row.company_code },
+          where: { code: (row as any).company_code },
         });
 
         const broker = await prisma.subBroker.findUnique({
-          where: { brokerCode: row.sub_broker_code },
+          where: { brokerCode: (row as any).sub_broker_code },
         });
 
         if (!company || !broker) {

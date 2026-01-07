@@ -37,7 +37,7 @@ export const getApplicableCommissionRule = async (
   }
 
   // Parse tier rules
-  const tiers = rule.tierRules as CommissionTier[];
+  const tiers = rule.tierRules as unknown as CommissionTier[];
 
   // Find applicable tier
   const applicableTier = tiers.find(
