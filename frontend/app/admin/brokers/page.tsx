@@ -60,7 +60,7 @@ export default function BrokersPage() {
     if (!confirm('Are you sure you want to delete this broker?')) return;
     
     try {
-      await subBrokerAPI.delete(id);
+      await subBrokerAPI.delete(String(id));
       loadBrokers();
     } catch (error) {
       console.error('Failed to delete broker:', error);
