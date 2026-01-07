@@ -91,6 +91,9 @@ export const renewalAPI = {
   getById: (id: string) =>
     api.get(`/renewals/${id}`),
   
+  getUpcoming: () =>
+    api.get('/renewals', { params: { status: 'pending' } }),
+  
   markAsRenewed: (id: string, data: any) =>
     api.put(`/renewals/${id}/complete`, data),
 };
