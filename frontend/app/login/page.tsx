@@ -26,6 +26,7 @@ export default function LoginPage() {
       // Store token and user info
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('role', user.role);
 
       // Redirect based on role
       const redirectPath = user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard';

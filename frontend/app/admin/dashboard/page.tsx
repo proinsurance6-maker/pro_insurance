@@ -19,9 +19,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     
-    if (!token || role !== 'admin') {
+    if (!token || user.role !== 'ADMIN') {
       router.push('/login');
       return;
     }
