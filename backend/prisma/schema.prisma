@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Insurance Book App - SaaS Platform for Insurance Agents
+// Schema Version: 2.0
 
 generator client {
   provider = "prisma-client-js"
@@ -10,140 +10,397 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Insurance Companies
-model InsuranceCompany {
-  id             String   @id @default(uuid()) @db.Uuid
-  name           String   @unique
-  code           String   @unique
-  contactPerson  String?  @map("contact_person")
-  email          String?
-  phone          String?
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  ADMIN      // Platform supervisor
+  AGENT      // Business owner (solo or team head)
+  SUB_AGENT  // Works under an Agent
+  CLIENT     // End customer
+}
+
+enum TeamMode {
+  SOLO  // Agent works alone
+  TEAM  // Agent has sub-agents
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum LedgerType {
+  CREDIT   // Money received
+  DEBIT    // Money paid out
+}
+
+enum PolicySource {
+  RENEWAL  // Existing policy renewed
+  SWITCH   // Switched from another company
+  NEW      // New policy
+}
+
+enum PaymentBy {
+  AGENT      // Agent paid premium
+  SUB_AGENT  // Sub-agent paid
+  CLIENT     // Client paid directly
+}
+
+enum DocumentType {
+  AADHAAR
+  PAN
+  RC
+  POLICY_PDF
+  OTHER
+}
+
+// ============================================
+// ADMIN (Platform Supervisor)
+// ============================================
+
+model Admin {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  phone        String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
+// ============================================
+// AGENT (Business Owner)
+// ============================================
+
+model Agent {
+  id              String             @id @default(uuid()) @db.Uuid
+  agentCode       String             @unique @map("agent_code")
+  name            String
+  email           String?            @unique
+  phone           String             @unique
+  passwordHash    String?            @map("password_hash")
+  address         String?
+  panNumber       String?            @map("pan_number")
+  aadhaarNumber   String?            @map("aadhaar_number")
+  bankDetails     Json?              @map("bank_details")
+  teamMode        TeamMode           @default(SOLO) @map("team_mode")
+  isActive        Boolean            @default(true) @map("is_active")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
 
   // Relations
-  policies         Policy[]
-  commissions      Commission[]
-  commissionRules  CommissionRule[]
+  subscription    Subscription?
+  subAgents       SubAgent[]
+  clients         Client[]
+  policies        Policy[]
+  ledgerEntries   LedgerEntry[]
+  commissions     Commission[]
+  documents       Document[]
+  otpCodes        OtpCode[]
+  reconciliations Reconciliation[]
+
+  @@map("agents")
+}
+
+// ============================================
+// SUB-AGENT (Works under Agent)
+// ============================================
+
+model SubAgent {
+  id                   String   @id @default(uuid()) @db.Uuid
+  agentId              String   @map("agent_id") @db.Uuid
+  subAgentCode         String   @unique @map("sub_agent_code")
+  name                 String
+  email                String?
+  phone                String
+  address              String?
+  panNumber            String?  @map("pan_number")
+  commissionPercentage Decimal  @default(50) @map("commission_percentage") @db.Decimal(5, 2)
+  ledgerBalance        Decimal  @default(0) @map("ledger_balance") @db.Decimal(12, 2) // Negative means owes to agent
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  agent         Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  policies      Policy[]
+  ledgerEntries LedgerEntry[]
+  commissions   Commission[]
+
+  @@index([agentId])
+  @@map("sub_agents")
+}
+
+// ============================================
+// CLIENT (End Customer - Self Onboarding)
+// ============================================
+
+model Client {
+  id            String    @id @default(uuid()) @db.Uuid
+  agentId       String    @map("agent_id") @db.Uuid
+  clientCode    String    @unique @map("client_code")
+  name          String
+  email         String?
+  phone         String
+  address       String?
+  dateOfBirth   DateTime? @map("date_of_birth") @db.Date
+  panNumber     String?   @map("pan_number")
+  aadhaarNumber String?   @map("aadhaar_number")
+  pendingAmount Decimal   @default(0) @map("pending_amount") @db.Decimal(12, 2) // Due from client
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  agent          Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  familyMembers  FamilyMember[]
+  policies       Policy[]
+  documents      Document[]
+  ledgerEntries  LedgerEntry[]
+  otpCodes       OtpCode[]
+
+  @@index([agentId])
+  @@index([phone])
+  @@map("clients")
+}
+
+// ============================================
+// FAMILY MEMBER (Client's Family)
+// ============================================
+
+model FamilyMember {
+  id            String    @id @default(uuid()) @db.Uuid
+  clientId      String    @map("client_id") @db.Uuid
+  name          String
+  relationship  String    // Father, Mother, Spouse, Child
+  dateOfBirth   DateTime? @map("date_of_birth") @db.Date
+  panNumber     String?   @map("pan_number")
+  aadhaarNumber String?   @map("aadhaar_number")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  policies  Policy[]
+  documents Document[]
+
+  @@index([clientId])
+  @@map("family_members")
+}
+
+// ============================================
+// SUBSCRIPTION (SaaS Billing)
+// ============================================
+
+model Subscription {
+  id              String             @id @default(uuid()) @db.Uuid
+  agentId         String             @unique @map("agent_id") @db.Uuid
+  status          SubscriptionStatus @default(TRIAL)
+  trialStartDate  DateTime           @map("trial_start_date") @db.Date
+  trialEndDate    DateTime           @map("trial_end_date") @db.Date
+  currentPeriodStart DateTime?       @map("current_period_start") @db.Date
+  currentPeriodEnd   DateTime?       @map("current_period_end") @db.Date
+  monthlyAmount   Decimal            @default(100) @map("monthly_amount") @db.Decimal(10, 2)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  agent    Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@map("subscriptions")
+}
+
+// ============================================
+// PAYMENT (Subscription Payments)
+// ============================================
+
+model Payment {
+  id               String   @id @default(uuid()) @db.Uuid
+  subscriptionId   String   @map("subscription_id") @db.Uuid
+  amount           Decimal  @db.Decimal(10, 2)
+  paymentDate      DateTime @map("payment_date") @db.Date
+  paymentMethod    String   @map("payment_method")
+  transactionId    String?  @map("transaction_id")
+  status           String   @default("success")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@map("payments")
+}
+
+// ============================================
+// INSURANCE COMPANY
+// ============================================
+
+model InsuranceCompany {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String   @unique
+  code          String   @unique
+  contactPerson String?  @map("contact_person")
+  email         String?
+  phone         String?
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  policies        Policy[]
+  commissions     Commission[]
+  reconciliations Reconciliation[]
 
   @@map("insurance_companies")
 }
 
-// Sub-Brokers (Users)
-model SubBroker {
-  id           String   @id @default(uuid()) @db.Uuid
-  brokerCode   String   @unique @map("broker_code")
-  name         String
-  email        String   @unique
-  phone        String?
-  passwordHash String   @map("password_hash")
-  address      String?
-  panNumber    String?  @map("pan_number")
-  bankDetails  Json?    @map("bank_details")
-  role         Role     @default(SUB_BROKER)
-  isActive     Boolean  @default(true) @map("is_active")
-  joiningDate  DateTime @default(now()) @map("joining_date")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+// ============================================
+// POLICY
+// ============================================
 
-  // Relations
-  policies         Policy[]
-  commissions      Commission[]
-  commissionRules  CommissionRule[]
-
-  @@map("sub_brokers")
-}
-
-enum Role {
-  ADMIN
-  SUB_BROKER
-}
-
-// Policies
 model Policy {
-  id                 String    @id @default(uuid()) @db.Uuid
-  policyNumber       String    @unique @map("policy_number")
-  companyId          String    @map("company_id") @db.Uuid
-  subBrokerId        String    @map("sub_broker_id") @db.Uuid
-  customerName       String    @map("customer_name")
-  customerEmail      String?   @map("customer_email")
-  customerPhone      String?   @map("customer_phone")
-  customerAddress    String?   @map("customer_address")
-  policyType         String    @map("policy_type")
-  planName           String?   @map("plan_name")
-  sumAssured         Decimal?  @map("sum_assured") @db.Decimal(15, 2)
-  premiumAmount      Decimal   @map("premium_amount") @db.Decimal(10, 2)
-  premiumFrequency   String    @default("yearly") @map("premium_frequency")
-  startDate          DateTime  @map("start_date") @db.Date
-  endDate            DateTime  @map("end_date") @db.Date
-  issueDate          DateTime? @map("issue_date") @db.Date
-  status             String    @default("active")
-  policyDocumentUrl  String?   @map("policy_document_url")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  id                String       @id @default(uuid()) @db.Uuid
+  policyNumber      String       @unique @map("policy_number")
+  companyId         String       @map("company_id") @db.Uuid
+  agentId           String       @map("agent_id") @db.Uuid
+  subAgentId        String?      @map("sub_agent_id") @db.Uuid
+  clientId          String       @map("client_id") @db.Uuid
+  familyMemberId    String?      @map("family_member_id") @db.Uuid
+  policyType        String       @map("policy_type") // Motor, Health, Life, etc.
+  planName          String?      @map("plan_name")
+  policySource      PolicySource @default(NEW) @map("policy_source")
+  previousPolicyId  String?      @map("previous_policy_id") @db.Uuid
+  sumAssured        Decimal?     @map("sum_assured") @db.Decimal(15, 2)
+  premiumAmount     Decimal      @map("premium_amount") @db.Decimal(12, 2)
+  premiumFrequency  String       @default("yearly") @map("premium_frequency")
+  premiumPaidBy     PaymentBy    @default(CLIENT) @map("premium_paid_by")
+  startDate         DateTime     @map("start_date") @db.Date
+  endDate           DateTime     @map("end_date") @db.Date
+  issueDate         DateTime?    @map("issue_date") @db.Date
+  vehicleNumber     String?      @map("vehicle_number") // For motor policies
+  status            String       @default("active")
+  policyDocumentUrl String?      @map("policy_document_url")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  company      InsuranceCompany @relation(fields: [companyId], references: [id])
-  subBroker    SubBroker        @relation(fields: [subBrokerId], references: [id])
-  commissions  Commission[]
-  renewals     Renewal[]
+  company       InsuranceCompany @relation(fields: [companyId], references: [id])
+  agent         Agent            @relation(fields: [agentId], references: [id])
+  subAgent      SubAgent?        @relation(fields: [subAgentId], references: [id])
+  client        Client           @relation(fields: [clientId], references: [id])
+  familyMember  FamilyMember?    @relation(fields: [familyMemberId], references: [id])
+  commissions   Commission[]
+  renewals      Renewal[]
+  ledgerEntries LedgerEntry[]
+  documents     Document[]
 
   @@index([companyId])
-  @@index([subBrokerId])
+  @@index([agentId])
+  @@index([clientId])
   @@index([endDate])
   @@index([status])
   @@map("policies")
 }
 
-// Commissions
+// ============================================
+// COMMISSION
+// ============================================
+
 model Commission {
-  id                    String    @id @default(uuid()) @db.Uuid
-  policyId              String    @map("policy_id") @db.Uuid
-  subBrokerId           String    @map("sub_broker_id") @db.Uuid
-  companyId             String    @map("company_id") @db.Uuid
-  commissionPercentage  Decimal   @map("commission_percentage") @db.Decimal(5, 2)
-  baseAmount            Decimal   @map("base_amount") @db.Decimal(10, 2)
-  commissionAmount      Decimal   @map("commission_amount") @db.Decimal(10, 2)
-  paymentStatus         String    @default("pending") @map("payment_status")
-  paymentDate           DateTime? @map("payment_date") @db.Date
-  paymentMethod         String?   @map("payment_method")
-  transactionReference  String?   @map("transaction_reference")
-  commissionType        String    @default("new_business") @map("commission_type")
-  remarks               String?
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
+  id                       String    @id @default(uuid()) @db.Uuid
+  policyId                 String    @map("policy_id") @db.Uuid
+  agentId                  String    @map("agent_id") @db.Uuid
+  subAgentId               String?   @map("sub_agent_id") @db.Uuid
+  companyId                String    @map("company_id") @db.Uuid
+  totalCommissionPercent   Decimal   @map("total_commission_percent") @db.Decimal(5, 2)
+  totalCommissionAmount    Decimal   @map("total_commission_amount") @db.Decimal(12, 2)
+  agentCommissionAmount    Decimal   @map("agent_commission_amount") @db.Decimal(12, 2)
+  subAgentCommissionAmount Decimal?  @map("sub_agent_commission_amount") @db.Decimal(12, 2)
+  paymentStatus            String    @default("pending") @map("payment_status")
+  receivedFromCompany      Boolean   @default(false) @map("received_from_company")
+  receivedDate             DateTime? @map("received_date") @db.Date
+  paidToSubAgent           Boolean   @default(false) @map("paid_to_sub_agent")
+  paidToSubAgentDate       DateTime? @map("paid_to_sub_agent_date") @db.Date
+  commissionType           String    @default("new_business") @map("commission_type")
+  remarks                  String?
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  policy    Policy           @relation(fields: [policyId], references: [id], onDelete: Cascade)
-  subBroker SubBroker        @relation(fields: [subBrokerId], references: [id])
-  company   InsuranceCompany @relation(fields: [companyId], references: [id])
+  policy   Policy           @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  agent    Agent            @relation(fields: [agentId], references: [id])
+  subAgent SubAgent?        @relation(fields: [subAgentId], references: [id])
+  company  InsuranceCompany @relation(fields: [companyId], references: [id])
 
   @@index([policyId])
-  @@index([subBrokerId])
+  @@index([agentId])
   @@index([paymentStatus])
   @@map("commissions")
 }
 
-// Renewals
+// ============================================
+// LEDGER ENTRY (Smart Khata)
+// ============================================
+
+model LedgerEntry {
+  id          String     @id @default(uuid()) @db.Uuid
+  agentId     String     @map("agent_id") @db.Uuid
+  subAgentId  String?    @map("sub_agent_id") @db.Uuid
+  clientId    String?    @map("client_id") @db.Uuid
+  policyId    String?    @map("policy_id") @db.Uuid
+  entryType   LedgerType @map("entry_type")
+  amount      Decimal    @db.Decimal(12, 2)
+  description String
+  reference   String?    // Transaction reference
+  entryDate   DateTime   @default(now()) @map("entry_date") @db.Date
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  agent    Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  subAgent SubAgent? @relation(fields: [subAgentId], references: [id])
+  client   Client?   @relation(fields: [clientId], references: [id])
+  policy   Policy?   @relation(fields: [policyId], references: [id])
+
+  @@index([agentId])
+  @@index([subAgentId])
+  @@index([clientId])
+  @@index([entryDate])
+  @@map("ledger_entries")
+}
+
+// ============================================
+// RENEWAL
+// ============================================
+
 model Renewal {
-  id                       String    @id @default(uuid()) @db.Uuid
-  policyId                 String    @map("policy_id") @db.Uuid
-  renewalDate              DateTime  @map("renewal_date") @db.Date
-  reminder30DaysSent       Boolean   @default(false) @map("reminder_30_days_sent")
-  reminder30DaysSentAt     DateTime? @map("reminder_30_days_sent_at")
-  reminder15DaysSent       Boolean   @default(false) @map("reminder_15_days_sent")
-  reminder15DaysSentAt     DateTime? @map("reminder_15_days_sent_at")
-  reminder7DaysSent        Boolean   @default(false) @map("reminder_7_days_sent")
-  reminder7DaysSentAt      DateTime? @map("reminder_7_days_sent_at")
-  reminder1DaySent         Boolean   @default(false) @map("reminder_1_day_sent")
-  reminder1DaySentAt       DateTime? @map("reminder_1_day_sent_at")
-  renewalStatus            String    @default("pending") @map("renewal_status")
-  renewedAt                DateTime? @map("renewed_at")
-  renewedPolicyId          String?   @map("renewed_policy_id") @db.Uuid
-  remarks                  String?
-  createdAt                DateTime  @default(now()) @map("created_at")
-  updatedAt                DateTime  @updatedAt @map("updated_at")
+  id                   String    @id @default(uuid()) @db.Uuid
+  policyId             String    @map("policy_id") @db.Uuid
+  renewalDate          DateTime  @map("renewal_date") @db.Date
+  reminder30DaysSent   Boolean   @default(false) @map("reminder_30_days_sent")
+  reminder30DaysSentAt DateTime? @map("reminder_30_days_sent_at")
+  reminder15DaysSent   Boolean   @default(false) @map("reminder_15_days_sent")
+  reminder15DaysSentAt DateTime? @map("reminder_15_days_sent_at")
+  reminder7DaysSent    Boolean   @default(false) @map("reminder_7_days_sent")
+  reminder7DaysSentAt  DateTime? @map("reminder_7_days_sent_at")
+  reminder1DaySent     Boolean   @default(false) @map("reminder_1_day_sent")
+  reminder1DaySentAt   DateTime? @map("reminder_1_day_sent_at")
+  whatsappSent         Boolean   @default(false) @map("whatsapp_sent")
+  renewalStatus        String    @default("pending") @map("renewal_status")
+  renewalAction        String?   @map("renewal_action") // SAME_COMPANY, SWITCH
+  renewedAt            DateTime? @map("renewed_at")
+  renewedPolicyId      String?   @map("renewed_policy_id") @db.Uuid
+  remarks              String?
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   // Relations
   policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
@@ -154,23 +411,83 @@ model Renewal {
   @@map("renewals")
 }
 
-// Commission Rules
-model CommissionRule {
-  id            String    @id @default(uuid()) @db.Uuid
-  companyId     String    @map("company_id") @db.Uuid
-  policyType    String    @map("policy_type")
-  tierRules     Json      @map("tier_rules")
-  effectiveFrom DateTime  @map("effective_from") @db.Date
-  effectiveTo   DateTime? @map("effective_to") @db.Date
-  isDefault     Boolean   @default(false) @map("is_default")
-  createdBy     String?   @map("created_by") @db.Uuid
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+// ============================================
+// DOCUMENT (Cloud Vault)
+// ============================================
+
+model Document {
+  id             String       @id @default(uuid()) @db.Uuid
+  agentId        String?      @map("agent_id") @db.Uuid
+  clientId       String?      @map("client_id") @db.Uuid
+  familyMemberId String?      @map("family_member_id") @db.Uuid
+  policyId       String?      @map("policy_id") @db.Uuid
+  documentType   DocumentType @map("document_type")
+  documentName   String       @map("document_name")
+  documentUrl    String       @map("document_url")
+  mimeType       String?      @map("mime_type")
+  fileSize       Int?         @map("file_size") // in bytes
+  uploadedAt     DateTime     @default(now()) @map("uploaded_at")
 
   // Relations
-  company   InsuranceCompany @relation(fields: [companyId], references: [id])
-  creator   SubBroker?       @relation(fields: [createdBy], references: [id])
+  agent        Agent?        @relation(fields: [agentId], references: [id])
+  client       Client?       @relation(fields: [clientId], references: [id])
+  familyMember FamilyMember? @relation(fields: [familyMemberId], references: [id])
+  policy       Policy?       @relation(fields: [policyId], references: [id])
 
-  @@unique([companyId, policyType, effectiveFrom])
-  @@map("commission_rules")
+  @@index([agentId])
+  @@index([clientId])
+  @@index([familyMemberId])
+  @@map("documents")
+}
+
+// ============================================
+// RECONCILIATION (Pro Feature)
+// ============================================
+
+model Reconciliation {
+  id               String   @id @default(uuid()) @db.Uuid
+  agentId          String   @map("agent_id") @db.Uuid
+  companyId        String   @map("company_id") @db.Uuid
+  statementMonth   DateTime @map("statement_month") @db.Date
+  expectedAmount   Decimal  @map("expected_amount") @db.Decimal(12, 2)
+  receivedAmount   Decimal  @map("received_amount") @db.Decimal(12, 2)
+  differenceAmount Decimal  @map("difference_amount") @db.Decimal(12, 2)
+  isDisputed       Boolean  @default(false) @map("is_disputed")
+  disputeRemarks   String?  @map("dispute_remarks")
+  resolvedAt       DateTime? @map("resolved_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  agent   Agent            @relation(fields: [agentId], references: [id])
+  company InsuranceCompany @relation(fields: [companyId], references: [id])
+
+  @@index([agentId])
+  @@index([companyId])
+  @@index([statementMonth])
+  @@map("reconciliations")
+}
+
+// ============================================
+// OTP CODES (Mobile OTP Auth)
+// ============================================
+
+model OtpCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  phone     String
+  code      String
+  agentId   String?   @map("agent_id") @db.Uuid
+  clientId  String?   @map("client_id") @db.Uuid
+  purpose   String    @default("login") // login, signup, verify
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  agent  Agent?  @relation(fields: [agentId], references: [id])
+  client Client? @relation(fields: [clientId], references: [id])
+
+  @@index([phone])
+  @@index([code])
+  @@map("otp_codes")
 }

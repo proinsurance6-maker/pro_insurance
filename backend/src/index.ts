@@ -2,12 +2,12 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
+import agentRoutes from './routes/agent.routes';
+import clientRoutes from './routes/client.routes';
 import policyRoutes from './routes/policy.routes';
+import ledgerRoutes from './routes/ledger.routes';
 import commissionRoutes from './routes/commission.routes';
 import renewalRoutes from './routes/renewal.routes';
-import subBrokerRoutes from './routes/subBroker.routes';
-import companyRoutes from './routes/company.routes';
-import commissionRuleRoutes from './routes/commissionRule.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { startCronJobs } from './jobs';
 
@@ -26,12 +26,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/agent', agentRoutes);
+app.use('/api/clients', clientRoutes);
 app.use('/api/policies', policyRoutes);
+app.use('/api/ledger', ledgerRoutes);
 app.use('/api/commissions', commissionRoutes);
 app.use('/api/renewals', renewalRoutes);
-app.use('/api/sub-brokers', subBrokerRoutes);
-app.use('/api/companies', companyRoutes);
-app.use('/api/commission-rules', commissionRuleRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

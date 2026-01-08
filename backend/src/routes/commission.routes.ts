@@ -1,17 +1,25 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
 import {
   getCommissions,
-  getCommissionSummary,
-  updatePaymentStatus,
+  getCommissionByCompany,
+  markCommissionPaid,
+  bulkMarkPaid,
+  getSubAgentCommissions
 } from '../controllers/commission.controller';
+import { authenticate, requireAgent } from '../middleware/auth';
 
 const router = Router();
 
-router.use(authenticate);
+// All routes require agent authentication
+router.use(authenticate, requireAgent);
 
+// Commission reports
 router.get('/', getCommissions);
-router.get('/summary', getCommissionSummary);
-router.put('/:id/payment', updatePaymentStatus);
+router.get('/by-company', getCommissionByCompany);
+router.get('/sub-agents', getSubAgentCommissions);
+
+// Mark as paid
+router.put('/:id/paid', markCommissionPaid);
+router.post('/bulk-paid', bulkMarkPaid);
 
 export default router;

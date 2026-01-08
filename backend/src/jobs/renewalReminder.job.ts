@@ -31,13 +31,17 @@ export const checkAndSendRenewalReminders = async () => {
     where: {
       renewalDate: normalized30,
       reminder30DaysSent: false,
-      renewalStatus: 'pending',
+      renewalStatus: 'PENDING',
     },
     include: {
       policy: {
         include: {
           company: true,
-          subBroker: true,
+          client: {
+            include: {
+              agent: true,
+            },
+          },
         },
       },
     },
@@ -47,13 +51,17 @@ export const checkAndSendRenewalReminders = async () => {
     where: {
       renewalDate: normalized15,
       reminder15DaysSent: false,
-      renewalStatus: 'pending',
+      renewalStatus: 'PENDING',
     },
     include: {
       policy: {
         include: {
           company: true,
-          subBroker: true,
+          client: {
+            include: {
+              agent: true,
+            },
+          },
         },
       },
     },
@@ -63,13 +71,17 @@ export const checkAndSendRenewalReminders = async () => {
     where: {
       renewalDate: normalized7,
       reminder7DaysSent: false,
-      renewalStatus: 'pending',
+      renewalStatus: 'PENDING',
     },
     include: {
       policy: {
         include: {
           company: true,
-          subBroker: true,
+          client: {
+            include: {
+              agent: true,
+            },
+          },
         },
       },
     },
@@ -79,13 +91,17 @@ export const checkAndSendRenewalReminders = async () => {
     where: {
       renewalDate: normalized1,
       reminder1DaySent: false,
-      renewalStatus: 'pending',
+      renewalStatus: 'PENDING',
     },
     include: {
       policy: {
         include: {
           company: true,
-          subBroker: true,
+          client: {
+            include: {
+              agent: true,
+            },
+          },
         },
       },
     },
@@ -144,46 +160,59 @@ export const checkAndSendRenewalReminders = async () => {
 
 const sendRenewalEmail = async (renewal: any, daysRemaining: number) => {
   const { policy } = renewal;
+  const agent = policy.client?.agent;
+  const client = policy.client;
 
-  await sendEmail({
-    to: policy.subBroker.email,
-    subject: `Policy Renewal Reminder - ${policy.policyNumber}`,
-    html: `
-      <h2>Policy Renewal Reminder</h2>
-      <p>Dear ${policy.subBroker.name},</p>
-      
-      <p>This is a reminder that the following policy is due for renewal in <strong>${daysRemaining} days</strong>:</p>
-      
-      <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Policy Number:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${policy.policyNumber}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Customer Name:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${policy.customerName}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Company:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${policy.company.name}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Policy Type:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${policy.policyType}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Premium Amount:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">₹${policy.premiumAmount}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Renewal Date:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${new Date(renewal.renewalDate).toLocaleDateString()}</td>
-        </tr>
-      </table>
-      
-      <p>Please contact the customer to process the renewal.</p>
-      
-      <p>Best regards,<br>Insurance Management Team</p>
-    `,
-  });
+  // Send email to agent if available
+  if (agent?.email) {
+    await sendEmail({
+      to: agent.email,
+      subject: `Policy Renewal Reminder - ${policy.policyNumber}`,
+      html: `
+        <h2>Policy Renewal Reminder</h2>
+        <p>Dear ${agent.name},</p>
+        
+        <p>This is a reminder that the following policy is due for renewal in <strong>${daysRemaining} days</strong>:</p>
+        
+        <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Policy Number:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${policy.policyNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Client Name:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${client?.name || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Client Phone:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${client?.phone || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Company:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${policy.company?.name || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Policy Type:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${policy.policyType}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Premium Amount:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">₹${policy.premiumAmount}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Sum Assured:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">₹${policy.sumAssured || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Renewal Date:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${new Date(renewal.renewalDate).toLocaleDateString('en-IN')}</td>
+          </tr>
+        </table>
+        
+        <p>Please contact the client to process the renewal.</p>
+        
+        <p>Best regards,<br>Insurance Book Team</p>
+      `,
+    });
+  }
 };

@@ -5,9 +5,10 @@ import { AppError } from './errorHandler';
 export interface AuthRequest extends Request {
   user?: {
     userId: string;
-    email: string;
+    email?: string;
+    phone?: string;
     role: string;
-    brokerCode: string;
+    agentCode?: string;
   };
   file?: any;
 }
@@ -36,8 +37,9 @@ export const authenticate = async (
     req.user = {
       userId: decoded.userId,
       email: decoded.email,
+      phone: decoded.phone,
       role: decoded.role,
-      brokerCode: decoded.brokerCode
+      agentCode: decoded.agentCode
     };
 
     next();
@@ -52,7 +54,7 @@ export const authenticate = async (
   }
 };
 
-export const adminAuth = async (
+export const requireAdmin = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -71,3 +73,46 @@ export const adminAuth = async (
     next(error);
   }
 };
+
+export const requireAgent = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError('Authentication required', 401, 'AUTH_REQUIRED');
+    }
+
+    if (req.user.role !== 'AGENT') {
+      throw new AppError('Agent access required', 403, 'FORBIDDEN');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const requireClient = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError('Authentication required', 401, 'AUTH_REQUIRED');
+    }
+
+    if (req.user.role !== 'CLIENT') {
+      throw new AppError('Client access required', 403, 'FORBIDDEN');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Alias for backward compatibility
+export const adminAuth = requireAdmin;

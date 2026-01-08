@@ -7,20 +7,18 @@ async function createAdmin() {
   try {
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
-    const admin = await prisma.subBroker.create({
+    const admin = await prisma.admin.create({
       data: {
-        name: 'Admin User',
-        email: 'admin@example.com',
-        phone: '1234567890',
+        name: 'Super Admin',
+        email: 'admin@insurancebook.com',
         passwordHash: hashedPassword,
-        brokerCode: 'ADMIN001',
-        role: 'ADMIN',
+        phone: '9999999999',
         isActive: true
       }
     });
     
     console.log('✅ Admin user created successfully!');
-    console.log('Email: admin@example.com');
+    console.log('Email: admin@insurancebook.com');
     console.log('Password: admin123');
   } catch (error) {
     console.error('Error:', error.message);
