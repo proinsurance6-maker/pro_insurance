@@ -28,11 +28,10 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(user));
 
       // Redirect based on role
-      if (user.role === 'ADMIN') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/dashboard');
-      }
+      const redirectPath = user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard';
+      
+      // Use window.location for reliable redirect
+      window.location.href = redirectPath;
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Login failed');
     } finally {
