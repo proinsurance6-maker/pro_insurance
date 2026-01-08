@@ -12,9 +12,11 @@ const api = axios.create({
 // Request interceptor to add token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -26,26 +28,110 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
 );
 
-// Auth APIs
+// ==========================================
+// AUTH APIs
+// ==========================================
 export const authAPI = {
-  login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
+  // Agent OTP Auth
+  sendAgentOTP: (phone: string) =>
+    api.post('/auth/agent/send-otp', { phone }),
   
-  register: (data: any) =>
-    api.post('/auth/register', data),
+  verifyAgentOTP: (phone: string, code: string, name?: string, teamMode?: string) =>
+    api.post('/auth/agent/verify-otp', { phone, code, name, teamMode }),
   
+  // Client OTP Auth
+  sendClientOTP: (phone: string) =>
+    api.post('/auth/client/send-otp', { phone }),
+  
+  verifyClientOTP: (phone: string, code: string) =>
+    api.post('/auth/client/verify-otp', { phone, code }),
+  
+  // Admin Auth
+  adminLogin: (email: string, password: string) =>
+    api.post('/auth/admin/login', { email, password }),
+  
+  // Get current user
   getMe: () =>
     api.get('/auth/me'),
 };
 
-// Policy APIs
+// ==========================================
+// AGENT APIs
+// ==========================================
+export const agentAPI = {
+  getDashboard: () =>
+    api.get('/agent/dashboard'),
+  
+  getProfile: () =>
+    api.get('/agent/profile'),
+  
+  updateProfile: (data: any) =>
+    api.put('/agent/profile', data),
+  
+  getMonthlyReport: (month?: number, year?: number) =>
+    api.get('/agent/monthly-report', { params: { month, year } }),
+  
+  // Sub-agents
+  getSubAgents: () =>
+    api.get('/agent/sub-agents'),
+  
+  createSubAgent: (data: any) =>
+    api.post('/agent/sub-agents', data),
+  
+  updateSubAgent: (id: string, data: any) =>
+    api.put(`/agent/sub-agents/${id}`, data),
+  
+  deleteSubAgent: (id: string) =>
+    api.delete(`/agent/sub-agents/${id}`),
+};
+
+// ==========================================
+// CLIENT APIs
+// ==========================================
+export const clientAPI = {
+  getAll: (params?: any) =>
+    api.get('/clients', { params }),
+  
+  getById: (id: string) =>
+    api.get(`/clients/${id}`),
+  
+  create: (data: any) =>
+    api.post('/clients', data),
+  
+  update: (id: string, data: any) =>
+    api.put(`/clients/${id}`, data),
+  
+  delete: (id: string) =>
+    api.delete(`/clients/${id}`),
+  
+  // Family members
+  addFamilyMember: (clientId: string, data: any) =>
+    api.post(`/clients/${clientId}/family`, data),
+  
+  updateFamilyMember: (clientId: string, memberId: string, data: any) =>
+    api.put(`/clients/${clientId}/family/${memberId}`, data),
+  
+  deleteFamilyMember: (clientId: string, memberId: string) =>
+    api.delete(`/clients/${clientId}/family/${memberId}`),
+  
+  // Client ledger/khata
+  getLedger: (clientId: string) =>
+    api.get(`/clients/${clientId}/ledger`),
+};
+
+// ==========================================
+// POLICY APIs
+// ==========================================
 export const policyAPI = {
   getAll: (params?: any) =>
     api.get('/policies', { params }),
@@ -62,91 +148,81 @@ export const policyAPI = {
   delete: (id: string) =>
     api.delete(`/policies/${id}`),
   
-  bulkUpload: (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/policies/bulk-upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
+  renew: (id: string, data: any) =>
+    api.post(`/policies/${id}/renew`, data),
+  
+  // Get insurance companies for dropdown
+  getCompanies: () =>
+    api.get('/policies/companies'),
 };
 
-// Commission APIs
+// ==========================================
+// LEDGER APIs (Smart Khata)
+// ==========================================
+export const ledgerAPI = {
+  getAll: (params?: any) =>
+    api.get('/ledger', { params }),
+  
+  createDebit: (data: any) =>
+    api.post('/ledger/debit', data),
+  
+  createCollection: (data: any) =>
+    api.post('/ledger/collection', data),
+  
+  getClientKhata: (clientId: string) =>
+    api.get(`/ledger/client/${clientId}/khata`),
+  
+  getPending: () =>
+    api.get('/ledger/pending'),
+  
+  update: (id: string, data: any) =>
+    api.put(`/ledger/${id}`, data),
+  
+  delete: (id: string) =>
+    api.delete(`/ledger/${id}`),
+};
+
+// ==========================================
+// COMMISSION APIs
+// ==========================================
 export const commissionAPI = {
   getAll: (params?: any) =>
     api.get('/commissions', { params }),
   
-  getSummary: () =>
-    api.get('/commissions/summary'),
+  getByCompany: (companyId: string, params?: any) =>
+    api.get(`/commissions/company/${companyId}`, { params }),
   
-  updatePayment: (id: string, data: any) =>
-    api.put(`/commissions/${id}/payment`, data),
+  markPaid: (id: string, receivedDate?: string) =>
+    api.put(`/commissions/${id}/mark-paid`, { receivedDate }),
+  
+  bulkMarkPaid: (commissionIds: string[], receivedDate?: string) =>
+    api.put('/commissions/bulk-mark-paid', { commissionIds, receivedDate }),
+  
+  getSubAgentCommissions: (subAgentId: string) =>
+    api.get(`/commissions/sub-agent/${subAgentId}`),
 };
 
-// Renewal APIs
+// ==========================================
+// RENEWAL APIs
+// ==========================================
 export const renewalAPI = {
-  getAll: (params?: any) =>
-    api.get('/renewals', { params }),
+  getUpcoming: (days?: number) =>
+    api.get('/renewals/upcoming', { params: { days } }),
   
-  getById: (id: string) =>
-    api.get(`/renewals/${id}`),
+  getExpired: () =>
+    api.get('/renewals/expired'),
   
-  getUpcoming: () =>
-    api.get('/renewals', { params: { status: 'pending' } }),
+  getCalendar: (month?: number, year?: number) =>
+    api.get('/renewals/calendar', { params: { month, year } }),
   
-  markAsRenewed: (id: string, data: any) =>
-    api.put(`/renewals/${id}/complete`, data),
-};
-
-// Sub-Broker APIs (Admin)
-export const subBrokerAPI = {
-  getAll: () =>
-    api.get('/sub-brokers'),
+  getToday: () =>
+    api.get('/renewals/today'),
   
-  getById: (id: string) =>
-    api.get(`/sub-brokers/${id}`),
+  markRenewed: (id: string, newPolicyId?: string) =>
+    api.put(`/renewals/${id}/mark-renewed`, { newPolicyId }),
   
-  create: (data: any) =>
-    api.post('/sub-brokers', data),
-  
-  update: (id: string, data: any) =>
-    api.put(`/sub-brokers/${id}`, data),
-  
-  delete: (id: string) =>
-    api.delete(`/sub-brokers/${id}`),
-};
-
-// Company APIs
-export const companyAPI = {
-  getAll: () =>
-    api.get('/companies'),
-  
-  getById: (id: string) =>
-    api.get(`/companies/${id}`),
-  
-  create: (data: any) =>
-    api.post('/companies', data),
-  
-  update: (id: string, data: any) =>
-    api.put(`/companies/${id}`, data),
-  
-  delete: (id: string) =>
-    api.delete(`/companies/${id}`),
-};
-
-// Commission Rule APIs (Admin)
-export const commissionRuleAPI = {
-  getAll: () =>
-    api.get('/commission-rules'),
-  
-  create: (data: any) =>
-    api.post('/commission-rules', data),
-  
-  update: (id: string, data: any) =>
-    api.put(`/commission-rules/${id}`, data),
-  
-  delete: (id: string) =>
-    api.delete(`/commission-rules/${id}`),
+  sendReminder: (id: string) =>
+    api.post(`/renewals/${id}/send-reminder`),
 };
 
 export default api;
