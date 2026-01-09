@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
+import { parse } from 'csv-parse/sync';
+import * as XLSX from 'xlsx';
+import { extractPolicyFromImage } from '../services/ocr.service';
 
 // ==========================================
 // GET ALL POLICIES
@@ -445,6 +448,304 @@ export const renewPolicy = async (req: Request, res: Response, next: NextFunctio
       success: true,
       data: newPolicy,
       message: 'Policy renewed successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// SCAN DOCUMENT (OCR) - OpenAI Vision API
+// ==========================================
+export const scanDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const file = (req as any).file;
+
+    if (!file) {
+      throw new AppError('No document uploaded', 400, 'VALIDATION_ERROR');
+    }
+
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      throw new AppError(
+        'OCR service not configured. Please add OPENAI_API_KEY to .env file.',
+        500,
+        'OCR_NOT_CONFIGURED'
+      );
+    }
+
+    // Validate file type
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    
+    if (!allowedImageTypes.includes(file.mimetype)) {
+      if (file.mimetype === 'application/pdf') {
+        throw new AppError(
+          'PDF files are not supported yet. Please upload a photo/screenshot of the policy (JPG, PNG).',
+          400,
+          'PDF_NOT_SUPPORTED'
+        );
+      }
+      throw new AppError('Invalid file type. Please upload an image (JPG, PNG, WebP).', 400, 'INVALID_FILE_TYPE');
+    }
+
+    // Convert buffer to base64
+    const imageBase64 = file.buffer.toString('base64');
+
+    // Extract data using OpenAI Vision
+    const extractedData = await extractPolicyFromImage(imageBase64, file.mimetype);
+
+    res.json({
+      success: true,
+      data: extractedData,
+      message: 'Document scanned successfully! Please verify the extracted details.'
+    });
+  } catch (error: any) {
+    // Handle specific OCR errors
+    if (error.message?.includes('OPENAI_API_KEY')) {
+      return next(new AppError('OCR service not configured. Contact admin.', 500, 'OCR_ERROR'));
+    }
+    if (error.message?.includes('rate limit')) {
+      return next(new AppError('Too many requests. Please try again in a minute.', 429, 'RATE_LIMIT'));
+    }
+    next(error);
+  }
+};
+
+// ==========================================
+// PARSE EXCEL FILE
+// ==========================================
+export const parseExcel = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const file = (req as any).file;
+
+    if (!file) {
+      throw new AppError('No file uploaded', 400, 'VALIDATION_ERROR');
+    }
+
+    let records: any[] = [];
+    const buffer = file.buffer;
+
+    // Handle CSV files
+    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      records = parse(buffer, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        relax_column_count: true
+      });
+    } else {
+      // Handle Excel files with xlsx
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      records = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+    }
+
+    // Get existing clients and companies for matching
+    const [clients, companies] = await Promise.all([
+      prisma.client.findMany({ where: { agentId }, select: { id: true, name: true, phone: true } }),
+      prisma.insuranceCompany.findMany({ where: { isActive: true }, select: { id: true, name: true, code: true } })
+    ]);
+
+    // Map column names (flexible matching)
+    const columnMap: Record<string, string> = {
+      'policy number': 'policyNumber',
+      'policy no': 'policyNumber',
+      'policy_number': 'policyNumber',
+      'policynumber': 'policyNumber',
+      'client name': 'clientName',
+      'client_name': 'clientName',
+      'clientname': 'clientName',
+      'customer name': 'clientName',
+      'client phone': 'clientPhone',
+      'client_phone': 'clientPhone',
+      'phone': 'clientPhone',
+      'mobile': 'clientPhone',
+      'company': 'companyName',
+      'company name': 'companyName',
+      'company_name': 'companyName',
+      'insurer': 'companyName',
+      'policy type': 'policyType',
+      'policy_type': 'policyType',
+      'type': 'policyType',
+      'premium': 'premiumAmount',
+      'premium amount': 'premiumAmount',
+      'premium_amount': 'premiumAmount',
+      'sum assured': 'sumAssured',
+      'sum_assured': 'sumAssured',
+      'sumassured': 'sumAssured',
+      'start date': 'startDate',
+      'start_date': 'startDate',
+      'startdate': 'startDate',
+      'end date': 'endDate',
+      'end_date': 'endDate',
+      'enddate': 'endDate',
+      'expiry date': 'endDate',
+      'commission': 'commissionRate',
+      'commission rate': 'commissionRate',
+      'commission_rate': 'commissionRate'
+    };
+
+    // Normalize records
+    const policies = records.map((row, index) => {
+      const normalized: any = { rowIndex: index + 2 }; // +2 for Excel row (1-indexed + header)
+      
+      for (const [key, value] of Object.entries(row)) {
+        const normalizedKey = columnMap[key.toLowerCase().trim()] || key;
+        normalized[normalizedKey] = value;
+      }
+
+      // Match client by name or phone
+      const matchedClient = clients.find(c => 
+        c.name.toLowerCase() === normalized.clientName?.toLowerCase() ||
+        c.phone === normalized.clientPhone?.replace(/\D/g, '').slice(-10)
+      );
+
+      // Match company by name or code
+      const matchedCompany = companies.find(c =>
+        c.name.toLowerCase().includes(normalized.companyName?.toLowerCase()) ||
+        normalized.companyName?.toLowerCase().includes(c.name.toLowerCase()) ||
+        c.code.toLowerCase() === normalized.companyName?.toLowerCase()
+      );
+
+      return {
+        ...normalized,
+        clientId: matchedClient?.id,
+        companyId: matchedCompany?.id,
+        premiumAmount: parseFloat(normalized.premiumAmount?.toString().replace(/[₹,]/g, '')) || 0,
+        sumAssured: parseFloat(normalized.sumAssured?.toString().replace(/[₹,]/g, '')) || null,
+        commissionRate: parseFloat(normalized.commissionRate) || 15,
+        isValid: !!(matchedClient && matchedCompany && normalized.policyNumber && normalized.premiumAmount)
+      };
+    }).filter(p => p.policyNumber); // Filter out empty rows
+
+    res.json({
+      success: true,
+      data: {
+        policies,
+        totalFound: policies.length,
+        validCount: policies.filter(p => p.isValid).length
+      },
+      message: `Parsed ${policies.length} policies from file`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// BULK CREATE POLICIES
+// ==========================================
+export const bulkCreatePolicies = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const { policies } = req.body;
+
+    if (!policies || !Array.isArray(policies) || policies.length === 0) {
+      throw new AppError('No policies provided', 400, 'VALIDATION_ERROR');
+    }
+
+    // Validate and create policies in transaction
+    const results = await prisma.$transaction(async (tx) => {
+      const created: any[] = [];
+      const errors: any[] = [];
+
+      for (const policyData of policies) {
+        try {
+          // Validate client belongs to agent
+          if (!policyData.clientId) {
+            errors.push({ row: policyData.rowIndex, error: 'Client not found' });
+            continue;
+          }
+
+          const client = await tx.client.findFirst({
+            where: { id: policyData.clientId, agentId }
+          });
+
+          if (!client) {
+            errors.push({ row: policyData.rowIndex, error: 'Client not found for this agent' });
+            continue;
+          }
+
+          if (!policyData.companyId) {
+            errors.push({ row: policyData.rowIndex, error: 'Insurance company not found' });
+            continue;
+          }
+
+          // Check for duplicate policy number
+          const existing = await tx.policy.findUnique({
+            where: { policyNumber: policyData.policyNumber }
+          });
+
+          if (existing) {
+            errors.push({ row: policyData.rowIndex, error: 'Policy number already exists' });
+            continue;
+          }
+
+          // Parse dates
+          const startDate = policyData.startDate ? new Date(policyData.startDate) : new Date();
+          let endDate = policyData.endDate ? new Date(policyData.endDate) : new Date(startDate);
+          if (!policyData.endDate) {
+            endDate.setFullYear(endDate.getFullYear() + 1);
+          }
+
+          // Create policy
+          const policy = await tx.policy.create({
+            data: {
+              agentId,
+              clientId: policyData.clientId,
+              companyId: policyData.companyId,
+              policyNumber: policyData.policyNumber,
+              policyType: policyData.policyType || 'Other',
+              premiumAmount: policyData.premiumAmount,
+              sumAssured: policyData.sumAssured || null,
+              startDate,
+              endDate,
+              policySource: 'NEW'
+            }
+          });
+
+          // Create commission
+          const rate = policyData.commissionRate || 15;
+          const commissionAmount = (policyData.premiumAmount * rate) / 100;
+
+          await tx.commission.create({
+            data: {
+              policyId: policy.id,
+              agentId,
+              companyId: policyData.companyId,
+              totalCommissionPercent: rate,
+              totalCommissionAmount: commissionAmount,
+              agentCommissionAmount: commissionAmount
+            }
+          });
+
+          // Create renewal
+          await tx.renewal.create({
+            data: {
+              policyId: policy.id,
+              renewalDate: endDate
+            }
+          });
+
+          created.push(policy);
+        } catch (err: any) {
+          errors.push({ row: policyData.rowIndex, error: err.message });
+        }
+      }
+
+      return { created, errors };
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        created: results.created.length,
+        errors: results.errors.length,
+        errorDetails: results.errors
+      },
+      message: `Created ${results.created.length} policies, ${results.errors.length} failed`
     });
   } catch (error) {
     next(error);

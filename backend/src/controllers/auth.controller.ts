@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
+import { sendOTPviaSMS, sendWelcomeSMS } from '../services/sms.service';
 
 // Generate 6-digit OTP
 const generateOTP = (): string => {
@@ -44,9 +45,8 @@ export const sendOTP = async (req: Request, res: Response, next: NextFunction) =
       }
     });
 
-    // TODO: Send OTP via SMS (Twilio/MSG91)
-    // For now, we'll log it (remove in production)
-    console.log(`📱 OTP for ${phone}: ${code}`);
+    // Send OTP via SMS (Twilio)
+    await sendOTPviaSMS(phone, code);
 
     res.json({
       success: true,
@@ -132,6 +132,9 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
         },
         include: { subscription: true }
       });
+
+      // Send welcome SMS to new agent
+      sendWelcomeSMS(phone, name, agentCode).catch(console.error);
     }
 
     // Check subscription status

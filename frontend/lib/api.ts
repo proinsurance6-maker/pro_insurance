@@ -154,6 +154,22 @@ export const policyAPI = {
   // Get insurance companies for dropdown
   getCompanies: () =>
     api.get('/policies/companies'),
+  
+  // Scan document for OCR extraction
+  scanDocument: (formData: FormData) =>
+    api.post('/policies/scan-document', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+  
+  // Parse Excel file for bulk import
+  parseExcel: (formData: FormData) =>
+    api.post('/policies/parse-excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+  
+  // Bulk create policies from Excel
+  bulkCreate: (policies: any[]) =>
+    api.post('/policies/bulk', { policies }),
 };
 
 // ==========================================

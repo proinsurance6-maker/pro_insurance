@@ -1,142 +1,87 @@
-# Insurance Broker Management System - Copilot Instructions
+# Insurance Book SaaS - Copilot Instructions
 
-## Project Overview
-Full-stack application for managing insurance policies, sub-brokers, commissions, and automated renewal tracking.
+## Architecture Overview
+Multi-tenant SaaS platform for insurance agents. Three-tier architecture with clear data isolation per agent.
 
-## Technology Stack
-- **Frontend**: Next.js 14 (App Router), TypeScript, TailwindCSS, shadcn/ui
-- **Backend**: Node.js, Express.js, TypeScript
-- **Database**: PostgreSQL with Prisma ORM
-- **Background Jobs**: node-cron for scheduled tasks
-- **Email**: Nodemailer/SendGrid
+**Core Entities & Hierarchy:**
+- `Admin` → Platform supervisors
+- `Agent` → Business owners (solo or with team) - owns all downstream data
+- `SubAgent` → Works under an Agent with configurable commission split
+- `Client` → End customers with optional `FamilyMember` records
+- `Policy` → Links Agent, SubAgent (optional), Client, and InsuranceCompany
 
-## Project Structure
-```
-/
-├── backend/               # Express API server
-│   ├── src/
-│   │   ├── controllers/   # Request handlers
-│   │   ├── routes/        # API routes
-│   │   ├── middleware/    # Auth, validation, error handling
-│   │   ├── services/      # Business logic
-│   │   ├── utils/         # Helpers
-│   │   └── jobs/          # Cron jobs
-│   ├── prisma/
-│   │   └── schema.prisma  # Database schema
-│   └── package.json
-│
-├── frontend/              # Next.js application
-│   ├── app/              # App router pages
-│   │   ├── (auth)/       # Login pages
-│   │   ├── (dashboard)/  # Sub-broker pages
-│   │   └── (admin)/      # Admin panel
-│   ├── components/       # React components
-│   ├── lib/             # Utilities, API clients
-│   └── package.json
-│
-├── ROADMAP.md           # Development phases
-└── ARCHITECTURE.md      # System design
-```
-
-## Database Schema
-Core entities: `insurance_companies`, `sub_brokers`, `policies`, `commissions`, `renewals`, `commission_rules`
-
-**Key Relationships:**
-- Policy → Commission (auto-created on policy insert)
-- Policy → Renewal (auto-created with policy end_date)
-- Commission rules are tiered based on premium ranges
-
-## Key Features & Workflows
-
-### 1. Role-Based Access
-- **Admin**: Manage sub-brokers, bulk upload policies, configure commission rules, view all data
-- **Sub-Broker**: View own policies, commissions, and renewals only
-
-### 2. Auto-Calculations
-When creating a policy:
-1. Fetch commission rule from `commission_rules` table
-2. Calculate commission based on premium amount and tier
-3. Auto-create commission record
-4. Auto-create renewal record with `renewal_date = policy.end_date`
-
-### 3. Renewal Email Automation
-Daily cron job checks renewals at 30, 15, 7, and 1 day before expiry and sends emails to sub-brokers.
-
-### 4. Bulk Upload (Admin Only)
-- Admin uploads CSV with policies
-- System validates company codes and broker codes
-- Creates policies + commissions + renewals in a transaction
+**Data Flow on Policy Creation** (see [policy.controller.ts](backend/src/controllers/policy.controller.ts)):
+1. Validate client belongs to agent: `prisma.client.findFirst({ where: { id: clientId, agentId } })`
+2. Create policy with all relationships
+3. Auto-create `Commission` record via [commission.service.ts](backend/src/services/commission.service.ts)
+4. Auto-create `Renewal` record with `renewalDate = policy.endDate`
 
 ## Development Commands
-
-### Backend
 ```bash
-cd backend
-npm install
-npx prisma generate      # Generate Prisma client
-npx prisma migrate dev   # Run migrations
-npx prisma db seed      # Seed initial data
-npm run dev             # Start server (port 5000)
+# Backend (port 5000)
+cd backend && npm install
+npx prisma generate && npx prisma migrate dev
+npm run dev
+
+# Frontend (port 3000)
+cd frontend && npm install && npm run dev
 ```
 
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev             # Start dev server (port 3000)
-```
+## Critical Patterns
 
-## API Conventions
-- All routes use RESTful conventions
-- Admin-only routes protected by `adminAuth` middleware
-- Sub-broker routes filtered by `req.user.id`
-- Response format: `{ success: boolean, data: any, message?: string }`
+### Authentication & Authorization
+- JWT auth via `authenticate` middleware - extracts `userId`, `role` from token
+- Role guards: `requireAdmin`, `requireAgent`, `requireClient` in [auth.ts](backend/src/middleware/auth.ts)
+- **All agent queries MUST filter by agentId**: `where: { agentId: (req as any).user.userId }`
+- User type in `AuthRequest.user`: `{ userId, email?, phone?, role, agentCode? }`
 
-## Code Patterns
+### API Response Format
+All endpoints return: `{ success: boolean, data: any, message?: string }`
+Pagination: `{ data: { items: [], pagination: { page, limit, total, totalPages } } }`
 
-### API Route Example
+### Decimal Handling
+Prisma returns `Decimal` objects for monetary fields. Convert before JSON response:
 ```typescript
-// backend/src/routes/policies.ts
-router.post('/', authenticate, async (req, res) => {
-  // Create policy
-  // Auto-create commission
-  // Auto-create renewal
-});
+premiumAmount: policy.premiumAmount.toString()
 ```
 
-### Commission Calculation
+### Commission Split Logic
+When SubAgent is involved, commission splits by `subAgent.commissionPercentage`:
 ```typescript
-const getCommissionRule = async (companyId, policyType, premiumAmount) => {
-  const rules = await prisma.commissionRules.findFirst({
-    where: { company_id: companyId, policy_type: policyType }
-  });
-  
-  const tier = rules.tier_rules.find(t => 
-    premiumAmount >= t.min_premium && 
-    (!t.max_premium || premiumAmount <= t.max_premium)
-  );
-  
-  return tier.rate;
-};
+subAgentCommissionAmount = (totalCommission * subAgentPercentage) / 100
+agentCommissionAmount = totalCommission - subAgentCommissionAmount
 ```
 
-### Frontend Data Fetching
-Use React Query for API calls with automatic caching and refetching.
+### Frontend API Layer
+Centralized in [lib/api.ts](frontend/lib/api.ts) - axios with token interceptor. Use typed API objects:
+- `authAPI.sendAgentOTP()`, `authAPI.verifyAgentOTP()`
+- `agentAPI.getDashboard()`, `policyAPI.getAll()`, `clientAPI.create()`
 
-## Important Notes
-- Always validate CSV uploads before batch insert
-- Commission rules support tiered structures (stored as JSONB)
-- Renewal reminders track sent status to avoid duplicates
-- Use Prisma transactions for multi-table operations
-- Sub-brokers can only access their own data (enforce in queries)
+Auth state via `useAuth()` hook from [auth-context.tsx](frontend/lib/auth-context.tsx)
 
-## Testing
-- Unit tests for commission calculations
-- Integration tests for API endpoints
-- E2E tests for critical flows (login, policy creation, bulk upload)
+### Renewal Automation
+Daily cron job in [renewalReminder.job.ts](backend/src/jobs/renewalReminder.job.ts) checks for policies expiring at 30/15/7/1 days. Tracks sent status per reminder (`reminder30DaysSent`, etc.) to prevent duplicates.
+
+## Database Conventions
+- UUIDs for all IDs (`@db.Uuid`)
+- Snake_case table/column names via `@@map`/`@map`
+- Monetary: `Decimal(12,2)`, Percentages: `Decimal(5,2)`
+- Soft deletes via `isActive` boolean, not hard deletes
+- Key enums: `UserRole`, `TeamMode`, `LedgerType`, `PolicySource`, `PaymentBy`
 
 ## Common Tasks
-- **Add new policy type**: Update commission_rules and policy validation
-- **Modify email template**: Edit `/backend/src/templates/email.html`
-- **Add new admin feature**: Create route + add `adminAuth` middleware
-- **Change commission logic**: Update `getCommissionRule()` service
+
+**Add new API endpoint:**
+1. Add route in `backend/src/routes/{entity}.routes.ts`
+2. Add controller in `backend/src/controllers/{entity}.controller.ts`
+3. Add API function in `frontend/lib/api.ts`
+
+**Modify schema:**
+1. Edit `backend/prisma/schema.prisma`
+2. Run `npx prisma migrate dev --name description`
+3. Update related controllers/services
+
+**Add protected admin route:**
+```typescript
+router.post('/admin-action', authenticate, requireAdmin, controller);
+```

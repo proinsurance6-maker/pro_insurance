@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ interface Client {
   name: string;
   phone: string;
 }
+
+type EntryMode = 'manual' | 'scan' | 'excel';
 
 const POLICY_TYPES = [
   'Life Insurance',
@@ -41,13 +43,22 @@ export default function NewPolicyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preSelectedClientId = searchParams.get('clientId');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const excelInputRef = useRef<HTMLInputElement>(null);
   
+  const [entryMode, setEntryMode] = useState<EntryMode>('manual');
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [clientSearch, setClientSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [scannedImage, setScannedImage] = useState<string | null>(null);
+  const [excelData, setExcelData] = useState<any[]>([]);
+  const [excelFileName, setExcelFileName] = useState('');
   
   const [formData, setFormData] = useState({
     clientId: preSelectedClientId || '',
@@ -55,6 +66,7 @@ export default function NewPolicyPage() {
     companyId: '',
     policyNumber: '',
     policyType: '',
+    planName: '',
     sumAssured: '',
     premiumAmount: '',
     paymentMode: 'yearly',
@@ -62,6 +74,7 @@ export default function NewPolicyPage() {
     endDate: '',
     commissionRate: '',
     holderName: '',
+    vehicleNumber: '',
     remarks: '',
   });
 
@@ -119,6 +132,122 @@ export default function NewPolicyPage() {
     client.phone.includes(clientSearch)
   );
 
+  // Handle document scan/upload
+  const handleDocumentScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setScanning(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setScannedImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload for OCR processing
+      const formDataUpload = new FormData();
+      formDataUpload.append('document', file);
+      
+      const response = await policyAPI.scanDocument(formDataUpload);
+      const extractedData = response.data.data;
+
+      // Fill form with extracted data
+      if (extractedData) {
+        setFormData(prev => ({
+          ...prev,
+          policyNumber: extractedData.policyNumber || prev.policyNumber,
+          policyType: extractedData.policyType || prev.policyType,
+          planName: extractedData.planName || prev.planName,
+          sumAssured: extractedData.sumAssured?.toString() || prev.sumAssured,
+          premiumAmount: extractedData.premiumAmount?.toString() || prev.premiumAmount,
+          startDate: extractedData.startDate || prev.startDate,
+          endDate: extractedData.endDate || prev.endDate,
+          holderName: extractedData.holderName || prev.holderName,
+          vehicleNumber: extractedData.vehicleNumber || prev.vehicleNumber,
+        }));
+
+        // Try to match company
+        if (extractedData.companyName) {
+          const matchedCompany = companies.find(c => 
+            c.name.toLowerCase().includes(extractedData.companyName.toLowerCase()) ||
+            extractedData.companyName.toLowerCase().includes(c.name.toLowerCase())
+          );
+          if (matchedCompany) {
+            setFormData(prev => ({ ...prev, companyId: matchedCompany.id }));
+          }
+        }
+
+        // Build success message with extracted fields
+        const extractedFields = [];
+        if (extractedData.policyNumber) extractedFields.push('Policy No');
+        if (extractedData.companyName) extractedFields.push('Company');
+        if (extractedData.holderName) extractedFields.push('Holder Name');
+        if (extractedData.premiumAmount) extractedFields.push('Premium');
+        if (extractedData.startDate) extractedFields.push('Dates');
+        
+        setSuccess(`✅ Extracted: ${extractedFields.join(', ')}. Please verify details.`);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to scan document. Please try again or enter manually.');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  // Handle Excel import
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setError('');
+    setSuccess('');
+    setExcelFileName(file.name);
+
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      
+      const response = await policyAPI.parseExcel(formDataUpload);
+      const policies = response.data.data.policies || [];
+      
+      if (policies.length > 0) {
+        setExcelData(policies);
+        setSuccess(`✅ Found ${policies.length} policies in Excel. Review and import below.`);
+      } else {
+        setError('No valid policies found in Excel file. Check column headers.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to parse Excel file.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Bulk import from Excel
+  const handleBulkImport = async () => {
+    if (excelData.length === 0) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await policyAPI.bulkCreate(excelData);
+      setSuccess(`✅ Successfully imported ${response.data.data.created} policies!`);
+      setExcelData([]);
+      setTimeout(() => router.push('/dashboard/policies'), 2000);
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to import policies.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -155,15 +284,225 @@ export default function NewPolicyPage() {
           ← Back to Policies
         </Link>
         <h1 className="text-2xl font-bold text-gray-800">Add New Policy</h1>
-        <p className="text-gray-600">Enter policy details below</p>
+        <p className="text-gray-600">Choose how you want to add policy details</p>
       </div>
 
+      {/* Entry Mode Selection */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <button
+          onClick={() => { setEntryMode('manual'); setError(''); setSuccess(''); }}
+          className={`p-4 rounded-lg border-2 transition-all ${
+            entryMode === 'manual' 
+              ? 'border-blue-500 bg-blue-50 text-blue-700' 
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className="text-2xl mb-1">✏️</div>
+          <div className="font-medium text-sm">Manual</div>
+          <div className="text-xs text-gray-500">Type details</div>
+        </button>
+        
+        <button
+          onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
+          className={`p-4 rounded-lg border-2 transition-all ${
+            entryMode === 'scan' 
+              ? 'border-blue-500 bg-blue-50 text-blue-700' 
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className="text-2xl mb-1">📷</div>
+          <div className="font-medium text-sm">Scan Document</div>
+          <div className="text-xs text-gray-500">Auto-fill from image</div>
+        </button>
+        
+        <button
+          onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
+          className={`p-4 rounded-lg border-2 transition-all ${
+            entryMode === 'excel' 
+              ? 'border-blue-500 bg-blue-50 text-blue-700' 
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className="text-2xl mb-1">📊</div>
+          <div className="font-medium text-sm">Excel Import</div>
+          <div className="text-xs text-gray-500">Bulk upload</div>
+        </button>
+      </div>
+
+      {/* Hidden File Inputs */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleDocumentScan}
+        accept="image/*,.pdf"
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={excelInputRef}
+        onChange={handleExcelImport}
+        accept=".xlsx,.xls,.csv"
+        className="hidden"
+      />
+
+      {/* Scan Mode UI */}
+      {entryMode === 'scan' && (
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-4xl mb-3">📄</div>
+              <h3 className="font-medium text-gray-900 mb-2">Scan Policy Document</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Upload policy copy image or PDF to auto-extract details
+              </p>
+              
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={scanning}
+                className="mb-4"
+              >
+                {scanning ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Scanning...
+                  </>
+                ) : (
+                  <>📷 Choose File / Take Photo</>
+                )}
+              </Button>
+
+              {scannedImage && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600 mb-2">Uploaded Document:</p>
+                  <img 
+                    src={scannedImage} 
+                    alt="Scanned document" 
+                    className="max-h-48 mx-auto rounded-lg border"
+                  />
+                </div>
+              )}
+
+              {success && (
+                <div className="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                  {success}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Excel Mode UI */}
+      {entryMode === 'excel' && (
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-4xl mb-3">📊</div>
+              <h3 className="font-medium text-gray-900 mb-2">Import from Excel</h3>
+              <p className="text-sm text-gray-600 mb-2">
+                Upload Excel file with policy data. Required columns:
+              </p>
+              <p className="text-xs text-gray-500 mb-4 bg-gray-100 p-2 rounded">
+                Policy Number, Client Name, Client Phone, Company, Policy Type, Premium, Start Date, End Date
+              </p>
+              
+              <Button
+                onClick={() => excelInputRef.current?.click()}
+                disabled={importing}
+                variant="outline"
+                className="mb-4"
+              >
+                {importing ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Reading Excel...
+                  </>
+                ) : (
+                  <>📁 Choose Excel File</>
+                )}
+              </Button>
+
+              {excelFileName && (
+                <p className="text-sm text-gray-600">File: {excelFileName}</p>
+              )}
+
+              {success && (
+                <div className="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                  {success}
+                </div>
+              )}
+
+              {/* Excel Preview Table */}
+              {excelData.length > 0 && (
+                <div className="mt-4 text-left">
+                  <h4 className="font-medium mb-2">Preview ({excelData.length} policies):</h4>
+                  <div className="max-h-64 overflow-auto border rounded">
+                    <table className="min-w-full text-xs">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="p-2 text-left">Policy No</th>
+                          <th className="p-2 text-left">Client</th>
+                          <th className="p-2 text-left">Type</th>
+                          <th className="p-2 text-right">Premium</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {excelData.slice(0, 10).map((row, i) => (
+                          <tr key={i} className="border-t">
+                            <td className="p-2">{row.policyNumber}</td>
+                            <td className="p-2">{row.clientName}</td>
+                            <td className="p-2">{row.policyType}</td>
+                            <td className="p-2 text-right">₹{row.premiumAmount}</td>
+                          </tr>
+                        ))}
+                        {excelData.length > 10 && (
+                          <tr className="border-t bg-gray-50">
+                            <td colSpan={4} className="p-2 text-center text-gray-500">
+                              ... and {excelData.length - 10} more
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      onClick={() => { setExcelData([]); setExcelFileName(''); }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleBulkImport}
+                      disabled={loading}
+                      className="flex-1"
+                    >
+                      {loading ? 'Importing...' : `Import ${excelData.length} Policies`}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Manual Form - show for manual mode, or after scan/excel fills data */}
+      {(entryMode === 'manual' || (entryMode === 'scan' && scannedImage)) && (
       <Card>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
+              </div>
+            )}
+            
+            {success && entryMode === 'scan' && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                {success}
               </div>
             )}
 
@@ -414,6 +753,14 @@ export default function NewPolicyPage() {
           </form>
         </CardContent>
       </Card>
+      )}
+
+      {/* Error display for Excel mode */}
+      {entryMode === 'excel' && error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mt-4">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

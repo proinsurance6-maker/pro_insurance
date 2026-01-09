@@ -39,8 +39,11 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.12",
+    "openai": "^6.15.0",
     "prisma": "^6.1.0",
-    "typescript": "^5.9.3"
+    "twilio": "^5.11.2",
+    "typescript": "^5.9.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "ts-node-dev": "^2.0.0"
