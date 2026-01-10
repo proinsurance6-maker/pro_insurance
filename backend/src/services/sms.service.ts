@@ -44,6 +44,8 @@ export const sendOTPviaVerifyService = async (phone: string, otp?: string): Prom
 
     const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
 
+    console.log(`📱 Attempting Verify Service with SID: ${verifyServiceSid}`);
+    
     // Send code via Verify Service
     const verification = await client.verify.v2.services(verifyServiceSid).verifications.create({
       to: formattedPhone,
@@ -53,10 +55,46 @@ export const sendOTPviaVerifyService = async (phone: string, otp?: string): Prom
     console.log(`✅ Verify Service OTP sent to ${formattedPhone}, SID: ${verification.sid}`);
     return true;
   } catch (error: any) {
-    console.error('❌ Verify Service failed:', error.message);
+    console.error('❌ Verify Service error:', error.code || error.status, error.message);
+    
+    // For trial accounts, Verify Service may not work - use fallback
+    console.log(`⚠️  Verify Service failed, falling back to SMS/console`);
     console.log(`📱 [FALLBACK] OTP for ${phone}: ${otp || 'auto-generated'}`);
-    return true;
+    
+    // If SMS is configured, try SMS
+    if (twilioPhone) {
+      console.log(`📱 Attempting SMS fallback to ${phone}...`);
+      return sendOTPviaSMS(phone, otp || '000000');
+    }
+    
+    return true; // Allow flow to continue anyway
   }
+};
+
+/**
+ * Store OTP in memory for testing (development only)
+ * In production, this is stored in database via auth controller
+ */
+const otpStore = new Map<string, { code: string; expiresAt: number }>();
+
+/**
+ * Store OTP for development/testing (console-based verification)
+ */
+export const storeOTPForTesting = (phone: string, code: string) => {
+  otpStore.set(phone, { code, expiresAt: Date.now() + 5 * 60 * 1000 }); // 5 min expiry
+};
+
+/**
+ * Verify OTP from memory store (development/testing)
+ */
+export const verifyOTPFromStore = (phone: string, code: string): boolean => {
+  const stored = otpStore.get(phone);
+  if (!stored) return false;
+  if (Date.now() > stored.expiresAt) {
+    otpStore.delete(phone);
+    return false;
+  }
+  return stored.code === code;
 };
 
 /**
@@ -69,28 +107,38 @@ export const verifyOTPCode = async (phone: string, code: string): Promise<boolea
   try {
     const client = getTwilioClient();
     
-    if (!client || !verifyServiceSid) {
-      console.log('📱 Verify Service not configured');
+    // If Verify Service configured, try to verify via Twilio
+    if (client && verifyServiceSid) {
+      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+
+      try {
+        const verificationCheck = await client.verify.v2.services(verifyServiceSid).verificationChecks.create({
+          to: formattedPhone,
+          code,
+        });
+
+        if (verificationCheck.status === 'approved') {
+          console.log(`✅ OTP verified for ${formattedPhone} via Verify Service`);
+          return true;
+        }
+      } catch (verifyError: any) {
+        console.log(`⚠️  Verify Service check failed: ${verifyError.message}`);
+        // Fall through to manual verification
+      }
+    }
+    
+    // Fallback: Check from in-memory store (for development/console OTP)
+    if (verifyOTPFromStore(phone, code)) {
+      console.log(`✅ OTP verified for ${phone} from console/manual store`);
       return true;
     }
-
-    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-
-    const verificationCheck = await client.verify.v2.services(verifyServiceSid).verificationChecks.create({
-      to: formattedPhone,
-      code,
-    });
-
-    if (verificationCheck.status === 'approved') {
-      console.log(`✅ OTP verified for ${formattedPhone}`);
-      return true;
-    } else {
-      console.log(`❌ Invalid OTP for ${formattedPhone}`);
-      return false;
-    }
-  } catch (error: any) {
-    console.error('❌ Verify OTP failed:', error.message);
+    
+    console.log(`❌ Invalid OTP for ${phone}`);
     return false;
+  } catch (error: any) {
+    console.error('❌ OTP verification error:', error.message);
+    // Still allow if stored OTP matches
+    return verifyOTPFromStore(phone, code);
   }
 };
 

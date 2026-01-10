@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
-import { sendOTPviaVerifyService, sendWelcomeSMS } from '../services/sms.service';
+import { sendOTPviaVerifyService, sendWelcomeSMS, storeOTPForTesting } from '../services/sms.service';
 
 // Generate 6-digit OTP
 const generateOTP = (): string => {
@@ -48,6 +48,9 @@ export const sendOTP = async (req: Request, res: Response, next: NextFunction) =
     // Send OTP via Twilio Verify Service (works with trial accounts)
     // Fallback to SMS if Verify Service not configured
     await sendOTPviaVerifyService(phone, code);
+    
+    // Also store in memory for development/console testing
+    storeOTPForTesting(phone, code);
 
     res.json({
       success: true,
@@ -86,9 +89,12 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
     });
 
     if (!otpRecord) {
+      console.log(`❌ OTP verification failed: ${phone} - Code: ${code}`);
       throw new AppError('Invalid or expired OTP', 401, 'INVALID_OTP');
     }
 
+    console.log(`✅ OTP verified successfully: ${phone}`);
+    
     // Mark OTP as used
     await prisma.otpCode.update({
       where: { id: otpRecord.id },
