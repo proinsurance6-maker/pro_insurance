@@ -46,6 +46,7 @@ export const sendOTP = async (req: Request, res: Response, next: NextFunction) =
     });
 
     // Send OTP via SMS (Twilio)
+    // Note: May fallback to console log in development/trial mode
     await sendOTPviaSMS(phone, code);
 
     res.json({

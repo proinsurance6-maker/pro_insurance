@@ -54,12 +54,13 @@ export const sendOTPviaSMS = async (phone: string, otp: string): Promise<boolean
   } catch (error: any) {
     console.error('❌ SMS sending failed:', error.message);
     
-    // Log OTP for development if SMS fails (ALWAYS log for testing)
+    // Log OTP for development/testing (ALWAYS log for fallback)
     console.log(`📱 [FALLBACK] OTP for ${phone}: ${otp}`);
-    console.log(`ℹ️  SMS not sent due to: ${error.message}`);
+    console.log(`ℹ️  SMS error: ${error.message} - Using fallback mode`);
     
-    // Return true to allow auth flow to continue
-    // OTP is saved in database anyway
+    // Always return true - allow auth to continue
+    // OTP is already saved in database
+    // In production, setup proper error handling after trial upgrade
     return true;
   }
 };
