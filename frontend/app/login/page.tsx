@@ -27,7 +27,6 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [signupPin, setSignupPin] = useState('');
-  const [teamMode, setTeamMode] = useState('SOLO');
   
   // Admin login
   const [adminEmail, setAdminEmail] = useState('');
@@ -49,7 +48,7 @@ export default function LoginPage() {
         phone: phone.replace(/\D/g, ''),
         email,
         pin: signupPin,
-        teamMode
+        teamMode: 'SOLO'
       });
 
       const { token, agent } = response.data.data;
@@ -289,38 +288,6 @@ export default function LoginPage() {
                       maxLength={6}
                     />
                     <p className="text-xs text-gray-500 mt-1">Use this PIN to login next time</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Team Mode
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setTeamMode('SOLO')}
-                        className={`p-3 border-2 rounded-lg text-center transition ${
-                          teamMode === 'SOLO'
-                            ? 'border-blue-600 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="font-medium text-sm">Solo</div>
-                        <div className="text-xs text-gray-500">Work alone</div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTeamMode('TEAM')}
-                        className={`p-3 border-2 rounded-lg text-center transition ${
-                          teamMode === 'TEAM'
-                            ? 'border-blue-600 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="font-medium text-sm">Team</div>
-                        <div className="text-xs text-gray-500">With sub-agents</div>
-                      </button>
-                    </div>
                   </div>
 
                   <Button 
