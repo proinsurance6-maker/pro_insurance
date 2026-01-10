@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
-import { sendOTPviaVerifyService, sendWelcomeSMS } from '../services/sms.service';
+import { sendOTPviaSMS, sendWelcomeSMS } from '../services/sms.service';
 
 // Generate 6-digit OTP
 const generateOTP = (): string => {
@@ -45,12 +45,12 @@ export const sendOTP = async (req: Request, res: Response, next: NextFunction) =
       }
     });
 
-    // Send OTP via Twilio Verify Service (PRODUCTION MODE - No fallback)
+    // Send OTP via Twilio SMS API (direct, simple, reliable)
     try {
-      await sendOTPviaVerifyService(phone, code);
+      await sendOTPviaSMS(phone, code);
     } catch (smsError: any) {
-      // If SMS fails, return error to user
-      throw new AppError(smsError.message || 'Failed to send OTP', 500, 'SMS_ERROR');
+      console.error('Auth Error - SMS sending failed:', smsError.message);
+      throw new AppError(smsError.message || 'Failed to send OTP. Please check Twilio configuration.', 500, 'SMS_ERROR');
     }
 
     res.json({

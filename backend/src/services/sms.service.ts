@@ -157,7 +157,8 @@ export const verifyOTPCode = async (phone: string, code: string): Promise<boolea
 };
 
 /**
- * Send OTP via SMS using Twilio (PRODUCTION - No fallback)
+ * Send OTP via Direct Twilio SMS (NOT Verify Service)
+ * Simple, reliable, production-ready
  * @param phone - 10-digit phone number
  * @param otp - 6-digit OTP code
  * @returns Success status
@@ -167,18 +168,19 @@ export const sendOTPviaSMS = async (phone: string, otp: string): Promise<boolean
     const client = getTwilioClient();
     
     if (!client) {
-      throw new Error('Twilio client not initialized');
+      throw new Error('Twilio client not initialized. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.');
     }
 
     if (!twilioPhone) {
-      throw new Error('TWILIO_PHONE_NUMBER not configured');
+      throw new Error('TWILIO_PHONE_NUMBER environment variable not set.');
     }
 
     const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
 
-    console.log(`📱 Sending SMS via Twilio...`);
+    console.log(`📱 Sending OTP via Twilio SMS API...`);
     console.log(`   From: ${twilioPhone}`);
     console.log(`   To: ${formattedPhone}`);
+    console.log(`   OTP: ${otp}`);
 
     const message = await client.messages.create({
       body: `Your Insurance Book OTP is: ${otp}. Valid for 5 minutes. Do not share with anyone.`,
@@ -186,17 +188,24 @@ export const sendOTPviaSMS = async (phone: string, otp: string): Promise<boolean
       to: formattedPhone,
     });
 
-    console.log(`✅ SMS sent successfully`);
+    console.log(`✅ SMS sent successfully!`);
     console.log(`   Message SID: ${message.sid}`);
     console.log(`   Status: ${message.status}`);
+    console.log(`   Account: ${accountSid}`);
+    
     return true;
     
   } catch (error: any) {
     const errorCode = error.code || error.status || 'UNKNOWN';
     const errorMsg = error.message || 'Unknown error';
     
-    console.error(`❌ SMS ERROR (${errorCode}): ${errorMsg}`);
-    throw new Error(`Failed to send SMS: ${errorMsg}`);
+    console.error(`\n❌ SMS ERROR CODE: ${errorCode}`);
+    console.error(`❌ SMS ERROR MSG: ${errorMsg}`);
+    console.error(`   Account SID: ${accountSid}`);
+    console.error(`   Phone From: ${twilioPhone}`);
+    console.error(`   Phone To: +91${phone}\n`);
+    
+    throw new Error(`SMS sending failed: ${errorMsg}`);
   }
 };
 
