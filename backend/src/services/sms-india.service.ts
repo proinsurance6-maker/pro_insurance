@@ -24,29 +24,32 @@ export const sendOTPviaMsg91 = async (phone: string, otp: string): Promise<boole
 
     const message = `Your Insurance Book OTP is: ${otp}. Valid for 5 minutes. Do not share with anyone.`;
 
-    const response = await axios.get('https://api.msg91.com/apiv2/route', {
-      params: {
-        authkey: MSG91_API_KEY,
-        mobiles: `91${formattedPhone}`,
-        message: message,
-        sender: MSG91_SENDER_ID,
-        route: '4',
-        DLT_TE_ID: process.env.MSG91_DLT_TE_ID || '',
-      },
-    });
-
-    console.log(`✅ MSG91 API Response:`, response.status);
-
-    if (response.status === 200) {
-      const data = response.data;
-      if (data.type === 'success' || data.request_id) {
-        console.log(`✅ SMS sent successfully via MSG91`);
-        console.log(`   Request ID: ${data.request_id}`);
-        return true;
+    const response = await axios.post(
+      'https://api.msg91.com/api/sendhttp.php',
+      {},
+      {
+        params: {
+          authkey: MSG91_API_KEY,
+          mobiles: formattedPhone.startsWith('91') ? formattedPhone : `91${formattedPhone}`,
+          message: encodeURIComponent(message),
+          sender: MSG91_SENDER_ID,
+          route: '4',
+        },
       }
+    );
+
+    console.log(`✅ MSG91 API Response:`, response.status, response.data);
+
+    // MSG91 returns HTML or plain text response
+    // Success response contains "success" or message ID
+    const responseText = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+    
+    if (response.status === 200 && (responseText.includes('success') || responseText.includes('1001'))) {
+      console.log(`✅ SMS sent successfully via MSG91`);
+      return true;
     }
 
-    throw new Error('MSG91 API returned error: ' + JSON.stringify(response.data));
+    throw new Error('MSG91 API returned error: ' + responseText);
   } catch (error: any) {
     console.error(`❌ MSG91 SMS Error: ${error.message}`);
     console.error(`   Phone: ${phone}`);
@@ -69,16 +72,19 @@ export const sendSMSviaMsg91 = async (phone: string, message: string): Promise<b
     console.log(`📱 Sending SMS via MSG91...`);
     console.log(`   To: +91${formattedPhone}`);
 
-    const response = await axios.get('https://api.msg91.com/apiv2/route', {
-      params: {
-        authkey: MSG91_API_KEY,
-        mobiles: `91${formattedPhone}`,
-        message: message,
-        sender: MSG91_SENDER_ID,
-        route: '4',
-        DLT_TE_ID: process.env.MSG91_DLT_TE_ID || '',
-      },
-    });
+    const response = await axios.post(
+      'https://api.msg91.com/api/sendhttp.php',
+      {},
+      {
+        params: {
+          authkey: MSG91_API_KEY,
+          mobiles: formattedPhone.startsWith('91') ? formattedPhone : `91${formattedPhone}`,
+          message: encodeURIComponent(message),
+          sender: MSG91_SENDER_ID,
+          route: '4',
+        },
+      }
+    );
 
     if (response.status === 200) {
       console.log(`✅ SMS sent via MSG91`);
