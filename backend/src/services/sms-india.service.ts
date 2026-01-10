@@ -39,25 +39,36 @@ export const sendOTPviaMsg91 = async (phone: string, otp: string): Promise<boole
     );
 
     console.log(`✅ MSG91 API Response Status: ${response.status}`);
-    console.log(`   Response Data Type: ${typeof response.data}`);
-    console.log(`   Response Data: ${JSON.stringify(response.data).substring(0, 100)}`);
+    console.log(`   Full Response Data:`, response.data);
+    
+    // MSG91 returns text/plain response
+    // Success format: "1001|<msgid>"
+    // Error format: error code or error message
+    const responseStr = String(response.data).trim();
+    
+    console.log(`   Parsed Response: "${responseStr}"`);
+    console.log(`   Response includes "1001": ${responseStr.includes('1001')}`);
+    console.log(`   Response includes "error": ${responseStr.toLowerCase().includes('error')}`);
 
-    // MSG91 API returns different response formats
-    // Check for success indicators
-    if (response.status === 200) {
-      const responseText = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-      
-      // Log raw response for debugging
-      if (responseText.toLowerCase().includes('success') || 
-          responseText.includes('1001') ||
-          responseText.includes('request_id') ||
-          !responseText.includes('error')) {
-        console.log(`✅ SMS sent successfully via MSG91`);
-        return true;
-      }
+    // Check if response indicates success
+    if (response.status === 200 && responseStr.includes('1001')) {
+      console.log(`✅ SMS sent successfully via MSG91 - MSG ID received`);
+      return true;
     }
 
-    throw new Error('MSG91 API returned error or invalid response');
+    // If we get 200 and response is not an error, assume success
+    if (response.status === 200 && 
+        !responseStr.toLowerCase().includes('error') && 
+        !responseStr.includes('authentication') &&
+        !responseStr.includes('400') &&
+        !responseStr.includes('401') &&
+        !responseStr.includes('403')) {
+      console.warn(`⚠️ MSG91 returned 200 but no clear success indicator. Response: "${responseStr}"`);
+      // Still return true for now since 200 was returned
+      return true;
+    }
+
+    throw new Error(`MSG91 API error response: "${responseStr}"`);
   } catch (error: any) {
     console.error(`❌ MSG91 SMS Error: ${error.message}`);
     console.error(`   Phone: ${phone}`);
