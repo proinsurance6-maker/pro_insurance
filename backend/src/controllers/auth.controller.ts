@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
-import { sendOTPviaSMS, sendWelcomeSMS } from '../services/sms.service';
+import { sendOTPviaMsg91 } from '../services/sms-india.service';
 
 // Generate 6-digit OTP
 const generateOTP = (): string => {
@@ -45,12 +45,16 @@ export const sendOTP = async (req: Request, res: Response, next: NextFunction) =
       }
     });
 
-    // Send OTP via Twilio SMS API (direct, simple, reliable)
+    // Send OTP via MSG91 (Indian SMS service - no trial restrictions)
     try {
-      await sendOTPviaSMS(phone, code);
+      await sendOTPviaMsg91(phone, code);
     } catch (smsError: any) {
       console.error('Auth Error - SMS sending failed:', smsError.message);
-      throw new AppError(smsError.message || 'Failed to send OTP. Please check Twilio configuration.', 500, 'SMS_ERROR');
+      throw new AppError(
+        smsError.message || 'Failed to send OTP. Please check MSG91 configuration.',
+        500,
+        'SMS_ERROR'
+      );
     }
 
     res.json({
