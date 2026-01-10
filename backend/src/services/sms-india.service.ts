@@ -91,3 +91,17 @@ export const sendSMSviaMsg91 = async (phone: string, message: string): Promise<b
     throw new Error(`SMS sending failed: ${error.message}`);
   }
 };
+
+/**
+ * Send welcome SMS to new agent
+ */
+export const sendWelcomeSMS = async (phone: string, name: string, agentCode: string): Promise<void> => {
+  try {
+    const message = `Welcome to Insurance Book, ${name}! Your Agent Code: ${agentCode}. Start your 60-day free trial now. insurancebook.vercel.app`;
+    await sendSMSviaMsg91(phone, message);
+    console.log(`✅ Welcome SMS sent to ${name}`);
+  } catch (error: any) {
+    console.error('Welcome SMS failed:', error.message);
+    // Don't throw - welcome SMS is not critical
+  }
+};

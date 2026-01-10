@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
-import { sendOTPviaMsg91 } from '../services/sms-india.service';
+import { sendOTPviaMsg91, sendWelcomeSMS } from '../services/sms-india.service';
 
 // Generate 6-digit OTP
 const generateOTP = (): string => {
