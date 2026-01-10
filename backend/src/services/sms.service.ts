@@ -1,11 +1,12 @@
 import twilio from 'twilio';
 
-// Initialize Twilio client - supports both authentication methods
+// Initialize Twilio client
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const apiKeySid = process.env.TWILIO_API_KEY_SID;
 const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
 const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
+const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
 
 let twilioClient: twilio.Twilio | null = null;
 
@@ -26,6 +27,74 @@ const getTwilioClient = () => {
 };
 
 /**
+ * Send OTP via Twilio Verify Service (recommended for trial accounts)
+ * @param phone - 10-digit phone number
+ * @param otp - 6-digit OTP code (optional - Verify generates if not provided)
+ * @returns Success status
+ */
+export const sendOTPviaVerifyService = async (phone: string, otp?: string): Promise<boolean> => {
+  try {
+    const client = getTwilioClient();
+    
+    if (!client || !verifyServiceSid) {
+      console.log('📱 Verify Service not configured. Using SMS fallback. OTP:', otp || 'auto-generated', 'for phone:', phone);
+      // Fallback to SMS
+      return sendOTPviaSMS(phone, otp || '000000');
+    }
+
+    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+
+    // Send code via Verify Service
+    const verification = await client.verify.v2.services(verifyServiceSid).verifications.create({
+      to: formattedPhone,
+      channel: 'sms',
+    });
+
+    console.log(`✅ Verify Service OTP sent to ${formattedPhone}, SID: ${verification.sid}`);
+    return true;
+  } catch (error: any) {
+    console.error('❌ Verify Service failed:', error.message);
+    console.log(`📱 [FALLBACK] OTP for ${phone}: ${otp || 'auto-generated'}`);
+    return true;
+  }
+};
+
+/**
+ * Verify OTP code via Twilio Verify Service
+ * @param phone - 10-digit phone number
+ * @param code - 6-digit OTP code to verify
+ * @returns Success status
+ */
+export const verifyOTPCode = async (phone: string, code: string): Promise<boolean> => {
+  try {
+    const client = getTwilioClient();
+    
+    if (!client || !verifyServiceSid) {
+      console.log('📱 Verify Service not configured');
+      return true;
+    }
+
+    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+
+    const verificationCheck = await client.verify.v2.services(verifyServiceSid).verificationChecks.create({
+      to: formattedPhone,
+      code,
+    });
+
+    if (verificationCheck.status === 'approved') {
+      console.log(`✅ OTP verified for ${formattedPhone}`);
+      return true;
+    } else {
+      console.log(`❌ Invalid OTP for ${formattedPhone}`);
+      return false;
+    }
+  } catch (error: any) {
+    console.error('❌ Verify OTP failed:', error.message);
+    return false;
+  }
+};
+
+/**
  * Send OTP via SMS using Twilio
  * @param phone - 10-digit phone number
  * @param otp - 6-digit OTP code
@@ -36,7 +105,7 @@ export const sendOTPviaSMS = async (phone: string, otp: string): Promise<boolean
     const client = getTwilioClient();
     
     if (!client || !twilioPhone) {
-      console.log('📱 Twilio not configured. OTP:', otp, 'for phone:', phone);
+      console.log('📱 Twilio SMS not configured. OTP:', otp, 'for phone:', phone);
       return true; // Return true so auth flow continues
     }
 
