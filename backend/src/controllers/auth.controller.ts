@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendOTPviaMsg91, sendWelcomeSMS } from '../services/sms-india.service';
@@ -87,10 +87,14 @@ export const agentSignup = async (req: Request, res: Response, next: NextFunctio
     await sendWelcomeSMS(phone, name, agentCode).catch(console.error);
 
     // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
+    const jwtOptions: SignOptions = {
+      expiresIn: process.env.JWT_EXPIRY || '15m'
+    };
     const token = jwt.sign(
       { userId: agent.id, email: agent.email, phone: agent.phone, role: 'AGENT' },
-      process.env.JWT_SECRET || 'dev-secret',
-      { expiresIn: process.env.JWT_EXPIRY || '15m' }
+      jwtSecret,
+      jwtOptions
     );
 
     res.json({
@@ -162,10 +166,14 @@ export const agentLogin = async (req: Request, res: Response, next: NextFunction
     }
 
     // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
+    const jwtOptions: SignOptions = {
+      expiresIn: process.env.JWT_EXPIRY || '15m'
+    };
     const token = jwt.sign(
       { userId: agent.id, email: agent.email, phone: agent.phone, role: 'AGENT' },
-      process.env.JWT_SECRET || 'dev-secret',
-      { expiresIn: process.env.JWT_EXPIRY || '15m' }
+      jwtSecret,
+      jwtOptions
     );
 
     res.json({
