@@ -28,46 +28,68 @@ const getTwilioClient = () => {
 
 /**
  * Send OTP via Twilio Verify Service (recommended for trial accounts)
+ * Works on free trial - no verified number requirement
  * @param phone - 10-digit phone number
- * @param otp - 6-digit OTP code (optional - Verify generates if not provided)
+ * @param otp - 6-digit OTP code (stored in DB)
  * @returns Success status
  */
 export const sendOTPviaVerifyService = async (phone: string, otp?: string): Promise<boolean> => {
   try {
     const client = getTwilioClient();
     
-    if (!client || !verifyServiceSid) {
-      console.log('📱 Verify Service not configured. Using SMS fallback. OTP:', otp || 'auto-generated', 'for phone:', phone);
-      // Fallback to SMS
-      return sendOTPviaSMS(phone, otp || '000000');
+    if (!client) {
+      console.log('❌ Twilio client not initialized');
+      console.log(`📱 [CONSOLE] OTP for ${phone}: ${otp || 'pending'}`);
+      return true;
+    }
+    
+    if (!verifyServiceSid) {
+      console.log('⚠️  TWILIO_VERIFY_SERVICE_SID not set. Using SMS/console fallback');
+      console.log(`📱 [CONSOLE] OTP for ${phone}: ${otp || 'pending'}`);
+      return true;
     }
 
     const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
 
-    console.log(`📱 Attempting Verify Service with SID: ${verifyServiceSid}`);
+    console.log(`📱 Sending via Verify Service (SID: ${verifyServiceSid.substring(0, 8)}...)`);
+    console.log(`📱 Phone: ${formattedPhone}`);
     
-    // Send code via Verify Service
-    const verification = await client.verify.v2.services(verifyServiceSid).verifications.create({
-      to: formattedPhone,
-      channel: 'sms',
-    });
+    // Send code via Verify Service - Trial account supports SMS
+    const verification = await client.verify.v2
+      .services(verifyServiceSid)
+      .verifications.create({
+        to: formattedPhone,
+        channel: 'sms',
+      });
 
-    console.log(`✅ Verify Service OTP sent to ${formattedPhone}, SID: ${verification.sid}`);
+    console.log(`✅ Verify Service OTP request sent - SID: ${verification.sid}`);
+    console.log(`✅ Status: ${verification.status}`);
+    console.log(`📝 Check your phone at ${formattedPhone} for OTP`);
     return true;
+    
   } catch (error: any) {
-    console.error('❌ Verify Service error:', error.code || error.status, error.message);
+    const errorCode = error.code || error.status || 'UNKNOWN';
+    const errorMsg = error.message || 'Unknown error';
     
-    // For trial accounts, Verify Service may not work - use fallback
-    console.log(`⚠️  Verify Service failed, falling back to SMS/console`);
-    console.log(`📱 [FALLBACK] OTP for ${phone}: ${otp || 'auto-generated'}`);
+    console.error(`❌ Verify Service error (${errorCode}): ${errorMsg}`);
     
-    // If SMS is configured, try SMS
-    if (twilioPhone) {
-      console.log(`📱 Attempting SMS fallback to ${phone}...`);
-      return sendOTPviaSMS(phone, otp || '000000');
+    // Log OTP for console fallback
+    console.log(`\n📱 [FALLBACK MODE] OTP for manual testing:`);
+    console.log(`   Phone: ${phone}`);
+    console.log(`   OTP: ${otp}`);
+    console.log(`   ↳ Use this OTP in the frontend form\n`);
+    
+    // Common trial account errors
+    if (errorCode === '20003') {
+      console.log('ℹ️  Error 20003: Authentication failed - Check TWILIO_VERIFY_SERVICE_SID');
+    } else if (errorCode === '21608') {
+      console.log('ℹ️  Error 21608: Invalid phone format - Ensure +91 country code');
+    } else if (errorCode === '20429') {
+      console.log('ℹ️  Error 20429: Rate limited - Wait before retrying');
     }
     
-    return true; // Allow flow to continue anyway
+    // Allow auth flow to continue - OTP is in database anyway
+    return true;
   }
 };
 
