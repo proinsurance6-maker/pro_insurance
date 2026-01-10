@@ -17,47 +17,172 @@ const generateAgentCode = async (): Promise<string> => {
 };
 
 // ==========================================
-// SEND OTP
+// AGENT SIGNUP (with PIN - no OTP needed)
 // ==========================================
-export const sendOTP = async (req: Request, res: Response, next: NextFunction) => {
+export const agentSignup = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { phone, purpose = 'login' } = req.body;
+    const { name, phone, email, pin, teamMode = 'SOLO' } = req.body;
+
+    // Validation
+    if (!name || name.length < 2) {
+      throw new AppError('Name must be at least 2 characters', 400, 'VALIDATION_ERROR');
+    }
 
     if (!phone || phone.length !== 10) {
       throw new AppError('Valid 10-digit phone number is required', 400, 'VALIDATION_ERROR');
     }
 
-    // Generate OTP
-    const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    if (!email || !email.includes('@')) {
+      throw new AppError('Valid email is required', 400, 'VALIDATION_ERROR');
+    }
 
-    // Check if agent exists
-    const agent = await prisma.agent.findUnique({ where: { phone } });
+    if (!pin || pin.length !== 6 || !/^\d+$/.test(pin)) {
+      throw new AppError('PIN must be a 6-digit number', 400, 'VALIDATION_ERROR');
+    }
 
-    // Save OTP to database
-    await prisma.otpCode.create({
+    // Check if phone already exists
+    const existingAgent = await prisma.agent.findUnique({ where: { phone } });
+    if (existingAgent) {
+      throw new AppError('This phone number is already registered', 409, 'PHONE_EXISTS');
+    }
+
+    // Check if email already exists
+    const existingEmail = await prisma.agent.findUnique({ where: { email } });
+    if (existingEmail) {
+      throw new AppError('This email is already registered', 409, 'EMAIL_EXISTS');
+    }
+
+    // Hash PIN
+    const hashedPin = await bcrypt.hash(pin, 10);
+
+    // Generate agent code
+    const agentCode = await generateAgentCode();
+    const trialStartDate = new Date();
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + 60); // 60 days trial
+
+    // Create agent with trial subscription
+    const agent = await prisma.agent.create({
       data: {
+        agentCode,
+        name,
         phone,
-        code,
-        agentId: agent?.id,
-        purpose,
-        expiresAt
-      }
+        email,
+        pin: hashedPin,
+        teamMode: teamMode as any,
+        isActive: true,
+        subscription: {
+          create: {
+            status: 'TRIAL',
+            trialStartDate,
+            trialEndDate,
+            monthlyAmount: 100
+          }
+        }
+      },
+      include: { subscription: true }
     });
 
-    // Send OTP via MSG91 (Indian SMS service - no trial restrictions)
-    await sendOTPviaMsg91(phone, code);
-    
-    console.log(`✅ OTP sent successfully to ${phone}: ${code}`);
+    // Send welcome email
+    await sendWelcomeSMS(phone, name, agentCode).catch(console.error);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: agent.id, email: agent.email, phone: agent.phone, role: 'AGENT' },
+      process.env.JWT_SECRET!,
+      { expiresIn: process.env.JWT_EXPIRY || '15m' }
+    );
 
     res.json({
       success: true,
       data: {
-        phone,
-        expiresIn: 300, // 5 minutes in seconds
-        isNewUser: !agent
+        agent: {
+          id: agent.id,
+          name: agent.name,
+          phone: agent.phone,
+          email: agent.email,
+          agentCode: agent.agentCode,
+          teamMode: agent.teamMode,
+          subscription: agent.subscription
+        },
+        token
       },
-      message: 'OTP sent successfully'
+      message: 'Signup successful! Welcome to Insurance Book'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// AGENT LOGIN (with PIN)
+// ==========================================
+export const agentLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { phone, pin } = req.body;
+
+    // Validation
+    if (!phone || phone.length !== 10) {
+      throw new AppError('Valid 10-digit phone number is required', 400, 'VALIDATION_ERROR');
+    }
+
+    if (!pin || pin.length !== 6 || !/^\d+$/.test(pin)) {
+      throw new AppError('PIN must be a 6-digit number', 400, 'VALIDATION_ERROR');
+    }
+
+    // Find agent by phone
+    const agent = await prisma.agent.findUnique({
+      where: { phone },
+      include: { subscription: true }
+    });
+
+    if (!agent) {
+      throw new AppError('Agent not found. Please sign up first.', 404, 'AGENT_NOT_FOUND');
+    }
+
+    // Verify PIN
+    const pinMatch = await bcrypt.compare(pin, agent.pin || '');
+    if (!pinMatch) {
+      throw new AppError('Invalid PIN', 401, 'INVALID_PIN');
+    }
+
+    // Check subscription status
+    const subscription = agent.subscription;
+    let subscriptionStatus = 'EXPIRED';
+    
+    if (subscription) {
+      if (subscription.status === 'TRIAL') {
+        const now = new Date();
+        if (now <= subscription.trialEndDate) {
+          subscriptionStatus = 'TRIAL';
+        }
+      } else if (subscription.status === 'ACTIVE') {
+        subscriptionStatus = 'ACTIVE';
+      }
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: agent.id, email: agent.email, phone: agent.phone, role: 'AGENT' },
+      process.env.JWT_SECRET!,
+      { expiresIn: process.env.JWT_EXPIRY || '15m' }
+    );
+
+    res.json({
+      success: true,
+      data: {
+        agent: {
+          id: agent.id,
+          name: agent.name,
+          phone: agent.phone,
+          email: agent.email,
+          agentCode: agent.agentCode,
+          teamMode: agent.teamMode,
+          subscription
+        },
+        token
+      },
+      message: 'Login successful'
     });
   } catch (error) {
     next(error);

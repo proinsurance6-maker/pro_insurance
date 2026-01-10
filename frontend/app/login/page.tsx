@@ -9,7 +9,6 @@ import { authAPI } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
 type LoginMode = 'agent' | 'admin';
-type OTPStep = 'phone' | 'otp' | 'register';
 type AgentAction = 'login' | 'signup';
 
 export default function LoginPage() {
@@ -18,224 +17,170 @@ export default function LoginPage() {
   
   // Mode selection
   const [mode, setMode] = useState<LoginMode>('agent');
-  const [agentAction, setAgentAction] = useState<AgentAction>('login');
+  const [agentAction, setAgentAction] = useState<AgentAction>('signup');
   
-  // Agent OTP login
+  // Agent login (PIN-based)
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpStep, setOtpStep] = useState<OTPStep>('phone');
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [pin, setPin] = useState('');
+  
+  // Agent signup (Name, Email, PIN, Team Mode)
   const [name, setName] = useState('');
-  const [teamMode, setTeamMode] = useState('solo');
+  const [email, setEmail] = useState('');
+  const [signupPin, setSignupPin] = useState('');
+  const [teamMode, setTeamMode] = useState('SOLO');
   
   // Admin login
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   
   // Common
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(0);
 
-  // Send OTP
-  const handleSendOTP = async (e: React.FormEvent) => {
+  // Agent Signup Handler
+  const handleAgentSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await authAPI.sendAgentOTP(phone);
-      const { isNewUser: newUser, expiresIn } = response.data.data;
-      
-      // If user clicked signup but phone exists, show message
-      if (agentAction === 'signup' && !newUser) {
-        setError('This phone number is already registered. Please login instead.');
-        setAgentAction('login');
-        setLoading(false);
-        return;
-      }
-      
-      // If user clicked login but phone is new, prompt signup
-      if (agentAction === 'login' && newUser) {
-        setIsNewUser(true);
-        setOtpStep('register');
-      } else if (agentAction === 'signup') {
-        // Signup flow - go directly to OTP verification
-        setIsNewUser(true);
-        setOtpStep('otp');
-      } else {
-        // Login flow for existing user
-        setIsNewUser(false);
-        setOtpStep('otp');
-      }
-      
-      // Start countdown
-      setCountdown(expiresIn);
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to send OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
+      const response = await authAPI.agentSignup({
+        name,
+        phone: phone.replace(/\D/g, ''),
+        email,
+        pin: signupPin,
+        teamMode
+      });
 
-  // Verify OTP
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      // Pass name and teamMode for both signup flow and register step
-      const shouldRegister = isNewUser || agentAction === 'signup';
-      
-      const response = await authAPI.verifyAgentOTP(
-        phone, 
-        otp, 
-        shouldRegister ? name : undefined,
-        shouldRegister ? teamMode.toUpperCase() : undefined
-      );
-      
-      const { token, user } = response.data.data;
-      login(token, user);
-      
+      const { token, agent } = response.data.data;
+      login(token, agent);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Invalid OTP');
+      setError(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Admin Login
+  // Agent Login Handler (with PIN)
+  const handleAgentLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await authAPI.agentLogin({
+        phone: phone.replace(/\D/g, ''),
+        pin
+      });
+
+      const { token, agent } = response.data.data;
+      login(token, agent);
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Login failed. Invalid phone or PIN.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Admin Login Handler
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await authAPI.adminLogin(email, password);
-      const { token, user } = response.data.data;
-      
-      login(token, user);
-      router.push('/admin');
+      const response = await authAPI.adminLogin({
+        email: adminEmail,
+        password: adminPassword
+      });
+
+      const { token, admin } = response.data.data;
+      login(token, admin);
+      router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Login failed');
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Format countdown
-  const formatCountdown = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+          <div className="flex items-center justify-center mb-3">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <span className="text-2xl">🛡️</span>
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-800">Insurance Book</CardTitle>
-          <p className="text-gray-500 mt-1">
-            {mode === 'agent' 
-              ? (agentAction === 'login' ? 'Agent Portal - Login with OTP' : 'Create New Agent Account')
-              : 'Admin Login'}
-          </p>
+          <CardTitle className="text-center">Insurance Book</CardTitle>
+          <p className="text-center text-sm text-blue-100 mt-1">Agent Portal</p>
         </CardHeader>
 
-        <CardContent>
-          {/* Mode Tabs */}
-          <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+        <CardContent className="pt-6">
+          {/* Mode Selector */}
+          <div className="flex gap-2 mb-6 border-b">
             <button
-              onClick={() => { setMode('agent'); setError(''); setOtpStep('phone'); setAgentAction('login'); }}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
-                mode === 'agent' 
-                  ? 'bg-white shadow text-blue-600' 
-                  : 'text-gray-600 hover:text-gray-800'
+              onClick={() => { setMode('agent'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
+                mode === 'agent'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               Agent
             </button>
             <button
               onClick={() => { setMode('admin'); setError(''); }}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
-                mode === 'admin' 
-                  ? 'bg-white shadow text-blue-600' 
-                  : 'text-gray-600 hover:text-gray-800'
+              className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
+                mode === 'admin'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               Admin
             </button>
           </div>
 
+          {/* Error Message */}
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
-          {/* Agent OTP Login */}
+          {/* Agent Section */}
           {mode === 'agent' && (
             <>
-              {/* Agent Login/Signup Tabs */}
-              {otpStep === 'phone' && (
-                <div className="flex mb-4 border-b">
-                  <button
-                    onClick={() => { setAgentAction('login'); setError(''); }}
-                    className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
-                      agentAction === 'login'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={() => { setAgentAction('signup'); setError(''); }}
-                    className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
-                      agentAction === 'signup'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    New Agent? Sign Up
-                  </button>
-                </div>
-              )}
+              {/* Login/Signup Tabs */}
+              <div className="flex gap-2 mb-4 border-b">
+                <button
+                  onClick={() => { setAgentAction('login'); setError(''); }}
+                  className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
+                    agentAction === 'login'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => { setAgentAction('signup'); setError(''); }}
+                  className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
+                    agentAction === 'signup'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Sign Up
+                </button>
+              </div>
 
-              {/* Step 1: Phone Number */}
-              {otpStep === 'phone' && (
-                <form onSubmit={handleSendOTP} className="space-y-4">
-                  {agentAction === 'signup' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Your Name
-                      </label>
-                      <Input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Enter your full name"
-                        required
-                      />
-                    </div>
-                  )}
+              {/* Login Form */}
+              {agentAction === 'login' && (
+                <form onSubmit={handleAgentLogin} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Mobile Number
@@ -255,112 +200,35 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
-                  {agentAction === 'signup' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Team Mode
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setTeamMode('solo')}
-                          className={`p-3 border rounded-lg text-center transition ${
-                            teamMode === 'solo'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="font-medium text-sm">Solo</div>
-                          <div className="text-xs text-gray-500">Work alone</div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setTeamMode('team')}
-                          className={`p-3 border rounded-lg text-center transition ${
-                            teamMode === 'team'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="font-medium text-sm">Team</div>
-                          <div className="text-xs text-gray-500">With sub-agents</div>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={loading || phone.length !== 10 || (agentAction === 'signup' && !name)}
-                  >
-                    {loading ? 'Sending OTP...' : 'Get OTP'}
-                  </Button>
-                </form>
-              )}
 
-              {/* Step 2: OTP Verification (Existing User) */}
-              {otpStep === 'otp' && (
-                <form onSubmit={handleVerifyOTP} className="space-y-4">
-                  <div className="text-center mb-4">
-                    {isNewUser && agentAction === 'signup' ? (
-                      <>
-                        <div className="text-green-600 text-2xl mb-2">✓</div>
-                        <p className="text-sm text-gray-600">
-                          Creating account for <span className="font-semibold">{name}</span>
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-sm text-gray-600">
-                        Welcome back!
-                      </p>
-                    )}
-                    <p className="text-sm text-gray-600 mt-1">
-                      OTP sent to <span className="font-semibold">+91 {phone}</span>
-                    </p>
-                    {countdown > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Expires in {formatCountdown(countdown)}
-                      </p>
-                    )}
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Enter OTP
+                      6-Digit PIN
                     </label>
                     <Input
-                      type="text"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="123456"
+                      type="password"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
                       className="text-center text-2xl tracking-widest"
                       required
                       maxLength={6}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
-                    {loading 
-                      ? (isNewUser ? 'Creating Account...' : 'Verifying...') 
-                      : (isNewUser ? 'Create Account & Login' : 'Verify & Login')
-                    }
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => { setOtpStep('phone'); setOtp(''); }}
-                    className="w-full text-sm text-gray-600 hover:text-gray-800"
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={loading || phone.length !== 10 || pin.length !== 6}
                   >
-                    Change Phone Number
-                  </button>
+                    {loading ? 'Logging in...' : 'Login'}
+                  </Button>
                 </form>
               )}
 
-              {/* Step 3: Registration (New User) */}
-              {otpStep === 'register' && (
-                <form onSubmit={handleVerifyOTP} className="space-y-4">
-                  <div className="text-center mb-4">
-                    <p className="text-sm text-gray-600">
-                      Welcome! Complete your registration
-                    </p>
-                  </div>
+              {/* Signup Form */}
+              {agentAction === 'signup' && (
+                <form onSubmit={handleAgentSignup} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Your Name
@@ -373,25 +241,56 @@ export default function LoginPage() {
                       required
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Enter OTP
+                      Mobile Number
+                    </label>
+                    <div className="flex">
+                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                        +91
+                      </span>
+                      <Input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="9876543210"
+                        className="rounded-l-none"
+                        required
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address
                     </label>
                     <Input
-                      type="text"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="123456"
-                      className="text-center text-xl tracking-widest"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Create 6-Digit PIN
+                    </label>
+                    <Input
+                      type="password"
+                      value={signupPin}
+                      onChange={(e) => setSignupPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      className="text-center text-2xl tracking-widest"
                       required
                       maxLength={6}
                     />
-                    {countdown > 0 && (
-                      <p className="text-xs text-gray-500 mt-1 text-center">
-                        Expires in {formatCountdown(countdown)}
-                      </p>
-                    )}
+                    <p className="text-xs text-gray-500 mt-1">Use this PIN to login next time</p>
                   </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Team Mode
@@ -399,46 +298,48 @@ export default function LoginPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() => setTeamMode('solo')}
-                        className={`p-3 border rounded-lg text-center transition ${
-                          teamMode === 'solo' 
-                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                        onClick={() => setTeamMode('SOLO')}
+                        className={`p-3 border-2 rounded-lg text-center transition ${
+                          teamMode === 'SOLO'
+                            ? 'border-blue-600 bg-blue-50 text-blue-700'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <div className="font-medium">Solo</div>
+                        <div className="font-medium text-sm">Solo</div>
                         <div className="text-xs text-gray-500">Work alone</div>
                       </button>
                       <button
                         type="button"
-                        onClick={() => setTeamMode('team')}
-                        className={`p-3 border rounded-lg text-center transition ${
-                          teamMode === 'team' 
-                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                        onClick={() => setTeamMode('TEAM')}
+                        className={`p-3 border-2 rounded-lg text-center transition ${
+                          teamMode === 'TEAM'
+                            ? 'border-blue-600 bg-blue-50 text-blue-700'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <div className="font-medium">Team</div>
+                        <div className="font-medium text-sm">Team</div>
                         <div className="text-xs text-gray-500">With sub-agents</div>
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading || otp.length !== 6 || !name}>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={loading || phone.length !== 10 || !name || !email || signupPin.length !== 6}
+                  >
                     {loading ? 'Creating Account...' : 'Create Account'}
                   </Button>
-                  <button
-                    type="button"
-                    onClick={() => { setOtpStep('phone'); setOtp(''); setName(''); }}
-                    className="w-full text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    Change Phone Number
-                  </button>
+
+                  <p className="text-xs text-center text-gray-500 mt-3">
+                    ✓ 60 days free trial • ₹100/month after
+                  </p>
                 </form>
               )}
             </>
           )}
 
-          {/* Admin Login */}
+          {/* Admin Section */}
           {mode === 'admin' && (
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div>
@@ -447,8 +348,8 @@ export default function LoginPage() {
                 </label>
                 <Input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
                   placeholder="admin@insurancebook.com"
                   required
                 />
@@ -459,24 +360,17 @@ export default function LoginPage() {
                 </label>
                 <Input
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
           )}
-
-          {/* Footer */}
-          <div className="mt-6 pt-4 border-t text-center">
-            <p className="text-xs text-gray-500">
-              60 days free trial • ₹100/month after
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

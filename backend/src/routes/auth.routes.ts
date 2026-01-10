@@ -5,7 +5,9 @@ import {
   adminLogin,
   clientSendOTP,
   clientVerifyOTP,
-  getMe
+  getMe,
+  agentSignup,
+  agentLogin
 } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth';
 
@@ -15,7 +17,13 @@ const router = Router();
 // AGENT AUTH ROUTES
 // ==========================================
 
-// Send OTP to agent
+// Agent signup with PIN (no OTP needed)
+router.post('/agent/signup', agentSignup);
+
+// Agent login with PIN
+router.post('/agent/login', agentLogin);
+
+// Send OTP to agent (for login with OTP - optional)
 router.post('/agent/send-otp', sendOTP);
 
 // Verify OTP and login/signup agent

@@ -42,7 +42,15 @@ api.interceptors.response.use(
 // AUTH APIs
 // ==========================================
 export const authAPI = {
-  // Agent OTP Auth
+  // Agent Signup with PIN
+  agentSignup: (data: { name: string; phone: string; email: string; pin: string; teamMode: string }) =>
+    api.post('/auth/agent/signup', data),
+  
+  // Agent Login with PIN
+  agentLogin: (data: { phone: string; pin: string }) =>
+    api.post('/auth/agent/login', data),
+  
+  // Agent OTP Auth (kept for backward compatibility)
   sendAgentOTP: (phone: string) =>
     api.post('/auth/agent/send-otp', { phone }),
   
@@ -57,8 +65,8 @@ export const authAPI = {
     api.post('/auth/client/verify-otp', { phone, code }),
   
   // Admin Auth
-  adminLogin: (email: string, password: string) =>
-    api.post('/auth/admin/login', { email, password }),
+  adminLogin: (data: { email: string; password: string }) =>
+    api.post('/auth/admin/login', data),
   
   // Get current user
   getMe: () =>
