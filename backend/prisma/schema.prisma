@@ -85,6 +85,7 @@ model Agent {
   name            String
   email           String?            @unique
   phone           String             @unique
+  pin             String?            // 6-digit PIN for authentication
   passwordHash    String?            @map("password_hash")
   address         String?
   panNumber       String?            @map("pan_number")

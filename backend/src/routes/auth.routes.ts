@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import {
-  sendOTP,
   verifyOTP,
   adminLogin,
   clientSendOTP,
@@ -23,11 +22,9 @@ router.post('/agent/signup', agentSignup);
 // Agent login with PIN
 router.post('/agent/login', agentLogin);
 
-// Send OTP to agent (for login with OTP - optional)
-router.post('/agent/send-otp', sendOTP);
-
-// Verify OTP and login/signup agent
-router.post('/agent/verify-otp', verifyOTP);
+// OTP routes (kept for backward compatibility - commented out for now)
+// router.post('/agent/send-otp', sendOTP);
+// router.post('/agent/verify-otp', verifyOTP);
 
 // ==========================================
 // CLIENT AUTH ROUTES
