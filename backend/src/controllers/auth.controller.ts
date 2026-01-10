@@ -88,13 +88,10 @@ export const agentSignup = async (req: Request, res: Response, next: NextFunctio
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
-    const jwtOptions: SignOptions = {
-      expiresIn: process.env.JWT_EXPIRY || '15m'
-    };
     const token = jwt.sign(
       { userId: agent.id, email: agent.email, phone: agent.phone, role: 'AGENT' },
       jwtSecret,
-      jwtOptions
+      { expiresIn: (process.env.JWT_EXPIRY || '15m') as string }
     );
 
     res.json({
@@ -167,13 +164,10 @@ export const agentLogin = async (req: Request, res: Response, next: NextFunction
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
-    const jwtOptions: SignOptions = {
-      expiresIn: process.env.JWT_EXPIRY || '15m'
-    };
     const token = jwt.sign(
       { userId: agent.id, email: agent.email, phone: agent.phone, role: 'AGENT' },
       jwtSecret,
-      jwtOptions
+      { expiresIn: (process.env.JWT_EXPIRY || '15m') as string }
     );
 
     res.json({
