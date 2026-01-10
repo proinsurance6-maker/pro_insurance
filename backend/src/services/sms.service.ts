@@ -27,10 +27,9 @@ const getTwilioClient = () => {
 };
 
 /**
- * Send OTP via Twilio Verify Service (recommended for trial accounts)
- * Works on free trial - no verified number requirement
+ * Send OTP via Twilio Verify Service (PRODUCTION - No fallback)
  * @param phone - 10-digit phone number
- * @param otp - 6-digit OTP code (stored in DB)
+ * @param otp - 6-digit OTP code
  * @returns Success status
  */
 export const sendOTPviaVerifyService = async (phone: string, otp?: string): Promise<boolean> => {
@@ -38,23 +37,20 @@ export const sendOTPviaVerifyService = async (phone: string, otp?: string): Prom
     const client = getTwilioClient();
     
     if (!client) {
-      console.log('❌ Twilio client not initialized');
-      console.log(`📱 [CONSOLE] OTP for ${phone}: ${otp || 'pending'}`);
-      return true;
+      throw new Error('Twilio client not initialized. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN');
     }
     
     if (!verifyServiceSid) {
-      console.log('⚠️  TWILIO_VERIFY_SERVICE_SID not set. Using SMS/console fallback');
-      console.log(`📱 [CONSOLE] OTP for ${phone}: ${otp || 'pending'}`);
-      return true;
+      throw new Error('TWILIO_VERIFY_SERVICE_SID not configured in environment variables');
     }
 
     const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
 
-    console.log(`📱 Sending via Verify Service (SID: ${verifyServiceSid.substring(0, 8)}...)`);
-    console.log(`📱 Phone: ${formattedPhone}`);
+    console.log(`📱 Sending OTP via Verify Service...`);
+    console.log(`   Service SID: ${verifyServiceSid}`);
+    console.log(`   Phone: ${formattedPhone}`);
     
-    // Send code via Verify Service - Trial account supports SMS
+    // Send code via Verify Service - NO FALLBACK
     const verification = await client.verify.v2
       .services(verifyServiceSid)
       .verifications.create({
@@ -62,34 +58,30 @@ export const sendOTPviaVerifyService = async (phone: string, otp?: string): Prom
         channel: 'sms',
       });
 
-    console.log(`✅ Verify Service OTP request sent - SID: ${verification.sid}`);
-    console.log(`✅ Status: ${verification.status}`);
-    console.log(`📝 Check your phone at ${formattedPhone} for OTP`);
+    console.log(`✅ OTP sent via Verify Service`);
+    console.log(`   Status: ${verification.status}`);
+    console.log(`   Check phone: ${formattedPhone}`);
     return true;
     
   } catch (error: any) {
     const errorCode = error.code || error.status || 'UNKNOWN';
     const errorMsg = error.message || 'Unknown error';
     
-    console.error(`❌ Verify Service error (${errorCode}): ${errorMsg}`);
+    console.error(`❌ TWILIO ERROR (${errorCode}): ${errorMsg}`);
     
-    // Log OTP for console fallback
-    console.log(`\n📱 [FALLBACK MODE] OTP for manual testing:`);
-    console.log(`   Phone: ${phone}`);
-    console.log(`   OTP: ${otp}`);
-    console.log(`   ↳ Use this OTP in the frontend form\n`);
-    
-    // Common trial account errors
+    // Error codes explanation
     if (errorCode === '20003') {
-      console.log('ℹ️  Error 20003: Authentication failed - Check TWILIO_VERIFY_SERVICE_SID');
+      console.error('   → Authentication failed. Check Twilio credentials.');
     } else if (errorCode === '21608') {
-      console.log('ℹ️  Error 21608: Invalid phone format - Ensure +91 country code');
+      console.error('   → Invalid phone number format.');
     } else if (errorCode === '20429') {
-      console.log('ℹ️  Error 20429: Rate limited - Wait before retrying');
+      console.error('   → Rate limited. Wait before retrying.');
+    } else if (errorCode === 'INVALID_PARAMETER') {
+      console.error('   → Invalid Service SID or phone parameter.');
     }
     
-    // Allow auth flow to continue - OTP is in database anyway
-    return true;
+    // Throw error - don't continue
+    throw new Error(`SMS sending failed: ${errorMsg}`);
   }
 };
 
@@ -165,7 +157,7 @@ export const verifyOTPCode = async (phone: string, code: string): Promise<boolea
 };
 
 /**
- * Send OTP via SMS using Twilio
+ * Send OTP via SMS using Twilio (PRODUCTION - No fallback)
  * @param phone - 10-digit phone number
  * @param otp - 6-digit OTP code
  * @returns Success status
@@ -174,13 +166,19 @@ export const sendOTPviaSMS = async (phone: string, otp: string): Promise<boolean
   try {
     const client = getTwilioClient();
     
-    if (!client || !twilioPhone) {
-      console.log('📱 Twilio SMS not configured. OTP:', otp, 'for phone:', phone);
-      return true; // Return true so auth flow continues
+    if (!client) {
+      throw new Error('Twilio client not initialized');
     }
 
-    // Format phone number with country code
+    if (!twilioPhone) {
+      throw new Error('TWILIO_PHONE_NUMBER not configured');
+    }
+
     const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+
+    console.log(`📱 Sending SMS via Twilio...`);
+    console.log(`   From: ${twilioPhone}`);
+    console.log(`   To: ${formattedPhone}`);
 
     const message = await client.messages.create({
       body: `Your Insurance Book OTP is: ${otp}. Valid for 5 minutes. Do not share with anyone.`,
@@ -188,19 +186,17 @@ export const sendOTPviaSMS = async (phone: string, otp: string): Promise<boolean
       to: formattedPhone,
     });
 
-    console.log(`✅ SMS sent to ${formattedPhone}, SID: ${message.sid}`);
+    console.log(`✅ SMS sent successfully`);
+    console.log(`   Message SID: ${message.sid}`);
+    console.log(`   Status: ${message.status}`);
     return true;
+    
   } catch (error: any) {
-    console.error('❌ SMS sending failed:', error.message);
+    const errorCode = error.code || error.status || 'UNKNOWN';
+    const errorMsg = error.message || 'Unknown error';
     
-    // Log OTP for development/testing (ALWAYS log for fallback)
-    console.log(`📱 [FALLBACK] OTP for ${phone}: ${otp}`);
-    console.log(`ℹ️  SMS error: ${error.message} - Using fallback mode`);
-    
-    // Always return true - allow auth to continue
-    // OTP is already saved in database
-    // In production, setup proper error handling after trial upgrade
-    return true;
+    console.error(`❌ SMS ERROR (${errorCode}): ${errorMsg}`);
+    throw new Error(`Failed to send SMS: ${errorMsg}`);
   }
 };
 
