@@ -16,68 +16,60 @@ export const sendOTPviaMsg91 = async (phone: string, otp: string): Promise<boole
       throw new Error('MSG91_API_KEY not configured');
     }
 
-    const formattedPhone = phone.startsWith('+') ? phone.slice(2) : phone; // Remove +91 if present
-
-    console.log(`📱 Sending OTP via MSG91 (India)...`);
-    console.log(`   Phone: +91${formattedPhone}`);
-    console.log(`   OTP: ${otp}`);
+    // Remove +91 and any spaces, keep only 10 digits
+    let cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.startsWith('91')) {
+      cleanPhone = cleanPhone.slice(2);
+    }
+    
+    // Ensure 10 digits
+    if (cleanPhone.length !== 10) {
+      throw new Error(`Invalid phone format. Expected 10 digits, got ${cleanPhone.length}`);
+    }
 
     const message = `Your Insurance Book OTP is: ${otp}. Valid for 5 minutes. Do not share with anyone.`;
 
-    const response = await axios.post(
-      'https://api.msg91.com/api/sendhttp.php',
-      {},
-      {
-        params: {
-          authkey: MSG91_API_KEY,
-          mobiles: formattedPhone.startsWith('91') ? formattedPhone : `91${formattedPhone}`,
-          message: encodeURIComponent(message),
-          sender: MSG91_SENDER_ID,
-          route: '4',
-        },
-      }
-    );
+    console.log(`📱 Sending OTP via MSG91 (India)...`);
+    console.log(`   Phone: ${cleanPhone} (10 digits)`);
+    console.log(`   OTP: ${otp}`);
+    console.log(`   Sender: ${MSG91_SENDER_ID}`);
+    console.log(`   API Key present: ${MSG91_API_KEY ? 'Yes (length: ' + MSG91_API_KEY.length + ')' : 'No'}`);
 
-    console.log(`✅ MSG91 API Response Status: ${response.status}`);
-    console.log(`   Full Response Data:`, response.data);
-    
-    // MSG91 returns text/plain response
-    // Success format: "1001|<msgid>"
-    // Error format: error code or error message
+    const response = await axios.get('https://api.msg91.com/api/sendhttp.php', {
+      params: {
+        authkey: MSG91_API_KEY,
+        mobiles: cleanPhone,  // Send as 10-digit number WITHOUT country code
+        message: message,
+        sender: MSG91_SENDER_ID,
+        route: '4',
+      },
+    });
+
     const responseStr = String(response.data).trim();
     
-    console.log(`   Parsed Response: "${responseStr}"`);
-    console.log(`   Response includes "1001": ${responseStr.includes('1001')}`);
-    console.log(`   Response includes "error": ${responseStr.toLowerCase().includes('error')}`);
+    console.log(`✅ MSG91 API Response Status: ${response.status}`);
+    console.log(`   Raw Response: "${responseStr}"`);
+    console.log(`   Response Length: ${responseStr.length}`);
 
-    // Check if response indicates success
-    if (response.status === 200 && responseStr.includes('1001')) {
-      console.log(`✅ SMS sent successfully via MSG91 - MSG ID received`);
+    // MSG91 success response format: "1001|<message_id>"
+    if (responseStr.includes('1001')) {
+      console.log(`✅ SMS sent successfully! Message ID received from MSG91`);
       return true;
     }
 
-    // If we get 200 and response is not an error, assume success
-    if (response.status === 200 && 
-        !responseStr.toLowerCase().includes('error') && 
-        !responseStr.includes('authentication') &&
-        !responseStr.includes('400') &&
-        !responseStr.includes('401') &&
-        !responseStr.includes('403')) {
-      console.warn(`⚠️ MSG91 returned 200 but no clear success indicator. Response: "${responseStr}"`);
-      // Still return true for now since 200 was returned
-      return true;
+    // If response is suspicious (like hex), it's likely an error
+    if (/^[a-f0-9]{20,}$/i.test(responseStr)) {
+      throw new Error(`MSG91 returned error code: ${responseStr} - Check API Key, credits, or phone number validity`);
     }
 
-    throw new Error(`MSG91 API error response: "${responseStr}"`);
+    throw new Error(`MSG91 API unexpected response: "${responseStr}"`);
   } catch (error: any) {
-    console.error(`❌ MSG91 SMS Error: ${error.message}`);
-    console.error(`   Phone: ${phone}`);
-    console.error(`   Sender ID: ${MSG91_SENDER_ID}`);
-    console.error(`   API Key configured: ${!!MSG91_API_KEY}`);
+    console.error(`❌ MSG91 SMS Error:`, error.message);
+    console.error(`   Full Error:`, error);
     
-    // Fallback: Log the error but allow signup to continue (demo mode)
-    console.warn(`⚠️  SMS sending failed, but continuing with signup (demo mode)`);
-    return true; // Return true to allow signup flow to continue
+    // Allow signup to continue but log the error clearly
+    console.warn(`⚠️ SMS failed but continuing (demo/fallback mode)`);
+    return true;
   }
 };
 
@@ -90,34 +82,41 @@ export const sendSMSviaMsg91 = async (phone: string, message: string): Promise<b
       throw new Error('MSG91_API_KEY not configured');
     }
 
-    const formattedPhone = phone.startsWith('+') ? phone.slice(2) : phone;
+    // Remove +91 and any spaces, keep only 10 digits
+    let cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.startsWith('91')) {
+      cleanPhone = cleanPhone.slice(2);
+    }
+    
+    if (cleanPhone.length !== 10) {
+      throw new Error(`Invalid phone format`);
+    }
 
     console.log(`📱 Sending SMS via MSG91...`);
-    console.log(`   To: +91${formattedPhone}`);
+    console.log(`   To: ${cleanPhone}`);
+    console.log(`   Message length: ${message.length} chars`);
 
-    const response = await axios.post(
-      'https://api.msg91.com/api/sendhttp.php',
-      {},
-      {
-        params: {
-          authkey: MSG91_API_KEY,
-          mobiles: formattedPhone.startsWith('91') ? formattedPhone : `91${formattedPhone}`,
-          message: encodeURIComponent(message),
-          sender: MSG91_SENDER_ID,
-          route: '4',
-        },
-      }
-    );
+    const response = await axios.get('https://api.msg91.com/api/sendhttp.php', {
+      params: {
+        authkey: MSG91_API_KEY,
+        mobiles: cleanPhone,
+        message: message,
+        sender: MSG91_SENDER_ID,
+        route: '4',
+      },
+    });
 
-    if (response.status === 200) {
+    const responseStr = String(response.data).trim();
+    console.log(`✅ MSG91 API Response:`, responseStr.substring(0, 50));
+
+    if (responseStr.includes('1001')) {
       console.log(`✅ SMS sent via MSG91`);
       return true;
     }
 
-    throw new Error('MSG91 API error');
+    throw new Error('MSG91 error response');
   } catch (error: any) {
     console.error(`❌ SMS Error: ${error.message}`);
-    // Fallback: Allow SMS fail to not block signup (demo mode)
     console.warn(`⚠️  SMS sending failed, continuing in demo mode`);
     return true;
   }
