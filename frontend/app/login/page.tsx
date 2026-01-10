@@ -8,29 +8,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { authAPI } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
-type LoginMode = 'agent' | 'admin';
 type AgentAction = 'login' | 'signup';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   
-  // Mode selection
-  const [mode, setMode] = useState<LoginMode>('agent');
   const [agentAction, setAgentAction] = useState<AgentAction>('signup');
   
   // Agent login (PIN-based)
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   
-  // Agent signup (Name, Email, PIN, Team Mode)
+  // Agent signup (Name, Email, PIN)
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [signupPin, setSignupPin] = useState('');
-  
-  // Admin login
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
   
   // Common
   const [error, setError] = useState('');
@@ -83,28 +76,6 @@ export default function LoginPage() {
     }
   };
 
-  // Admin Login Handler
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await authAPI.adminLogin({
-        email: adminEmail,
-        password: adminPassword
-      });
-
-      const { token, admin } = response.data.data;
-      login(token, admin);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -119,30 +90,6 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent className="pt-6">
-          {/* Mode Selector */}
-          <div className="flex gap-2 mb-6 border-b">
-            <button
-              onClick={() => { setMode('agent'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
-                mode === 'agent'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Agent
-            </button>
-            <button
-              onClick={() => { setMode('admin'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
-                mode === 'admin'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Admin
-            </button>
-          </div>
-
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -150,32 +97,29 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Agent Section */}
-          {mode === 'agent' && (
-            <>
-              {/* Login/Signup Tabs */}
-              <div className="flex gap-2 mb-4 border-b">
-                <button
-                  onClick={() => { setAgentAction('login'); setError(''); }}
-                  className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
-                    agentAction === 'login'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => { setAgentAction('signup'); setError(''); }}
-                  className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
-                    agentAction === 'signup'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Sign Up
-                </button>
-              </div>
+          {/* Login/Signup Tabs */}
+          <div className="flex gap-2 mb-4 border-b">
+            <button
+              onClick={() => { setAgentAction('login'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
+                agentAction === 'login'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Login
+            </button>
+            <button
+              onClick={() => { setAgentAction('signup'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-medium border-b-2 transition ${
+                agentAction === 'signup'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
 
               {/* Login Form */}
               {agentAction === 'login' && (
@@ -303,41 +247,6 @@ export default function LoginPage() {
                   </p>
                 </form>
               )}
-            </>
-          )}
-
-          {/* Admin Section */}
-          {mode === 'admin' && (
-            <form onSubmit={handleAdminLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <Input
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="admin@insurancebook.com"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <Input
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign In'}
-              </Button>
-            </form>
-          )}
         </CardContent>
       </Card>
     </div>
