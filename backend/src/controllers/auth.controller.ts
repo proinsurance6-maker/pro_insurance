@@ -86,12 +86,12 @@ export const agentSignup = async (req: Request, res: Response, next: NextFunctio
     // Send welcome email
     await sendWelcomeSMS(phone, name, agentCode).catch(console.error);
 
-    // Generate JWT token
+    // Generate JWT token (7 days = 604800 seconds)
     const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
     const token = jwt.sign(
       { userId: agent.id, email: agent.email, phone: agent.phone, role: 'AGENT' },
       jwtSecret,
-      { expiresIn: (process.env.JWT_EXPIRY || '15m') as string }
+      { expiresIn: 604800 }
     );
 
     res.json({
@@ -162,12 +162,12 @@ export const agentLogin = async (req: Request, res: Response, next: NextFunction
       }
     }
 
-    // Generate JWT token
+    // Generate JWT token (7 days = 604800 seconds)
     const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
     const token = jwt.sign(
       { userId: agent.id, email: agent.email, phone: agent.phone, role: 'AGENT' },
       jwtSecret,
-      { expiresIn: (process.env.JWT_EXPIRY || '15m') as string }
+      { expiresIn: 604800 }
     );
 
     res.json({
