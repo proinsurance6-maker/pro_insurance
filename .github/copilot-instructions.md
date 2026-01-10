@@ -1,87 +1,80 @@
 # Insurance Book SaaS - Copilot Instructions
 
 ## Architecture Overview
-Multi-tenant SaaS platform for insurance agents. Three-tier architecture with clear data isolation per agent.
+Multi-tenant SaaS for insurance agents (India-focused). PostgreSQL + Express 5 backend (port 5000), Next.js 16 + React 19 frontend (port 3000).
 
-**Core Entities & Hierarchy:**
-- `Admin` → Platform supervisors
-- `Agent` → Business owners (solo or with team) - owns all downstream data
-- `SubAgent` → Works under an Agent with configurable commission split
-- `Client` → End customers with optional `FamilyMember` records
-- `Policy` → Links Agent, SubAgent (optional), Client, and InsuranceCompany
-
-**Data Flow on Policy Creation** (see [policy.controller.ts](backend/src/controllers/policy.controller.ts)):
-1. Validate client belongs to agent: `prisma.client.findFirst({ where: { id: clientId, agentId } })`
-2. Create policy with all relationships
-3. Auto-create `Commission` record via [commission.service.ts](backend/src/services/commission.service.ts)
-4. Auto-create `Renewal` record with `renewalDate = policy.endDate`
+**Entity Hierarchy** - data isolation enforced at every query:
+- `Agent` → Business owner, **owns all downstream data**
+- `SubAgent` → Works under Agent with configurable commission split
+- `Client` → Has optional `FamilyMember` records
+- `Policy` → Links Agent, SubAgent?, Client, InsuranceCompany → auto-creates `Commission` + `Renewal`
 
 ## Development Commands
 ```bash
-# Backend (port 5000)
-cd backend && npm install
-npx prisma generate && npx prisma migrate dev
-npm run dev
+# Backend
+cd backend && npm install && npx prisma generate && npx prisma migrate dev && npm run dev
 
-# Frontend (port 3000)
+# Frontend  
 cd frontend && npm install && npm run dev
 ```
 
 ## Critical Patterns
 
-### Authentication & Authorization
-- JWT auth via `authenticate` middleware - extracts `userId`, `role` from token
+### Multi-Tenancy: Agent Data Isolation
+**EVERY agent query MUST filter by agentId** - this is the core security model:
+```typescript
+// CORRECT - always include agentId filter
+const client = await prisma.client.findFirst({ where: { id, agentId: (req as any).user.userId } });
+
+// WRONG - never query without agentId for agent-owned resources
+const client = await prisma.client.findUnique({ where: { id } });
+```
+
+### Authentication
+- JWT via `authenticate` middleware → `req.user: { userId, role, email?, phone?, agentCode? }`
 - Role guards: `requireAdmin`, `requireAgent`, `requireClient` in [auth.ts](backend/src/middleware/auth.ts)
-- **All agent queries MUST filter by agentId**: `where: { agentId: (req as any).user.userId }`
-- User type in `AuthRequest.user`: `{ userId, email?, phone?, role, agentCode? }`
+- Route protection: `router.use(authenticate, requireAgent)` or per-route
 
-### API Response Format
-All endpoints return: `{ success: boolean, data: any, message?: string }`
-Pagination: `{ data: { items: [], pagination: { page, limit, total, totalPages } } }`
-
-### Decimal Handling
-Prisma returns `Decimal` objects for monetary fields. Convert before JSON response:
+### API Response Contract
 ```typescript
-premiumAmount: policy.premiumAmount.toString()
+// Success: { success: true, data: any }
+// Error:   { success: false, error: { code, message } }
+// Paginated: { data: { items: [], pagination: { page, limit, total, totalPages } } }
 ```
 
-### Commission Split Logic
-When SubAgent is involved, commission splits by `subAgent.commissionPercentage`:
+### Decimal → String Conversion
+Prisma `Decimal` fields must convert before JSON response:
 ```typescript
-subAgentCommissionAmount = (totalCommission * subAgentPercentage) / 100
-agentCommissionAmount = totalCommission - subAgentCommissionAmount
+res.json({ ...policy, premiumAmount: policy.premiumAmount.toString() });
 ```
 
-### Frontend API Layer
-Centralized in [lib/api.ts](frontend/lib/api.ts) - axios with token interceptor. Use typed API objects:
-- `authAPI.sendAgentOTP()`, `authAPI.verifyAgentOTP()`
-- `agentAPI.getDashboard()`, `policyAPI.getAll()`, `clientAPI.create()`
+### Error Handling
+```typescript
+throw new AppError('Client not found', 404, 'NOT_FOUND'); // Caught by global errorHandler
+```
 
-Auth state via `useAuth()` hook from [auth-context.tsx](frontend/lib/auth-context.tsx)
+### Commission Split
+Auto-calculated in [commission.service.ts](backend/src/services/commission.service.ts) when SubAgent involved:
+```typescript
+subAgentAmount = (total * subAgent.commissionPercentage) / 100
+```
 
-### Renewal Automation
-Daily cron job in [renewalReminder.job.ts](backend/src/jobs/renewalReminder.job.ts) checks for policies expiring at 30/15/7/1 days. Tracks sent status per reminder (`reminder30DaysSent`, etc.) to prevent duplicates.
+### Frontend Patterns
+- API: [lib/api.ts](frontend/lib/api.ts) - axios with auto token, typed exports (`policyAPI.getAll()`, etc.)
+- Auth: `useAuth()` hook → `{ user, login, logout, isAgent }`
+- Pages: `'use client'` with `useEffect` data fetching
+- Currency: `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`
 
 ## Database Conventions
-- UUIDs for all IDs (`@db.Uuid`)
-- Snake_case table/column names via `@@map`/`@map`
+- UUIDs (`@db.Uuid`), snake_case tables (`@@map`)
 - Monetary: `Decimal(12,2)`, Percentages: `Decimal(5,2)`
-- Soft deletes via `isActive` boolean, not hard deletes
-- Key enums: `UserRole`, `TeamMode`, `LedgerType`, `PolicySource`, `PaymentBy`
+- Soft deletes: `isActive` boolean
+- Enums: `UserRole`, `TeamMode`, `LedgerType`, `PolicySource`, `PaymentBy`
 
 ## Common Tasks
 
-**Add new API endpoint:**
-1. Add route in `backend/src/routes/{entity}.routes.ts`
-2. Add controller in `backend/src/controllers/{entity}.controller.ts`
-3. Add API function in `frontend/lib/api.ts`
+**Add endpoint:** Route → Controller (filter by agentId!) → Frontend API function
 
-**Modify schema:**
-1. Edit `backend/prisma/schema.prisma`
-2. Run `npx prisma migrate dev --name description`
-3. Update related controllers/services
+**Modify schema:** `backend/prisma/schema.prisma` → `npx prisma migrate dev --name desc`
 
-**Add protected admin route:**
-```typescript
-router.post('/admin-action', authenticate, requireAdmin, controller);
-```
+**File uploads:** multer + `memoryStorage()`, see [policy.routes.ts](backend/src/routes/policy.routes.ts)
