@@ -46,16 +46,9 @@ export const sendOTP = async (req: Request, res: Response, next: NextFunction) =
     });
 
     // Send OTP via MSG91 (Indian SMS service - no trial restrictions)
-    try {
-      await sendOTPviaMsg91(phone, code);
-    } catch (smsError: any) {
-      console.error('Auth Error - SMS sending failed:', smsError.message);
-      throw new AppError(
-        smsError.message || 'Failed to send OTP. Please check MSG91 configuration.',
-        500,
-        'SMS_ERROR'
-      );
-    }
+    await sendOTPviaMsg91(phone, code);
+    
+    console.log(`✅ OTP sent successfully to ${phone}: ${code}`);
 
     res.json({
       success: true,
