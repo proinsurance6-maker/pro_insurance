@@ -100,8 +100,8 @@ export default function NewPolicyPage() {
         policyAPI.getCompanies(),
         clientAPI.getAll()
       ]);
-      setCompanies(companiesRes.data.data || []);
-      setClients(clientsRes.data.data || []);
+      setCompanies(Array.isArray(companiesRes.data.data) ? companiesRes.data.data : []);
+      setClients(clientsRes.data.data?.clients || []);
       
       // Set pre-selected client name
       if (preSelectedClientId) {
