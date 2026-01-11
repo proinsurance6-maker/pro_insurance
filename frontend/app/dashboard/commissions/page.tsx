@@ -53,7 +53,7 @@ export default function CommissionsPage() {
   const fetchCommissions = async () => {
     try {
       const response = await commissionAPI.getAll();
-      const data = response.data.data || [];
+      const data = response.data.data.commissions || [];
       setCommissions(data);
       
       // Calculate summary

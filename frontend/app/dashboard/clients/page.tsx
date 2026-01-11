@@ -31,7 +31,7 @@ export default function ClientsPage() {
   const fetchClients = async () => {
     try {
       const response = await clientAPI.getAll();
-      setClients(response.data.data || []);
+      setClients(response.data.data.clients || []);
     } catch (error) {
       console.error('Failed to fetch clients:', error);
     } finally {

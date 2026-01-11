@@ -40,7 +40,7 @@ export default function SubAgentsPage() {
   const fetchSubAgents = async () => {
     try {
       const response = await agentAPI.getSubAgents();
-      setSubAgents(response.data.data || []);
+      setSubAgents(Array.isArray(response.data.data) ? response.data.data : []);
     } catch (error) {
       console.error('Failed to fetch sub-agents:', error);
     } finally {

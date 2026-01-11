@@ -41,7 +41,7 @@ export default function PoliciesPage() {
   const fetchPolicies = async () => {
     try {
       const response = await policyAPI.getAll();
-      setPolicies(response.data.data || []);
+      setPolicies(response.data.data.policies || []);
     } catch (error) {
       console.error('Failed to fetch policies:', error);
     } finally {

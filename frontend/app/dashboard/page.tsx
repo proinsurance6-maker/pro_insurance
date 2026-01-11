@@ -48,8 +48,8 @@ export default function DashboardPage() {
         renewalAPI.getUpcoming(7)
       ]);
       
-      setStats(dashboardRes.data.data);
-      setUpcomingRenewals(renewalsRes.data.data?.slice(0, 5) || []);
+      setStats(dashboardRes.data.data.stats);
+      setUpcomingRenewals(renewalsRes.data.data.renewals?.slice(0, 5) || []);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
