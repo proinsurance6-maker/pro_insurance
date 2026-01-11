@@ -468,9 +468,9 @@ export const scanDocument = async (req: Request, res: Response, next: NextFuncti
     // Check if OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY) {
       throw new AppError(
-        'OCR service not configured. Please add OPENAI_API_KEY to .env file.',
-        500,
-        'OCR_NOT_CONFIGURED'
+        'OCR feature is not available. Please contact support or enter policy details manually.',
+        400,
+        'OCR_NOT_AVAILABLE'
       );
     }
 
