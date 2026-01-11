@@ -3,7 +3,7 @@ import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { parse } from 'csv-parse/sync';
 import * as XLSX from 'xlsx';
-import { extractPolicyFromImage } from '../services/ocr.service';
+import { extractPolicyFromImage, extractPolicyFromText } from '../services/ocr.service';
 
 // ==========================================
 // GET ALL POLICIES
@@ -476,16 +476,27 @@ export const scanDocument = async (req: Request, res: Response, next: NextFuncti
 
     // Validate file type
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const isPDF = file.mimetype === 'application/pdf';
     
-    if (!allowedImageTypes.includes(file.mimetype)) {
-      if (file.mimetype === 'application/pdf') {
-        throw new AppError(
-          'PDF files are not supported yet. Please upload a photo/screenshot of the policy (JPG, PNG).',
-          400,
-          'PDF_NOT_SUPPORTED'
-        );
+    if (!allowedImageTypes.includes(file.mimetype) && !isPDF) {
+      throw new AppError('Invalid file type. Please upload an image (JPG, PNG) or PDF.', 400, 'INVALID_FILE_TYPE');
+    }
+
+    // For PDFs, we'll extract text instead of using vision
+    if (isPDF) {
+      const pdfParse = require('pdf-parse');
+      try {
+        const pdfData = await pdfParse(file.buffer);
+        const extractedData = await extractPolicyFromText(pdfData.text);
+        
+        return res.json({
+          success: true,
+          data: extractedData,
+          message: 'PDF processed successfully! Please verify the extracted details.'
+        });
+      } catch (err) {
+        throw new AppError('Failed to extract data from PDF. Please try uploading a clear image instead.', 400, 'PDF_PARSE_ERROR');
       }
-      throw new AppError('Invalid file type. Please upload an image (JPG, PNG, WebP).', 400, 'INVALID_FILE_TYPE');
     }
 
     // Convert buffer to base64

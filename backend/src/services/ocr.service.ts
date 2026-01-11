@@ -120,6 +120,85 @@ Important:
 };
 
 /**
+ * Extract policy details from PDF text using OpenAI
+ * @param pdfText - Extracted text from PDF
+ * @returns Extracted policy data
+ */
+export const extractPolicyFromText = async (
+  pdfText: string
+): Promise<ExtractedPolicyData> => {
+  
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY not configured in environment');
+  }
+
+  const prompt = `You are an expert insurance document analyzer. Analyze this insurance policy document text and extract the following information.
+
+Document Text:
+${pdfText.substring(0, 4000)} 
+
+Return ONLY a valid JSON object with these exact keys (use null if not found):
+{
+  "policyNumber": "the policy number/ID",
+  "holderName": "name of the policy holder/insured person",
+  "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
+  "companyName": "name of the insurance company",
+  "premiumAmount": numeric value of premium amount (no currency symbol),
+  "sumAssured": numeric value of sum assured/insured (no currency symbol),
+  "startDate": "policy start date in YYYY-MM-DD format",
+  "endDate": "policy end date/expiry date in YYYY-MM-DD format",
+  "vehicleNumber": "vehicle registration number if motor insurance, else null",
+  "planName": "name of the insurance plan/scheme if mentioned"
+}
+
+Important:
+- Extract dates and convert to YYYY-MM-DD format
+- Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
+- For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other
+- Be accurate - only extract information that is clearly visible in the text`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      max_tokens: 1000,
+      temperature: 0.1,
+    });
+
+    const content = response.choices[0]?.message?.content || '{}';
+    
+    let jsonStr = content;
+    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1];
+    }
+
+    const extracted = JSON.parse(jsonStr.trim());
+
+    return {
+      policyNumber: extracted.policyNumber || null,
+      holderName: extracted.holderName || null,
+      policyType: extracted.policyType || null,
+      companyName: extracted.companyName || null,
+      premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
+      sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
+      startDate: extracted.startDate || null,
+      endDate: extracted.endDate || null,
+      vehicleNumber: extracted.vehicleNumber || null,
+      planName: extracted.planName || null,
+    };
+  } catch (error: any) {
+    console.error('OpenAI API Error:', error.message);
+    throw new Error(`Failed to extract data from PDF: ${error.message}`);
+  }
+};
+
+/**
  * Extract text from PDF using OpenAI (converts first page)
  * Note: For multi-page PDFs, consider using pdf-to-image conversion
  */
