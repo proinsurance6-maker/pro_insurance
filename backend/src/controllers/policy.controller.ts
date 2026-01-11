@@ -4,6 +4,7 @@ import { AppError } from '../middleware/errorHandler';
 import { parse } from 'csv-parse/sync';
 import * as XLSX from 'xlsx';
 import { extractPolicyFromImage, extractPolicyFromText } from '../services/ocr.service';
+import pdfParse from 'pdf-parse';
 
 // ==========================================
 // GET ALL POLICIES
@@ -484,7 +485,6 @@ export const scanDocument = async (req: Request, res: Response, next: NextFuncti
 
     // For PDFs, we'll extract text instead of using vision
     if (isPDF) {
-      const pdfParse = require('pdf-parse');
       try {
         const pdfData = await pdfParse(file.buffer);
         const extractedData = await extractPolicyFromText(pdfData.text);
