@@ -219,17 +219,15 @@ Important:
  * Original OpenAI error handling (kept for reference)
  */
 const handleOpenAIError = (error: any) => {
-    
-    if (error.message?.includes('API key')) {
-      throw new Error('Invalid OpenAI API key. Please check OPENAI_API_KEY in .env');
-    }
-    
-    if (error.message?.includes('rate limit')) {
-      throw new Error('OpenAI rate limit exceeded. Please try again later.');
-    }
-
-    throw new Error(`Failed to extract data from document: ${error.message}`);
+  if (error.message?.includes('API key')) {
+    throw new Error('Invalid OpenAI API key. Please check OPENAI_API_KEY in .env');
   }
+  
+  if (error.message?.includes('rate limit')) {
+    throw new Error('OpenAI rate limit exceeded. Please try again later.');
+  }
+
+  throw new Error(`Failed to extract data from document: ${error.message}`);
 };
 
 /**
