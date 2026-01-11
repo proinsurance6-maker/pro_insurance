@@ -87,6 +87,10 @@ Important:
 - For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other
 - Be accurate - only extract information that is clearly visible in the document`;
 
+  if (!openai) {
+    throw new Error('OpenAI client not initialized');
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -288,6 +292,10 @@ Important:
 - Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
 - For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other
 - Be accurate - only extract information that is clearly visible in the text`;
+
+  if (!openai) {
+    throw new Error('OpenAI client not initialized');
+  }
 
   try {
     const response = await openai.chat.completions.create({
