@@ -335,6 +335,12 @@ export default function NewPolicyPage() {
       };
       reader.readAsDataURL(file);
 
+      // Also set the scanned file as policy copy
+      setFormData(prev => ({ 
+        ...prev, 
+        policyCopyFile: file 
+      } as any));
+
       // Upload for OCR processing
       const formDataUpload = new FormData();
       formDataUpload.append('document', file);
@@ -1273,14 +1279,14 @@ export default function NewPolicyPage() {
                 </div>
               )}
               
-              {/* Motor Commission Rates */}
+              {/* Received Payout - Motor Commission Rates */}
               {formData.policyType === 'Motor Insurance' && formData.motorPolicyType && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-                  <h4 className="font-medium text-green-800">Commission Rates (%)</h4>
+                  <h4 className="font-medium text-green-800">Received Payout (%)</h4>
                   <div className="grid grid-cols-3 gap-3">
                     {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">OD Commission %</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">OD Rate %</label>
                         <Input
                           type="number"
                           name="odCommissionRate"
@@ -1294,7 +1300,7 @@ export default function NewPolicyPage() {
                     )}
                     {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">TP Commission %</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">TP Rate %</label>
                         <Input
                           type="number"
                           name="tpCommissionRate"
@@ -1307,11 +1313,60 @@ export default function NewPolicyPage() {
                       </div>
                     )}
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Net Commission %</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Net Rate %</label>
                       <Input
                         type="number"
                         name="netCommissionRate"
                         value={formData.netCommissionRate}
+                        onChange={handleChange}
+                        placeholder="Optional"
+                        step="0.01"
+                        max="100"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Paid Amount - Motor Commission Rates for Sub-Agent */}
+              {formData.policyType === 'Motor Insurance' && formData.motorPolicyType && formData.subAgentId && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-orange-800">Paid Amount (%) - To Sub-Agent</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">OD Rate %</label>
+                        <Input
+                          type="number"
+                          name="subAgentOdRate"
+                          value={(formData as any).subAgentOdRate || ''}
+                          onChange={handleChange}
+                          placeholder="e.g., 10"
+                          step="0.01"
+                          max="100"
+                        />
+                      </div>
+                    )}
+                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">TP Rate %</label>
+                        <Input
+                          type="number"
+                          name="subAgentTpRate"
+                          value={(formData as any).subAgentTpRate || ''}
+                          onChange={handleChange}
+                          placeholder="e.g., 3"
+                          step="0.01"
+                          max="100"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Net Rate %</label>
+                      <Input
+                        type="number"
+                        name="subAgentNetRate"
+                        value={(formData as any).subAgentNetRate || ''}
                         onChange={handleChange}
                         placeholder="Optional"
                         step="0.01"
@@ -1358,8 +1413,8 @@ export default function NewPolicyPage() {
 
               {/* Agent/SubAgent Commission Split */}
               {formData.subAgentId && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <label className="block text-sm font-medium text-orange-800 mb-2">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="block text-sm font-medium text-blue-800 mb-2">
                     Agent का हिस्सा (%) - Commission Split
                   </label>
                   <Input
@@ -1372,7 +1427,7 @@ export default function NewPolicyPage() {
                     max="100"
                     className="bg-white"
                   />
-                  <p className="text-xs text-orange-600 mt-1">
+                  <p className="text-xs text-blue-600 mt-1">
                     Agent keeps this %, rest goes to Sub-Agent ({subAgents.find(s => s.id === formData.subAgentId)?.name})
                   </p>
                 </div>
@@ -1380,19 +1435,15 @@ export default function NewPolicyPage() {
 
               {/* Commission Calculation Preview */}
               {(formData.premiumAmount || formData.odPremium || formData.tpPremium || formData.brokerCommissionAmount) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-800 mb-2">Commission Preview</h4>
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <h4 className="font-medium text-indigo-800 mb-2">Commission Preview</h4>
                   <div className="text-sm space-y-1">
                     <p>Total Commission: <span className="font-bold text-green-700">₹{calculateTotalCommission().toFixed(2)}</span></p>
+                    <p className="text-indigo-700">Your Payout: <span className="font-bold text-indigo-800">₹{formData.subAgentId && getSubAgentShare() ? getSubAgentShare()?.agentAmount.toFixed(2) : calculateTotalCommission().toFixed(2)}</span></p>
                     {formData.subAgentId && getSubAgentShare() && (
-                      <>
-                        <p className="text-gray-600">
-                          → Your Share: <span className="font-medium">₹{getSubAgentShare()?.agentAmount.toFixed(2)}</span>
-                        </p>
-                        <p className="text-gray-600">
-                          → Sub-Agent ({getSubAgentShare()?.subAgentPercent}%): <span className="font-medium">₹{getSubAgentShare()?.subAgentAmount.toFixed(2)}</span>
-                        </p>
-                      </>
+                      <p className="text-orange-700">
+                        Paid Amount: <span className="font-bold text-orange-800">₹{getSubAgentShare()?.subAgentAmount.toFixed(2)}</span> ({getSubAgentShare()?.subAgentPercent}% to {subAgents.find(s => s.id === formData.subAgentId)?.name})
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1428,30 +1479,154 @@ export default function NewPolicyPage() {
                   </label>
                 </div>
 
-                {/* KYC Document Upload */}
+                {/* RC Upload */}
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
                   <input
                     type="file"
-                    id="kycDocument"
+                    id="rcDocument"
                     accept=".pdf,.jpg,.jpeg,.png"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        setFormData(prev => ({ ...prev, kycDocumentFile: file } as any));
+                        setFormData(prev => ({ ...prev, rcDocumentFile: file } as any));
                       }
                     }}
                   />
-                  <label htmlFor="kycDocument" className="cursor-pointer">
-                    <div className="text-3xl mb-2">🪪</div>
-                    <div className="text-sm font-medium text-gray-700">KYC Document</div>
-                    <div className="text-xs text-gray-500">Aadhaar, PAN, etc.</div>
-                    {(formData as any).kycDocumentFile && (
-                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).kycDocumentFile.name}</div>
+                  <label htmlFor="rcDocument" className="cursor-pointer">
+                    <div className="text-3xl mb-2">🚗</div>
+                    <div className="text-sm font-medium text-gray-700">RC Document</div>
+                    <div className="text-xs text-gray-500">Registration Certificate</div>
+                    {(formData as any).rcDocumentFile && (
+                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).rcDocumentFile.name}</div>
                     )}
                   </label>
                 </div>
               </div>
+
+              {/* KYC Documents Row */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Aadhar Front */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition">
+                  <input
+                    type="file"
+                    id="aadharFront"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, aadharFrontFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="aadharFront" className="cursor-pointer">
+                    <div className="text-2xl mb-1">🪪</div>
+                    <div className="text-xs font-medium text-gray-700">Aadhar Front</div>
+                    {(formData as any).aadharFrontFile && (
+                      <div className="text-xs text-green-600 mt-1">✓ Done</div>
+                    )}
+                  </label>
+                </div>
+
+                {/* Aadhar Back */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition">
+                  <input
+                    type="file"
+                    id="aadharBack"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, aadharBackFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="aadharBack" className="cursor-pointer">
+                    <div className="text-2xl mb-1">🪪</div>
+                    <div className="text-xs font-medium text-gray-700">Aadhar Back</div>
+                    {(formData as any).aadharBackFile && (
+                      <div className="text-xs text-green-600 mt-1">✓ Done</div>
+                    )}
+                  </label>
+                </div>
+
+                {/* PAN Card */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition">
+                  <input
+                    type="file"
+                    id="panCard"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, panCardFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="panCard" className="cursor-pointer">
+                    <div className="text-2xl mb-1">💳</div>
+                    <div className="text-xs font-medium text-gray-700">PAN Card</div>
+                    {(formData as any).panCardFile && (
+                      <div className="text-xs text-green-600 mt-1">✓ Done</div>
+                    )}
+                  </label>
+                </div>
+              </div>
+
+              {/* Photo and Cheque Row */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Photo */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
+                  <input
+                    type="file"
+                    id="photo"
+                    accept=".jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, photoFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="photo" className="cursor-pointer">
+                    <div className="text-3xl mb-2">📷</div>
+                    <div className="text-sm font-medium text-gray-700">Photo</div>
+                    <div className="text-xs text-gray-500">Passport size photo</div>
+                    {(formData as any).photoFile && (
+                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).photoFile.name}</div>
+                    )}
+                  </label>
+                </div>
+
+                {/* Cancel Cheque */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
+                  <input
+                    type="file"
+                    id="cancelCheque"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, cancelChequeFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="cancelCheque" className="cursor-pointer">
+                    <div className="text-3xl mb-2">🏦</div>
+                    <div className="text-sm font-medium text-gray-700">Cancel Cheque</div>
+                    <div className="text-xs text-gray-500">Bank account proof</div>
+                    {(formData as any).cancelChequeFile && (
+                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).cancelChequeFile.name}</div>
+                    )}
+                  </label>
+                </div>
+              </div>
+              
               <p className="text-xs text-gray-500">Upload policy copy and KYC documents for record keeping</p>
             </div>
 
