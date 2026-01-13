@@ -105,6 +105,7 @@ model Agent {
   // Relations
   subscription    Subscription?
   subAgents       SubAgent[]
+  brokers         Broker[]
   clients         Client[]
   policies        Policy[]
   ledgerEntries   LedgerEntry[]
@@ -270,6 +271,33 @@ model InsuranceCompany {
 }
 
 // ============================================
+// BROKER (PolicyBazaar, MitPro, Probus, etc.)
+// ============================================
+
+model Broker {
+  id            String   @id @default(uuid()) @db.Uuid
+  agentId       String   @map("agent_id") @db.Uuid
+  name          String
+  code          String?  // Broker code
+  contactPerson String?  @map("contact_person")
+  email         String?
+  phone         String?
+  address       String?
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  agent       Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  policies    Policy[]
+  commissions Commission[]
+
+  @@unique([agentId, name])
+  @@index([agentId])
+  @@map("brokers")
+}
+
+// ============================================
 // POLICY
 // ============================================
 
@@ -279,6 +307,7 @@ model Policy {
   companyId         String       @map("company_id") @db.Uuid
   agentId           String       @map("agent_id") @db.Uuid
   subAgentId        String?      @map("sub_agent_id") @db.Uuid
+  brokerId          String?      @map("broker_id") @db.Uuid
   clientId          String       @map("client_id") @db.Uuid
   familyMemberId    String?      @map("family_member_id") @db.Uuid
   policyType        String       @map("policy_type") // Motor, Health, Life, etc.
@@ -307,6 +336,7 @@ model Policy {
   company       InsuranceCompany @relation(fields: [companyId], references: [id])
   agent         Agent            @relation(fields: [agentId], references: [id])
   subAgent      SubAgent?        @relation(fields: [subAgentId], references: [id])
+  broker        Broker?          @relation(fields: [brokerId], references: [id])
   client        Client           @relation(fields: [clientId], references: [id])
   familyMember  FamilyMember?    @relation(fields: [familyMemberId], references: [id])
   commissions   Commission[]
@@ -331,8 +361,11 @@ model Commission {
   policyId                 String    @map("policy_id") @db.Uuid
   agentId                  String    @map("agent_id") @db.Uuid
   subAgentId               String?   @map("sub_agent_id") @db.Uuid
+  brokerId                 String?   @map("broker_id") @db.Uuid
   companyId                String    @map("company_id") @db.Uuid
-  // Base commission rates
+  // Broker commission (received from broker like PolicyBazaar, MitPro, Probus)
+  brokerCommissionAmount   Decimal?  @map("broker_commission_amount") @db.Decimal(12, 2)
+  // Base commission rates (after broker gives commission)
   totalCommissionPercent   Decimal   @map("total_commission_percent") @db.Decimal(5, 2)
   totalCommissionAmount    Decimal   @map("total_commission_amount") @db.Decimal(12, 2)
   // Motor-specific commission (OD/TP/Net based)
@@ -362,10 +395,12 @@ model Commission {
   policy   Policy           @relation(fields: [policyId], references: [id], onDelete: Cascade)
   agent    Agent            @relation(fields: [agentId], references: [id])
   subAgent SubAgent?        @relation(fields: [subAgentId], references: [id])
+  broker   Broker?          @relation(fields: [brokerId], references: [id])
   company  InsuranceCompany @relation(fields: [companyId], references: [id])
 
   @@index([policyId])
   @@index([agentId])
+  @@index([brokerId])
   @@index([paymentStatus])
   @@map("commissions")
 }

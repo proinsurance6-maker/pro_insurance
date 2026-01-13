@@ -249,4 +249,24 @@ export const renewalAPI = {
     api.post(`/renewals/${id}/send-reminder`),
 };
 
+// ==========================================
+// BROKER APIs (PolicyBazaar, MitPro, Probus, etc.)
+// ==========================================
+export const brokerAPI = {
+  getAll: (params?: any) =>
+    api.get('/brokers', { params }),
+  
+  getById: (id: string) =>
+    api.get(`/brokers/${id}`),
+  
+  create: (data: { name: string; code?: string; contactPerson?: string; email?: string; phone?: string; address?: string }) =>
+    api.post('/brokers', data),
+  
+  update: (id: string, data: any) =>
+    api.put(`/brokers/${id}`, data),
+  
+  delete: (id: string) =>
+    api.delete(`/brokers/${id}`),
+};
+
 export default api;

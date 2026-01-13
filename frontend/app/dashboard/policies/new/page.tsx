@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { policyAPI, clientAPI, agentAPI } from '@/lib/api';
+import { policyAPI, clientAPI, agentAPI, brokerAPI } from '@/lib/api';
 
 interface Company {
   id: string;
@@ -25,6 +25,12 @@ interface SubAgent {
   name: string;
   subAgentCode: string;
   commissionPercentage: string;
+}
+
+interface Broker {
+  id: string;
+  name: string;
+  code: string | null;
 }
 
 type EntryMode = 'manual' | 'scan' | 'excel';
@@ -68,9 +74,11 @@ export default function NewPolicyPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [subAgents, setSubAgents] = useState<SubAgent[]>([]);
+  const [brokers, setBrokers] = useState<Broker[]>([]);
   const [clientSearch, setClientSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [showNewBrokerForm, setShowNewBrokerForm] = useState(false);
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [excelData, setExcelData] = useState<any[]>([]);
   const [excelFileName, setExcelFileName] = useState('');
@@ -83,6 +91,14 @@ export default function NewPolicyPage() {
     address: ''
   });
   const [creatingClient, setCreatingClient] = useState(false);
+  
+  // New broker form data
+  const [newBrokerData, setNewBrokerData] = useState({
+    name: '',
+    phone: '',
+    email: ''
+  });
+  const [creatingBroker, setCreatingBroker] = useState(false);
   
   const [formData, setFormData] = useState({
     clientId: preSelectedClientId || '',
@@ -107,6 +123,10 @@ export default function NewPolicyPage() {
     tpCommissionRate: '',
     netCommissionRate: '',
     renewalCommissionRate: '',
+    // Broker (PolicyBazaar, MitPro, Probus, etc.)
+    brokerId: '',
+    brokerCommissionAmount: '', // Manual commission input from broker
+    agentSharePercent: '', // Agent keeps this %, rest to sub-agent
     // Sub-agent
     subAgentId: '',
     holderName: '',
@@ -132,14 +152,16 @@ export default function NewPolicyPage() {
 
   const fetchData = async () => {
     try {
-      const [companiesRes, clientsRes, subAgentsRes] = await Promise.all([
+      const [companiesRes, clientsRes, subAgentsRes, brokersRes] = await Promise.all([
         policyAPI.getCompanies(),
         clientAPI.getAll(),
-        agentAPI.getSubAgents()
+        agentAPI.getSubAgents(),
+        brokerAPI.getAll()
       ]);
       setCompanies(Array.isArray(companiesRes.data.data) ? companiesRes.data.data : []);
       setClients(clientsRes.data.data?.clients || []);
       setSubAgents(subAgentsRes.data.data || []);
+      setBrokers(brokersRes.data.data || []);
       
       // Set pre-selected client name
       if (preSelectedClientId) {
@@ -195,8 +217,37 @@ export default function NewPolicyPage() {
     }
   };
 
+  // Create new broker inline
+  const handleCreateBroker = async () => {
+    if (!newBrokerData.name) {
+      setError('Broker name is required');
+      return;
+    }
+    setCreatingBroker(true);
+    try {
+      const response = await brokerAPI.create(newBrokerData);
+      const newBroker = response.data.data;
+      // Add to list and select
+      setBrokers(prev => [newBroker, ...prev]);
+      setFormData(prev => ({ ...prev, brokerId: newBroker.id }));
+      setShowNewBrokerForm(false);
+      setNewBrokerData({ name: '', phone: '', email: '' });
+      setSuccess('✅ New broker added and selected');
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to create broker');
+    } finally {
+      setCreatingBroker(false);
+    }
+  };
+
   // Calculate total commission for motor policies
+  // If broker commission is manually entered, use that. Otherwise calculate from rates.
   const calculateTotalCommission = () => {
+    // If broker commission is manually entered, use that
+    if (formData.brokerCommissionAmount && parseFloat(formData.brokerCommissionAmount) > 0) {
+      return parseFloat(formData.brokerCommissionAmount);
+    }
+    
     const isMotor = formData.policyType === 'Motor Insurance';
     if (isMotor && formData.motorPolicyType === 'COMPREHENSIVE') {
       const odComm = (parseFloat(formData.odPremium) || 0) * (parseFloat(formData.odCommissionRate) || 0) / 100;
@@ -213,16 +264,24 @@ export default function NewPolicyPage() {
   };
 
   // Get selected sub-agent commission share
+  // Commission flow: Broker → Agent keeps X% → Sub-Agent gets rest
   const getSubAgentShare = () => {
     if (!formData.subAgentId) return null;
     const subAgent = subAgents.find(sa => sa.id === formData.subAgentId);
     if (!subAgent) return null;
     const totalComm = calculateTotalCommission();
-    const subAgentPercent = parseFloat(subAgent.commissionPercentage) || 0;
+    
+    // If agent share is manually specified, use that. Otherwise use sub-agent's default split
+    const agentKeeps = formData.agentSharePercent 
+      ? parseFloat(formData.agentSharePercent) 
+      : (100 - parseFloat(subAgent.commissionPercentage));
+    const subAgentPercent = 100 - agentKeeps;
+    
     return {
       subAgentAmount: (totalComm * subAgentPercent) / 100,
-      agentAmount: totalComm - (totalComm * subAgentPercent) / 100,
-      subAgentPercent
+      agentAmount: (totalComm * agentKeeps) / 100,
+      subAgentPercent,
+      agentKeeps
     };
   };
 
@@ -379,6 +438,10 @@ export default function NewPolicyPage() {
         tpCommissionRate: isMotor ? parseFloat(formData.tpCommissionRate) || undefined : undefined,
         netCommissionRate: parseFloat(formData.netCommissionRate) || undefined,
         renewalCommissionRate: parseFloat(formData.renewalCommissionRate) || undefined,
+        // Broker
+        brokerId: formData.brokerId || undefined,
+        brokerCommissionAmount: parseFloat(formData.brokerCommissionAmount) || undefined,
+        agentSharePercent: parseFloat(formData.agentSharePercent) || undefined,
         // Sub-agent
         subAgentId: formData.subAgentId || undefined,
         holderName: formData.holderName || undefined,
@@ -984,7 +1047,94 @@ export default function NewPolicyPage() {
 
             {/* Sub-Agent / Broker Assignment */}
             <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Sub-Agent / Broker (Optional)</h3>
+              <h3 className="font-medium text-gray-900 border-b pb-2">Broker & Sub-Agent (Optional)</h3>
+              
+              {/* Broker Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Broker (PolicyBazaar, MitPro, Probus, etc.)
+                </label>
+                {!showNewBrokerForm ? (
+                  <div>
+                    <select
+                      name="brokerId"
+                      value={formData.brokerId}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Direct / No Broker</option>
+                      {brokers.map((broker) => (
+                        <option key={broker.id} value={broker.id}>
+                          {broker.name} {broker.code ? `(${broker.code})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewBrokerForm(true)}
+                      className="text-xs text-blue-600 hover:underline mt-1"
+                    >
+                      + Add New Broker
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-purple-800">Add New Broker</span>
+                      <button type="button" onClick={() => setShowNewBrokerForm(false)} className="text-xs text-gray-500">Cancel</button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Broker Name *"
+                        value={newBrokerData.name}
+                        onChange={(e) => setNewBrokerData(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                      <Input
+                        placeholder="Phone"
+                        value={newBrokerData.phone}
+                        onChange={(e) => setNewBrokerData(prev => ({ ...prev, phone: e.target.value }))}
+                      />
+                    </div>
+                    <Input
+                      placeholder="Email"
+                      type="email"
+                      value={newBrokerData.email}
+                      onChange={(e) => setNewBrokerData(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleCreateBroker}
+                      disabled={creatingBroker || !newBrokerData.name}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-sm"
+                    >
+                      {creatingBroker ? 'Creating...' : '✓ Create & Select Broker'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Broker Commission (Manual Input) */}
+              {formData.brokerId && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <label className="block text-sm font-medium text-purple-800 mb-2">
+                    💰 Commission Received from Broker (₹)
+                  </label>
+                  <Input
+                    type="number"
+                    name="brokerCommissionAmount"
+                    value={formData.brokerCommissionAmount}
+                    onChange={handleChange}
+                    placeholder="Enter commission amount from broker"
+                    step="0.01"
+                    className="bg-white"
+                  />
+                  <p className="text-xs text-purple-600 mt-1">
+                    Enter the total commission you will receive from the broker
+                  </p>
+                </div>
+              )}
+
+              {/* Sub-Agent Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Assign Sub-Agent
@@ -998,7 +1148,7 @@ export default function NewPolicyPage() {
                   <option value="">No Sub-Agent (Direct)</option>
                   {subAgents.map((sa) => (
                     <option key={sa.id} value={sa.id}>
-                      {sa.name} ({sa.subAgentCode}) - {sa.commissionPercentage}% share
+                      {sa.name} ({sa.subAgentCode}) - {sa.commissionPercentage}% default share
                     </option>
                   ))}
                 </select>
@@ -1006,6 +1156,28 @@ export default function NewPolicyPage() {
                   <Link href="/dashboard/sub-agents" className="text-blue-600 hover:underline">Manage Sub-Agents</Link>
                 </p>
               </div>
+
+              {/* Agent/SubAgent Commission Split */}
+              {formData.subAgentId && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <label className="block text-sm font-medium text-orange-800 mb-2">
+                    Agent का हिस्सा (%)
+                  </label>
+                  <Input
+                    type="number"
+                    name="agentSharePercent"
+                    value={formData.agentSharePercent}
+                    onChange={handleChange}
+                    placeholder={`Default: ${100 - parseFloat(subAgents.find(s => s.id === formData.subAgentId)?.commissionPercentage || '50')}%`}
+                    step="0.01"
+                    max="100"
+                    className="bg-white"
+                  />
+                  <p className="text-xs text-orange-600 mt-1">
+                    Agent keeps this %, rest ({100 - (parseFloat(formData.agentSharePercent) || (100 - parseFloat(subAgents.find(s => s.id === formData.subAgentId)?.commissionPercentage || '50')))}%) goes to Sub-Agent
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Commission Section */}

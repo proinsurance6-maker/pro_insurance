@@ -8,6 +8,7 @@ import policyRoutes from './routes/policy.routes';
 import ledgerRoutes from './routes/ledger.routes';
 import commissionRoutes from './routes/commission.routes';
 import renewalRoutes from './routes/renewal.routes';
+import brokerRoutes from './routes/broker.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { startCronJobs } from './jobs';
 
@@ -32,6 +33,7 @@ app.use('/api/policies', policyRoutes);
 app.use('/api/ledger', ledgerRoutes);
 app.use('/api/commissions', commissionRoutes);
 app.use('/api/renewals', renewalRoutes);
+app.use('/api/brokers', brokerRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

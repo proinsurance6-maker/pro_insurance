@@ -124,15 +124,18 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
   try {
     const agentId = (req as any).user.userId;
     const {
-      clientId, companyId, subAgentId, familyMemberId,
+      clientId, companyId, subAgentId, brokerId, familyMemberId,
       policyNumber, policyType, motorPolicyType, planName, policySource,
       vehicleNumber, startDate, endDate,
       premiumAmount, sumAssured, premiumFrequency,
       // Motor premium breakdown
       odPremium, tpPremium, netPremium,
-      // Commission rates
-      premiumPaidBy, commissionPercent, 
+      // Commission rates - broker gives commission, agent keeps some, rest to sub-agent
+      premiumPaidBy, 
+      brokerCommissionAmount, // Total commission received from broker (manual input)
+      commissionPercent, 
       odCommissionRate, tpCommissionRate, netCommissionRate, renewalCommissionRate,
+      agentSharePercent, // Agent's share % of broker commission (rest goes to sub-agent)
       remarks
     } = req.body;
 
@@ -164,7 +167,10 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
     let netCommissionAmount = 0;
     let totalRate = commissionPercent || 15;
 
-    if (isMotor && motorPolicyType) {
+    // If broker commission is manually provided, use that
+    if (brokerCommissionAmount && brokerCommissionAmount > 0) {
+      totalCommissionAmount = parseFloat(brokerCommissionAmount);
+    } else if (isMotor && motorPolicyType) {
       // Motor policy - calculate OD/TP based commission
       if (motorPolicyType === 'COMPREHENSIVE' || motorPolicyType === 'OD_ONLY') {
         odCommissionAmount = ((odPremium || 0) * (odCommissionRate || 0)) / 100;
@@ -185,6 +191,7 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
     }
 
     // Get sub-agent split if specified
+    // Commission flow: Broker → Agent keeps X% → Sub-Agent gets rest
     let subAgentCommission = 0;
     let agentCommission = totalCommissionAmount;
     let subAgentSharePercent = 0;
@@ -194,9 +201,11 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
         where: { id: subAgentId, agentId }
       });
       if (subAgent) {
-        subAgentSharePercent = Number(subAgent.commissionPercentage);
-        subAgentCommission = (totalCommissionAmount * subAgentSharePercent) / 100;
-        agentCommission = totalCommissionAmount - subAgentCommission;
+        // If agent share is specified, use that. Otherwise use subAgent's default split
+        const agentKeeps = agentSharePercent !== undefined ? parseFloat(agentSharePercent) : (100 - Number(subAgent.commissionPercentage));
+        subAgentSharePercent = 100 - agentKeeps;
+        agentCommission = (totalCommissionAmount * agentKeeps) / 100;
+        subAgentCommission = totalCommissionAmount - agentCommission;
       }
     }
 
@@ -207,6 +216,7 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
           clientId,
           companyId,
           subAgentId: subAgentId || null,
+          brokerId: brokerId || null,
           familyMemberId: familyMemberId || null,
           policyNumber,
           policyType,
@@ -231,7 +241,10 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
           policyId: newPolicy.id,
           agentId,
           subAgentId: subAgentId || null,
+          brokerId: brokerId || null,
           companyId,
+          // Broker commission (total received from broker)
+          brokerCommissionAmount: brokerCommissionAmount ? parseFloat(brokerCommissionAmount) : null,
           totalCommissionPercent: totalRate,
           totalCommissionAmount: totalCommissionAmount,
           // Motor-specific commission breakdown
