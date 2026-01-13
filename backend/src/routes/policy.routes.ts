@@ -43,6 +43,17 @@ router.get('/companies', getCompanies);
 // Document scanning / OCR
 router.post('/scan-document', upload.single('document'), scanDocument);
 
+// Policy creation with multiple document uploads
+router.post('/', upload.fields([
+  { name: 'policyCopy', maxCount: 1 },
+  { name: 'rcDocument', maxCount: 1 },
+  { name: 'aadharFront', maxCount: 1 },
+  { name: 'aadharBack', maxCount: 1 },
+  { name: 'panCard', maxCount: 1 },
+  { name: 'photo', maxCount: 1 },
+  { name: 'cancelCheque', maxCount: 1 }
+]), createPolicy);
+
 // Excel parsing
 router.post('/parse-excel', upload.single('file'), parseExcel);
 
@@ -52,7 +63,6 @@ router.post('/bulk', bulkCreatePolicies);
 // Policy CRUD
 router.get('/', getPolicies);
 router.get('/:id', getPolicy);
-router.post('/', createPolicy);
 router.put('/:id', updatePolicy);
 router.delete('/:id', deletePolicy);
 

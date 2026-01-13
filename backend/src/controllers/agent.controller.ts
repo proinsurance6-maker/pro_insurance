@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
+import { uploadSubAgentKyc } from '../services/cloudinary.service';
 
 // ==========================================
 // GET AGENT DASHBOARD STATS
@@ -304,26 +305,31 @@ export const uploadSubAgentKyc = async (req: Request, res: Response, next: NextF
       throw new AppError('Sub-agent not found', 404, 'NOT_FOUND');
     }
 
-    // For now, just store file information in database
-    // In production, you would upload to cloud storage
-    const kycDocuments = files.map(file => ({
-      fileName: file.originalname,
-      fileType: file.mimetype,
-      fileSize: file.size,
-      uploadDate: new Date()
-    }));
+    // Upload to Cloudinary
+    const uploadedDocuments = await uploadSubAgentKyc(files, subAgent.subAgentCode);
 
+    // Update sub-agent with KYC info
     await prisma.subAgent.update({
       where: { id },
       data: { 
         kycStatus: 'SUBMITTED',
-        kycDocuments: JSON.stringify(kycDocuments)
+        kycDocuments: JSON.stringify(uploadedDocuments.map(doc => ({
+          fileName: doc.original_filename,
+          fileUrl: doc.secure_url,
+          publicId: doc.public_id,
+          uploadDate: new Date(),
+          fileSize: doc.bytes,
+          format: doc.format
+        })))
       }
     });
 
     res.json({
       success: true,
-      data: { uploadedFiles: kycDocuments.length },
+      data: { 
+        uploadedFiles: uploadedDocuments.length,
+        documents: uploadedDocuments 
+      },
       message: 'KYC documents uploaded successfully'
     });
   } catch (error) {

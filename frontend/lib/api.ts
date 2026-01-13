@@ -152,8 +152,31 @@ export const policyAPI = {
   getById: (id: string) =>
     api.get(`/policies/${id}`),
   
-  create: (data: any) =>
-    api.post('/policies', data),
+  create: (data: any, files?: { [key: string]: File }) => {
+    if (files && Object.keys(files).length > 0) {
+      const formData = new FormData();
+      
+      // Add text data
+      Object.keys(data).forEach(key => {
+        if (data[key] !== undefined && data[key] !== null) {
+          formData.append(key, data[key]);
+        }
+      });
+      
+      // Add files
+      Object.keys(files).forEach(key => {
+        if (files[key]) {
+          formData.append(key, files[key]);
+        }
+      });
+      
+      return api.post('/policies', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    } else {
+      return api.post('/policies', data);
+    }
+  },
   
   update: (id: string, data: any) =>
     api.put(`/policies/${id}`, data),

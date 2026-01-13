@@ -456,7 +456,20 @@ export default function NewPolicyPage() {
 
     try {
       const isMotor = formData.policyType === 'Motor Insurance';
-      await policyAPI.create({
+      
+      // Collect all document files
+      const files: { [key: string]: File } = {};
+      const formDataObj = formData as any;
+      
+      if (formDataObj.policyCopyFile) files.policyCopy = formDataObj.policyCopyFile;
+      if (formDataObj.rcDocumentFile) files.rcDocument = formDataObj.rcDocumentFile;
+      if (formDataObj.aadharFrontFile) files.aadharFront = formDataObj.aadharFrontFile;
+      if (formDataObj.aadharBackFile) files.aadharBack = formDataObj.aadharBackFile;
+      if (formDataObj.panCardFile) files.panCard = formDataObj.panCardFile;
+      if (formDataObj.photoFile) files.photo = formDataObj.photoFile;
+      if (formDataObj.cancelChequeFile) files.cancelCheque = formDataObj.cancelChequeFile;
+
+      const policyData = {
         clientId: formData.clientId,
         companyId: formData.companyId,
         policyNumber: formData.policyNumber,
@@ -477,6 +490,10 @@ export default function NewPolicyPage() {
         tpCommissionRate: isMotor ? parseFloat(formData.tpCommissionRate) || undefined : undefined,
         netCommissionRate: parseFloat(formData.netCommissionRate) || undefined,
         renewalCommissionRate: parseFloat(formData.renewalCommissionRate) || undefined,
+        // Sub-agent rates
+        subAgentOdRate: isMotor ? parseFloat(formDataObj.subAgentOdRate) || undefined : undefined,
+        subAgentTpRate: isMotor ? parseFloat(formDataObj.subAgentTpRate) || undefined : undefined,
+        subAgentNetRate: parseFloat(formDataObj.subAgentNetRate) || undefined,
         // Broker
         brokerId: formData.brokerId || undefined,
         brokerCommissionAmount: parseFloat(formData.brokerCommissionAmount) || undefined,
@@ -486,8 +503,11 @@ export default function NewPolicyPage() {
         holderName: formData.holderName || undefined,
         vehicleNumber: isMotor ? formData.vehicleNumber : undefined,
         remarks: formData.remarks || undefined,
-      });
-      router.push('/dashboard/policies');
+      };
+
+      await policyAPI.create(policyData, Object.keys(files).length > 0 ? files : undefined);
+      setSuccess('✅ Policy created successfully with documents uploaded!');
+      setTimeout(() => router.push('/dashboard/policies'), 2000);
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to create policy');
     } finally {

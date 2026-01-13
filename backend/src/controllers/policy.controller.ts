@@ -4,6 +4,7 @@ import { AppError } from '../middleware/errorHandler';
 import { parse } from 'csv-parse/sync';
 import * as XLSX from 'xlsx';
 import { extractPolicyFromImage, extractPolicyFromText } from '../services/ocr.service';
+import { uploadPolicyDocuments } from '../services/cloudinary.service';
 import pdfParse from 'pdf-parse';
 
 // ==========================================
@@ -291,14 +292,55 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
       return newPolicy;
     });
 
+    // Upload documents if provided
+    let uploadedDocuments = {};
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    if (files && Object.keys(files).length > 0) {
+      try {
+        const documentFiles = {
+          policyCopy: files.policyCopy?.[0],
+          rcDocument: files.rcDocument?.[0],
+          aadharFront: files.aadharFront?.[0],
+          aadharBack: files.aadharBack?.[0],
+          panCard: files.panCard?.[0],
+          photo: files.photo?.[0],
+          cancelCheque: files.cancelCheque?.[0],
+        };
+
+        uploadedDocuments = await uploadPolicyDocuments(documentFiles, policyNumber);
+        
+        // Save document URLs to database
+        if (Object.keys(uploadedDocuments).length > 0) {
+          await prisma.document.createMany({
+            data: Object.entries(uploadedDocuments).map(([type, doc]: [string, any]) => ({
+              policyId: policy.id,
+              agentId,
+              documentType: type.toUpperCase(),
+              fileName: doc.original_filename,
+              fileUrl: doc.secure_url,
+              cloudinaryPublicId: doc.public_id,
+              fileSize: doc.bytes,
+              uploadedAt: new Date()
+            }))
+          });
+        }
+      } catch (uploadError) {
+        console.error('Document upload failed:', uploadError);
+        // Don't fail policy creation if document upload fails
+      }
+    }
+
     const fullPolicy = await prisma.policy.findUnique({
       where: { id: policy.id },
-      include: { client: true, company: true, commissions: true }
+      include: { client: true, company: true, commissions: true, documents: true }
     });
 
     res.status(201).json({
       success: true,
-      data: fullPolicy,
+      data: {
+        ...fullPolicy,
+        uploadedDocuments: Object.keys(uploadedDocuments)
+      },
       message: 'Policy created successfully'
     });
   } catch (error) {
