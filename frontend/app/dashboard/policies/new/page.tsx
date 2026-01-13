@@ -282,14 +282,20 @@ export default function NewPolicyPage() {
     }
     
     const isMotor = formData.policyType === 'Motor Insurance';
-    if (isMotor && formData.motorPolicyType === 'COMPREHENSIVE') {
-      const odComm = (parseFloat(formData.odPremium) || 0) * (parseFloat(formData.odCommissionRate) || 0) / 100;
-      const tpComm = (parseFloat(formData.tpPremium) || 0) * (parseFloat(formData.tpCommissionRate) || 0) / 100;
-      return odComm + tpComm;
-    } else if (isMotor && formData.motorPolicyType === 'OD_ONLY') {
-      return (parseFloat(formData.odPremium) || 0) * (parseFloat(formData.odCommissionRate) || 0) / 100;
-    } else if (isMotor && formData.motorPolicyType === 'TP_ONLY') {
-      return (parseFloat(formData.tpPremium) || 0) * (parseFloat(formData.tpCommissionRate) || 0) / 100;
+    if (isMotor) {
+      // For motor insurance, check if net rate is filled first
+      const netRate = parseFloat(formData.netCommissionRate) || 0;
+      const netPremium = parseFloat(formData.netPremium || formData.premiumAmount) || 0;
+      
+      if (netRate > 0 && netPremium > 0) {
+        // Use net rate calculation if filled
+        return netPremium * netRate / 100;
+      } else {
+        // Otherwise use OD/TP separate calculations
+        const odComm = (parseFloat(formData.odPremium) || 0) * (parseFloat(formData.odCommissionRate) || 0) / 100;
+        const tpComm = (parseFloat(formData.tpPremium) || 0) * (parseFloat(formData.tpCommissionRate) || 0) / 100;
+        return odComm + tpComm;
+      }
     } else {
       // Other policies - Net based
       return (parseFloat(formData.netPremium || formData.premiumAmount) || 0) * (parseFloat(formData.netCommissionRate || formData.commissionRate) || 0) / 100;
@@ -1308,13 +1314,14 @@ export default function NewPolicyPage() {
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">OD Rate %</label>
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           name="odCommissionRate"
                           value={formData.odCommissionRate}
                           onChange={handleChange}
                           placeholder="e.g., 15"
-                          step="0.01"
                           max="100"
+                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
                     )}
@@ -1322,26 +1329,28 @@ export default function NewPolicyPage() {
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">TP Rate %</label>
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           name="tpCommissionRate"
                           value={formData.tpCommissionRate}
                           onChange={handleChange}
                           placeholder="e.g., 5"
-                          step="0.01"
                           max="100"
+                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
                     )}
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Net Rate %</label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         name="netCommissionRate"
                         value={formData.netCommissionRate}
                         onChange={handleChange}
                         placeholder="Optional"
-                        step="0.01"
                         max="100"
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>
@@ -1357,13 +1366,14 @@ export default function NewPolicyPage() {
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">OD Rate %</label>
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           name="subAgentOdRate"
                           value={(formData as any).subAgentOdRate || ''}
                           onChange={handleChange}
                           placeholder="e.g., 10"
-                          step="0.01"
                           max="100"
+                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
                     )}
@@ -1371,26 +1381,28 @@ export default function NewPolicyPage() {
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">TP Rate %</label>
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           name="subAgentTpRate"
                           value={(formData as any).subAgentTpRate || ''}
                           onChange={handleChange}
                           placeholder="e.g., 3"
-                          step="0.01"
                           max="100"
+                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
                     )}
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Net Rate %</label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         name="subAgentNetRate"
                         value={(formData as any).subAgentNetRate || ''}
                         onChange={handleChange}
                         placeholder="Optional"
-                        step="0.01"
                         max="100"
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>
@@ -1405,13 +1417,14 @@ export default function NewPolicyPage() {
                       Commission Rate (%)
                     </label>
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       name="commissionRate"
                       value={formData.commissionRate}
                       onChange={handleChange}
                       placeholder="e.g., 15"
-                      step="0.01"
                       max="100"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                   <div>
@@ -1419,51 +1432,37 @@ export default function NewPolicyPage() {
                       Renewal Commission (%)
                     </label>
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       name="renewalCommissionRate"
                       value={formData.renewalCommissionRate}
                       onChange={handleChange}
                       placeholder="For future renewals"
-                      step="0.01"
                       max="100"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
               )}
 
-              {/* Agent/SubAgent Commission Split */}
-              {formData.subAgentId && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <label className="block text-sm font-medium text-blue-800 mb-2">
-                    Agent का हिस्सा (%) - Commission Split
-                  </label>
-                  <Input
-                    type="number"
-                    name="agentSharePercent"
-                    value={formData.agentSharePercent}
-                    onChange={handleChange}
-                    placeholder={`Default: ${100 - parseFloat(subAgents.find(s => s.id === formData.subAgentId)?.commissionPercentage || '50')}%`}
-                    step="0.01"
-                    max="100"
-                    className="bg-white"
-                  />
-                  <p className="text-xs text-blue-600 mt-1">
-                    Agent keeps this %, rest goes to Sub-Agent ({subAgents.find(s => s.id === formData.subAgentId)?.name})
-                  </p>
-                </div>
-              )}
-
               {/* Commission Calculation Preview */}
-              {(formData.premiumAmount || formData.odPremium || formData.tpPremium || formData.brokerCommissionAmount) && (
+              {(formData.odCommissionRate || formData.tpCommissionRate || formData.netCommissionRate || formData.commissionRate || formData.brokerCommissionAmount) && (
                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                   <h4 className="font-medium text-indigo-800 mb-2">Commission Preview</h4>
                   <div className="text-sm space-y-1">
                     <p>Total Commission: <span className="font-bold text-green-700">₹{calculateTotalCommission().toFixed(2)}</span></p>
-                    <p className="text-indigo-700">Your Payout: <span className="font-bold text-indigo-800">₹{formData.subAgentId && getSubAgentShare() ? getSubAgentShare()?.agentAmount.toFixed(2) : calculateTotalCommission().toFixed(2)}</span></p>
+                    {!formData.subAgentId && (
+                      <p className="text-indigo-700">Your Payout: <span className="font-bold text-indigo-800">₹{calculateTotalCommission().toFixed(2)}</span></p>
+                    )}
                     {formData.subAgentId && getSubAgentShare() && (
-                      <p className="text-orange-700">
-                        Paid Amount: <span className="font-bold text-orange-800">₹{getSubAgentShare()?.subAgentAmount.toFixed(2)}</span> ({getSubAgentShare()?.subAgentPercent}% to {subAgents.find(s => s.id === formData.subAgentId)?.name})
-                      </p>
+                      <>
+                        <p className="text-indigo-700">
+                          Your Payout: <span className="font-bold text-indigo-800">₹{getSubAgentShare()?.agentAmount.toFixed(2)}</span>
+                        </p>
+                        <p className="text-orange-700">
+                          Paid to Sub-Agent: <span className="font-bold text-orange-800">₹{getSubAgentShare()?.subAgentAmount.toFixed(2)}</span> ({getSubAgentShare()?.subAgentPercent}% to {subAgents.find(s => s.id === formData.subAgentId)?.name})
+                        </p>
+                      </>
                     )}
                   </div>
                 </div>
