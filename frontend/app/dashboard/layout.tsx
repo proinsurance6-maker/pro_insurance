@@ -89,7 +89,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {navigation.map((item) => {
             const hasChildren = item.children && item.children.length > 0;
             const isExpanded = isMenuExpanded(item.name);
-            const isParentActive = hasChildren && item.children?.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
+            const isParentActive = hasChildren && item.children?.some(child => pathname === child.href || (child.href !== '/dashboard/policies' && pathname.startsWith(child.href)));
             const isActive = item.href ? (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) : isParentActive;
             
             if (hasChildren) {
@@ -164,7 +164,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {navigation.map((item) => {
               const hasChildren = item.children && item.children.length > 0;
               const isExpanded = isMenuExpanded(item.name);
-              const isParentActive = hasChildren && item.children?.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
+              const isParentActive = hasChildren && item.children?.some(child => pathname === child.href || (child.href !== '/dashboard/policies' && pathname.startsWith(child.href)));
               const isActive = item.href ? (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) : isParentActive;
               
               if (hasChildren) {

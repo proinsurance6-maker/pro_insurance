@@ -79,6 +79,7 @@ export default function NewPolicyPage() {
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [showNewBrokerForm, setShowNewBrokerForm] = useState(false);
+  const [showSubAgentForm, setShowSubAgentForm] = useState(false);
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [excelData, setExcelData] = useState<any[]>([]);
   const [excelFileName, setExcelFileName] = useState('');
@@ -99,6 +100,15 @@ export default function NewPolicyPage() {
     email: ''
   });
   const [creatingBroker, setCreatingBroker] = useState(false);
+  
+  // New sub-agent form data
+  const [newSubAgentData, setNewSubAgentData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    commissionPercentage: '10'
+  });
+  const [creatingSubAgent, setCreatingSubAgent] = useState(false);
   
   const [formData, setFormData] = useState({
     clientId: preSelectedClientId || '',
@@ -237,6 +247,29 @@ export default function NewPolicyPage() {
       setError(err.response?.data?.error?.message || 'Failed to create broker');
     } finally {
       setCreatingBroker(false);
+    }
+  };
+
+  // Create new sub-agent inline
+  const handleCreateSubAgent = async () => {
+    if (!newSubAgentData.name) {
+      setError('Sub-Agent name is required');
+      return;
+    }
+    setCreatingSubAgent(true);
+    try {
+      const response = await agentAPI.createSubAgent(newSubAgentData);
+      const newSubAgent = response.data.data;
+      // Add to list and select
+      setSubAgents(prev => [newSubAgent, ...prev]);
+      setFormData(prev => ({ ...prev, subAgentId: newSubAgent.id }));
+      setShowSubAgentForm(false);
+      setNewSubAgentData({ name: '', phone: '', email: '', commissionPercentage: '10' });
+      setSuccess('✅ New Sub-Agent added and selected');
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to create Sub-Agent');
+    } finally {
+      setCreatingSubAgent(false);
     }
   };
 
@@ -1132,9 +1165,86 @@ export default function NewPolicyPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  <Link href="/dashboard/sub-agents" className="text-blue-600 hover:underline">Manage Sub-Agents</Link>
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-gray-500">
+                    <Link href="/dashboard/sub-agents" className="text-blue-600 hover:underline">Manage Sub-Agents</Link>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowSubAgentForm(!showSubAgentForm)}
+                    className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                  >
+                    {showSubAgentForm ? 'Cancel' : '+ Add New Sub-Agent'}
+                  </button>
+                </div>
+                
+                {/* Inline Sub-Agent Creation Form */}
+                {showSubAgentForm && (
+                  <div className="mt-4 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+                    <h4 className="font-medium text-blue-800 mb-3">Add New Sub-Agent</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={newSubAgentData.name}
+                          onChange={(e) => setNewSubAgentData(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Sub-Agent full name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Phone *
+                        </label>
+                        <input
+                          type="tel"
+                          value={newSubAgentData.phone}
+                          onChange={(e) => setNewSubAgentData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="10-digit mobile number"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email (Optional)
+                        </label>
+                        <input
+                          type="email"
+                          value={newSubAgentData.email}
+                          onChange={(e) => setNewSubAgentData(prev => ({ ...prev, email: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="email@example.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Commission % (Default)
+                        </label>
+                        <input
+                          type="number"
+                          value={newSubAgentData.commissionPercentage}
+                          onChange={(e) => setNewSubAgentData(prev => ({ ...prev, commissionPercentage: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="10"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleCreateSubAgent}
+                      disabled={creatingSubAgent || !newSubAgentData.name}
+                      className="mt-4 bg-blue-600 hover:bg-blue-700"
+                    >
+                      {creatingSubAgent ? 'Creating...' : '✓ Create & Select Sub-Agent'}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
