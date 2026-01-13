@@ -522,79 +522,82 @@ export default function NewPolicyPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="mb-6">
-        <Link href="/dashboard/policies" className="text-blue-600 hover:underline text-sm mb-2 inline-block">
-          ← Back to Policies
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-800">Add New Policy</h1>
-        <p className="text-gray-600">Choose how you want to add policy details</p>
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Link href="/dashboard/policies" className="text-blue-600 hover:underline text-sm mb-2 inline-block">
+            ← Back to Policies
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-800">Add New Policy</h1>
+          <p className="text-gray-600">Choose how you want to add policy details</p>
+        </div>
       </div>
 
-      {/* Entry Mode Selection */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <button
-          onClick={() => { setEntryMode('manual'); setError(''); setSuccess(''); }}
-          className={`p-4 rounded-lg border-2 transition-all ${
-            entryMode === 'manual' 
-              ? 'border-blue-500 bg-blue-50 text-blue-700' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}
-        >
-          <div className="text-2xl mb-1">✏️</div>
-          <div className="font-medium text-sm">Manual</div>
-          <div className="text-xs text-gray-500">Type details</div>
-        </button>
-        
-        <button
-          onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
-          className={`p-4 rounded-lg border-2 transition-all ${
-            entryMode === 'scan' 
-              ? 'border-blue-500 bg-blue-50 text-blue-700' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}
-        >
-          <div className="text-2xl mb-1">📷</div>
-          <div className="font-medium text-sm">Scan Document</div>
-          <div className="text-xs text-gray-500">Auto-fill from image</div>
-        </button>
-        
-        <button
-          onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
-          className={`p-4 rounded-lg border-2 transition-all ${
-            entryMode === 'excel' 
-              ? 'border-blue-500 bg-blue-50 text-blue-700' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}
-        >
-          <div className="text-2xl mb-1">📊</div>
-          <div className="font-medium text-sm">Excel Import</div>
-          <div className="text-xs text-gray-500">Bulk upload</div>
-        </button>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Entry Mode Selection */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <button
+            onClick={() => { setEntryMode('manual'); setError(''); setSuccess(''); }}
+            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+              entryMode === 'manual' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
+                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+            }`}
+          >
+            <div className="text-3xl mb-2">✏️</div>
+            <div className="font-semibold text-base">Manual</div>
+            <div className="text-sm text-gray-500">Type details</div>
+          </button>
+          
+          <button
+            onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
+            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+              entryMode === 'scan' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
+                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+            }`}
+          >
+            <div className="text-3xl mb-2">📷</div>
+            <div className="font-semibold text-base">Scan Document</div>
+            <div className="text-sm text-gray-500">Auto-fill from image</div>
+          </button>
+          
+          <button
+            onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
+            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+              entryMode === 'excel' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
+                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+            }`}
+          >
+            <div className="text-3xl mb-2">📊</div>
+            <div className="font-semibold text-base">Excel Import</div>
+            <div className="text-sm text-gray-500">Bulk upload</div>
+          </button>
+        </div>
 
-      {/* Hidden File Inputs */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleDocumentScan}
-        accept="image/*,.pdf"
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={excelInputRef}
-        onChange={handleExcelImport}
-        accept=".xlsx,.xls,.csv"
-        className="hidden"
-      />
+        {/* Hidden File Inputs */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleDocumentScan}
+          accept="image/*,.pdf"
+          className="hidden"
+        />
+        <input
+          type="file"
+          ref={excelInputRef}
+          onChange={handleExcelImport}
+          accept=".xlsx,.xls,.csv"
+          className="hidden"
+        />
 
-      {/* Scan Mode UI */}
-      {entryMode === 'scan' && (
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="text-center">
+        {/* Scan Mode UI */}
+        {entryMode === 'scan' && (
+          <Card className="mb-6 shadow-lg">
+            <CardContent className="p-8">
+              <div className="text-center">
               <div className="text-4xl mb-3">📄</div>
               <h3 className="font-medium text-gray-900 mb-2">Scan Policy Document</h3>
               <p className="text-sm text-gray-600 mb-4">
@@ -736,93 +739,104 @@ export default function NewPolicyPage() {
 
       {/* Manual Form - show for manual mode, or after scan/excel fills data */}
       {(entryMode === 'manual' || (entryMode === 'scan' && scannedImage)) && (
-      <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-            
-            {success && entryMode === 'scan' && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                {success}
-              </div>
-            )}
-
-            {/* Client Selection */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Client Details</h3>
+        <div className="bg-white rounded-xl shadow-lg border">
+          <div className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                  {error}
+                </div>
+              )}
               
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Client <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  value={clientSearch}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value);
-                    setShowClientDropdown(true);
-                    setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
-                  }}
-                  onFocus={() => setShowClientDropdown(true)}
-                  placeholder="Search client by name or phone..."
-                  required
-                />
-                {showClientDropdown && clientSearch && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredClients.length === 0 ? (
-                      <div className="p-3">
-                        <p className="text-gray-500 text-sm mb-2">No clients found matching "{clientSearch}"</p>
-                        <Button 
-                          type="button" 
-                          size="sm" 
-                          onClick={() => {
-                            setShowNewClientForm(true);
-                            setShowClientDropdown(false);
-                            setNewClientData(prev => ({ ...prev, name: clientSearch }));
+              {success && entryMode === 'scan' && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
+                  {success}
+                </div>
+              )}
+
+              {/* Form Grid Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column */}
+                <div className="space-y-6">"
+
+                  {/* Client Selection */}
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <span className="text-blue-500 mr-2">👤</span>
+                      Client Details
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Client <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          value={clientSearch}
+                          onChange={(e) => {
+                            setClientSearch(e.target.value);
+                            setShowClientDropdown(true);
+                            setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
                           }}
-                          className="w-full"
-                        >
-                          ➕ Add New Client
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        {filteredClients.slice(0, 5).map((client) => (
-                          <button
-                            key={client.id}
-                            type="button"
-                            onClick={() => handleClientSelect(client)}
-                            className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0"
-                          >
-                            <p className="font-medium">{client.name}</p>
-                            <p className="text-sm text-gray-500">{client.phone}</p>
-                          </button>
-                        ))}
-                        <div className="p-2 border-t bg-gray-50">
-                          <Button 
-                            type="button" 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setShowNewClientForm(true);
-                              setShowClientDropdown(false);
-                            }}
-                            className="w-full"
-                          >
-                            ➕ Add New Client
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-                {formData.clientId && (
-                  <p className="text-sm text-green-600 mt-1">✓ Client selected: {formData.clientName}</p>
-                )}
+                          onFocus={() => setShowClientDropdown(true)}
+                          placeholder="Search client by name or phone..."
+                          required
+                          className="h-12 text-base"
+                        />
+                        {showClientDropdown && clientSearch && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                            {filteredClients.length === 0 ? (
+                              <div className="p-4">
+                                <p className="text-gray-500 text-sm mb-3">No clients found matching "{clientSearch}"</p>
+                                <Button 
+                                  type="button" 
+                                  size="sm" 
+                                  onClick={() => {
+                                    setShowNewClientForm(true);
+                                    setShowClientDropdown(false);
+                                    setNewClientData(prev => ({ ...prev, name: clientSearch }));
+                                  }}
+                                  className="w-full"
+                                >
+                                  ➕ Add New Client
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                {filteredClients.slice(0, 5).map((client) => (
+                                  <button
+                                    key={client.id}
+                                    type="button"
+                                    onClick={() => handleClientSelect(client)}
+                                    className="w-full text-left p-4 hover:bg-gray-50 border-b last:border-b-0"
+                                  >
+                                    <p className="font-medium">{client.name}</p>
+                                    <p className="text-sm text-gray-500">{client.phone}</p>
+                                  </button>
+                                ))}
+                                <div className="p-3 border-t bg-gray-50">
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                      setShowNewClientForm(true);
+                                      setShowClientDropdown(false);
+                                    }}
+                                    className="w-full"
+                                  >
+                                    ➕ Add New Client
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        
+                        {formData.clientId && (
+                          <p className="text-sm text-green-600 mt-1">✓ Client selected: {formData.clientName}</p>
+                        )}
               </div>
 
               {/* Inline New Client Form */}
@@ -1470,12 +1484,16 @@ export default function NewPolicyPage() {
             </div>
 
             {/* Documents Section */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Documents (Optional)</h3>
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <span className="text-blue-500 mr-2">📎</span>
+                Documents
+              </h3>
               
-              <div className="grid grid-cols-2 gap-4">
+              {/* Document Upload Grid */}
+              <div className="grid grid-cols-4 gap-4 mb-6">
                 {/* Policy Copy Upload */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
+                <div className="group">
                   <input
                     type="file"
                     id="policyCopy"
@@ -1488,18 +1506,23 @@ export default function NewPolicyPage() {
                       }
                     }}
                   />
-                  <label htmlFor="policyCopy" className="cursor-pointer">
-                    <div className="text-3xl mb-2">📄</div>
-                    <div className="text-sm font-medium text-gray-700">Policy Copy</div>
-                    <div className="text-xs text-gray-500">PDF, JPG, PNG</div>
-                    {(formData as any).policyCopyFile && (
-                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).policyCopyFile.name}</div>
-                    )}
+                  <label htmlFor="policyCopy" className="cursor-pointer block">
+                    <div className={`relative bg-gradient-to-br from-purple-50 to-purple-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
+                      (formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-purple-200 hover:border-purple-300'
+                    }`}>
+                      <div className="text-2xl mb-2">📄</div>
+                      <div className="text-sm font-medium text-gray-700">Policy Copy</div>
+                      {(formData as any).policyCopyFile ? (
+                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
+                      ) : (
+                        <div className="text-xs text-gray-400">PDF, JPG, PNG</div>
+                      )}
+                    </div>
                   </label>
                 </div>
 
                 {/* RC Upload */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
+                <div className="group">
                   <input
                     type="file"
                     id="rcDocument"
@@ -1512,21 +1535,23 @@ export default function NewPolicyPage() {
                       }
                     }}
                   />
-                  <label htmlFor="rcDocument" className="cursor-pointer">
-                    <div className="text-3xl mb-2">🚗</div>
-                    <div className="text-sm font-medium text-gray-700">RC Document</div>
-                    <div className="text-xs text-gray-500">Registration Certificate</div>
-                    {(formData as any).rcDocumentFile && (
-                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).rcDocumentFile.name}</div>
-                    )}
+                  <label htmlFor="rcDocument" className="cursor-pointer block">
+                    <div className={`relative bg-gradient-to-br from-blue-50 to-blue-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
+                      (formData as any).rcDocumentFile ? 'border-green-400 bg-green-50' : 'border-blue-200 hover:border-blue-300'
+                    }`}>
+                      <div className="text-2xl mb-2">🚗</div>
+                      <div className="text-sm font-medium text-gray-700">RC Document</div>
+                      {(formData as any).rcDocumentFile ? (
+                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
+                      ) : (
+                        <div className="text-xs text-gray-400">Registration</div>
+                      )}
+                    </div>
                   </label>
                 </div>
-              </div>
 
-              {/* KYC Documents Row */}
-              <div className="grid grid-cols-3 gap-3">
                 {/* Aadhar Front */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition">
+                <div className="group">
                   <input
                     type="file"
                     id="aadharFront"
@@ -1539,14 +1564,164 @@ export default function NewPolicyPage() {
                       }
                     }}
                   />
-                  <label htmlFor="aadharFront" className="cursor-pointer">
-                    <div className="text-2xl mb-1">🪪</div>
-                    <div className="text-xs font-medium text-gray-700">Aadhar Front</div>
-                    {(formData as any).aadharFrontFile && (
-                      <div className="text-xs text-green-600 mt-1">✓ Done</div>
-                    )}
+                  <label htmlFor="aadharFront" className="cursor-pointer block">
+                    <div className={`relative bg-gradient-to-br from-orange-50 to-orange-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
+                      (formData as any).aadharFrontFile ? 'border-green-400 bg-green-50' : 'border-orange-200 hover:border-orange-300'
+                    }`}>
+                      <div className="text-2xl mb-2">🪪</div>
+                      <div className="text-sm font-medium text-gray-700">Aadhar Front</div>
+                      {(formData as any).aadharFrontFile ? (
+                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
+                      ) : (
+                        <div className="text-xs text-gray-400">Front side</div>
+                      )}
+                    </div>
                   </label>
                 </div>
+
+                {/* Aadhar Back */}
+                <div className="group">
+                  <input
+                    type="file"
+                    id="aadharBack"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, aadharBackFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="aadharBack" className="cursor-pointer block">
+                    <div className={`relative bg-gradient-to-br from-orange-50 to-orange-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
+                      (formData as any).aadharBackFile ? 'border-green-400 bg-green-50' : 'border-orange-200 hover:border-orange-300'
+                    }`}>
+                      <div className="text-2xl mb-2">🪪</div>
+                      <div className="text-sm font-medium text-gray-700">Aadhar Back</div>
+                      {(formData as any).aadharBackFile ? (
+                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
+                      ) : (
+                        <div className="text-xs text-gray-400">Back side</div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Second Row of Documents */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* PAN Card */}
+                <div className="group">
+                  <input
+                    type="file"
+                    id="panCard"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, panCardFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="panCard" className="cursor-pointer block">
+                    <div className={`relative bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
+                      (formData as any).panCardFile ? 'border-green-400 bg-green-50' : 'border-indigo-200 hover:border-indigo-300'
+                    }`}>
+                      <div className="text-2xl mb-2">🆔</div>
+                      <div className="text-sm font-medium text-gray-700">PAN Card</div>
+                      {(formData as any).panCardFile ? (
+                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
+                      ) : (
+                        <div className="text-xs text-gray-400">Tax ID</div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+
+                {/* Photo */}
+                <div className="group">
+                  <input
+                    type="file"
+                    id="photo"
+                    accept=".jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, photoFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="photo" className="cursor-pointer block">
+                    <div className={`relative bg-gradient-to-br from-green-50 to-green-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
+                      (formData as any).photoFile ? 'border-green-400 bg-green-50' : 'border-green-200 hover:border-green-300'
+                    }`}>
+                      <div className="text-2xl mb-2">📸</div>
+                      <div className="text-sm font-medium text-gray-700">Photo</div>
+                      {(formData as any).photoFile ? (
+                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
+                      ) : (
+                        <div className="text-xs text-gray-400">Passport size</div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+
+                {/* Cancel Cheque */}
+                <div className="group">
+                  <input
+                    type="file"
+                    id="cancelCheque"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, cancelChequeFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="cancelCheque" className="cursor-pointer block">
+                    <div className={`relative bg-gradient-to-br from-rose-50 to-rose-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
+                      (formData as any).cancelChequeFile ? 'border-green-400 bg-green-50' : 'border-rose-200 hover:border-rose-300'
+                    }`}>
+                      <div className="text-2xl mb-2">🏦</div>
+                      <div className="text-sm font-medium text-gray-700">Cancel Cheque</div>
+                      {(formData as any).cancelChequeFile ? (
+                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
+                      ) : (
+                        <div className="text-xs text-gray-400">Bank proof</div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-500 mt-4 text-center">Upload policy copy and KYC documents for record keeping</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Remarks Section */}
+                <div className="col-span-1 lg:col-span-2">
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <span className="text-purple-500 mr-2">📝</span>
+                      Remarks
+                    </h3>
+                    <textarea
+                      name="remarks"
+                      value={formData.remarks || ''}
+                      onChange={handleChange}
+                      placeholder="Add any additional notes or remarks..."
+                      rows={4}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                </div>
+              }
 
                 {/* Aadhar Back */}
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition">
@@ -1664,27 +1839,40 @@ export default function NewPolicyPage() {
               />
             </div>
 
-            {/* Submit */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading || !formData.clientId || !formData.companyId || !formData.policyNumber}
-                className="flex-1"
-              >
-                {loading ? 'Saving...' : 'Save Policy'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              {/* Action Buttons */}
+              <div className="sticky bottom-0 bg-white border-t pt-6 mt-8">
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                    className="flex-1 h-12 text-base font-medium border-2"
+                  >
+                    <span className="mr-2">←</span>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading || !formData.clientId || !formData.companyId || !formData.policyNumber}
+                    className="flex-1 h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg"
+                  >
+                    {loading ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Saving Policy...
+                      </>
+                    ) : (
+                      <>
+                        <span className="mr-2">💾</span>
+                        Save Policy
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Error display for Excel mode */}
