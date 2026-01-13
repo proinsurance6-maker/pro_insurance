@@ -263,6 +263,11 @@ export default function NewPolicyPage() {
           endDate: extractedData.endDate || prev.endDate,
           holderName: extractedData.holderName || prev.holderName,
           vehicleNumber: extractedData.vehicleNumber || prev.vehicleNumber,
+          // Motor-specific fields from OCR
+          motorPolicyType: extractedData.motorPolicyType || prev.motorPolicyType,
+          odPremium: extractedData.odPremium?.toString() || prev.odPremium,
+          tpPremium: extractedData.tpPremium?.toString() || prev.tpPremium,
+          netPremium: extractedData.netPremium?.toString() || prev.netPremium,
         }));
 
         // Try to match company
@@ -282,6 +287,10 @@ export default function NewPolicyPage() {
         if (extractedData.companyName) extractedFields.push('Company');
         if (extractedData.holderName) extractedFields.push('Holder Name');
         if (extractedData.premiumAmount) extractedFields.push('Premium');
+        if (extractedData.motorPolicyType) extractedFields.push('Motor Type');
+        if (extractedData.odPremium) extractedFields.push('OD Premium');
+        if (extractedData.tpPremium) extractedFields.push('TP Premium');
+        if (extractedData.netPremium) extractedFields.push('Net Premium');
         if (extractedData.startDate) extractedFields.push('Dates');
         
         setSuccess(`✅ Extracted: ${extractedFields.join(', ')}. Please verify details.`);

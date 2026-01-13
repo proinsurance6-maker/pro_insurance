@@ -13,8 +13,13 @@ interface ExtractedPolicyData {
   policyNumber: string | null;
   holderName: string | null;
   policyType: string | null;
+  motorPolicyType: string | null; // COMPREHENSIVE, OD_ONLY, TP_ONLY
   companyName: string | null;
   premiumAmount: number | null;
+  // Motor premium breakdown
+  odPremium: number | null;
+  tpPremium: number | null;
+  netPremium: number | null;
   sumAssured: number | null;
   startDate: string | null;
   endDate: string | null;
@@ -65,25 +70,40 @@ const extractWithOpenAI = async (
   mimeType: string
 ): Promise<ExtractedPolicyData> => {
 
-  const prompt = `You are an expert insurance document analyzer. Analyze this insurance policy document image and extract the following information.
+  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Analyze this insurance policy document image and extract the following information.
 
 Return ONLY a valid JSON object with these exact keys (use null if not found):
 {
   "policyNumber": "the policy number/ID",
   "holderName": "name of the policy holder/insured person",
   "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
+  "motorPolicyType": "for Motor Insurance only: COMPREHENSIVE (if both OD and TP), OD_ONLY (if only Own Damage), TP_ONLY (if only Third Party/Liability), else null",
   "companyName": "name of the insurance company",
-  "premiumAmount": numeric value of premium amount (no currency symbol),
-  "sumAssured": numeric value of sum assured/insured (no currency symbol),
+  "premiumAmount": numeric value of total/gross premium amount (no currency symbol),
+  "odPremium": numeric value of OD (Own Damage) premium for motor insurance (no currency symbol), null for non-motor,
+  "tpPremium": numeric value of TP (Third Party/Liability) premium for motor insurance (no currency symbol), null for non-motor,
+  "netPremium": numeric value of net premium (excluding GST/taxes) (no currency symbol),
+  "sumAssured": numeric value of sum assured/insured/IDV (no currency symbol),
   "startDate": "policy start date in YYYY-MM-DD format",
   "endDate": "policy end date/expiry date in YYYY-MM-DD format",
   "vehicleNumber": "vehicle registration number if motor insurance, else null",
   "planName": "name of the insurance plan/scheme if mentioned"
 }
 
-Important:
-- Extract dates and convert to YYYY-MM-DD format
+Important Instructions:
+- Extract dates and convert to YYYY-MM-DD format (Indian dates are usually DD/MM/YYYY or DD-MM-YYYY)
 - Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
+- For Motor Insurance:
+  * Look for "OD Premium", "Own Damage Premium", "OD" in premium breakdown
+  * Look for "TP Premium", "Third Party Premium", "Liability Premium", "TP" in premium breakdown
+  * Look for "Net Premium", "Basic Premium" (amount before GST/taxes)
+  * Determine motorPolicyType: 
+    - If both OD and TP premiums exist → COMPREHENSIVE
+    - If only OD premium → OD_ONLY  
+    - If only TP/Liability premium → TP_ONLY
+    - For "Package Policy" or "Comprehensive" → COMPREHENSIVE
+    - For "Standalone OD" → OD_ONLY
+    - For "Standalone TP" or "Act Only" or "Liability Only" → TP_ONLY
 - For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other
 - Be accurate - only extract information that is clearly visible in the document`;
 
@@ -132,8 +152,12 @@ Important:
       policyNumber: extracted.policyNumber || null,
       holderName: extracted.holderName || null,
       policyType: extracted.policyType || null,
+      motorPolicyType: extracted.motorPolicyType || null,
       companyName: extracted.companyName || null,
       premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
+      odPremium: extracted.odPremium ? Number(extracted.odPremium) : null,
+      tpPremium: extracted.tpPremium ? Number(extracted.tpPremium) : null,
+      netPremium: extracted.netPremium ? Number(extracted.netPremium) : null,
       sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
       startDate: extracted.startDate || null,
       endDate: extracted.endDate || null,
@@ -154,25 +178,40 @@ const extractWithGemini = async (
   mimeType: string
 ): Promise<ExtractedPolicyData> => {
   
-  const prompt = `You are an expert insurance document analyzer. Analyze this insurance policy document image and extract the following information.
+  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Analyze this insurance policy document image and extract the following information.
 
 Return ONLY a valid JSON object with these exact keys (use null if not found):
 {
   "policyNumber": "the policy number/ID",
   "holderName": "name of the policy holder/insured person",
   "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
+  "motorPolicyType": "for Motor Insurance only: COMPREHENSIVE (if both OD and TP), OD_ONLY (if only Own Damage), TP_ONLY (if only Third Party/Liability), else null",
   "companyName": "name of the insurance company",
-  "premiumAmount": numeric value of premium amount (no currency symbol),
-  "sumAssured": numeric value of sum assured/insured (no currency symbol),
+  "premiumAmount": numeric value of total/gross premium amount (no currency symbol),
+  "odPremium": numeric value of OD (Own Damage) premium for motor insurance (no currency symbol), null for non-motor,
+  "tpPremium": numeric value of TP (Third Party/Liability) premium for motor insurance (no currency symbol), null for non-motor,
+  "netPremium": numeric value of net premium (excluding GST/taxes) (no currency symbol),
+  "sumAssured": numeric value of sum assured/insured/IDV (no currency symbol),
   "startDate": "policy start date in YYYY-MM-DD format",
   "endDate": "policy end date/expiry date in YYYY-MM-DD format",
   "vehicleNumber": "vehicle registration number if motor insurance, else null",
   "planName": "name of the insurance plan/scheme if mentioned"
 }
 
-Important:
-- Extract dates and convert to YYYY-MM-DD format
+Important Instructions:
+- Extract dates and convert to YYYY-MM-DD format (Indian dates are usually DD/MM/YYYY or DD-MM-YYYY)
 - Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
+- For Motor Insurance:
+  * Look for "OD Premium", "Own Damage Premium", "OD" in premium breakdown
+  * Look for "TP Premium", "Third Party Premium", "Liability Premium", "TP" in premium breakdown
+  * Look for "Net Premium", "Basic Premium" (amount before GST/taxes)
+  * Determine motorPolicyType: 
+    - If both OD and TP premiums exist → COMPREHENSIVE
+    - If only OD premium → OD_ONLY  
+    - If only TP/Liability premium → TP_ONLY
+    - For "Package Policy" or "Comprehensive" → COMPREHENSIVE
+    - For "Standalone OD" → OD_ONLY
+    - For "Standalone TP" or "Act Only" or "Liability Only" → TP_ONLY
 - For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other
 - Be accurate - only extract information that is clearly visible in the document`;
 
@@ -205,8 +244,12 @@ Important:
       policyNumber: extracted.policyNumber || null,
       holderName: extracted.holderName || null,
       policyType: extracted.policyType || null,
+      motorPolicyType: extracted.motorPolicyType || null,
       companyName: extracted.companyName || null,
       premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
+      odPremium: extracted.odPremium ? Number(extracted.odPremium) : null,
+      tpPremium: extracted.tpPremium ? Number(extracted.tpPremium) : null,
+      netPremium: extracted.netPremium ? Number(extracted.netPremium) : null,
       sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
       startDate: extracted.startDate || null,
       endDate: extracted.endDate || null,
@@ -268,7 +311,7 @@ export const extractPolicyFromText = async (
 
 const extractTextWithOpenAI = async (pdfText: string): Promise<ExtractedPolicyData> => {
 
-  const prompt = `You are an expert insurance document analyzer. Analyze this insurance policy document text and extract the following information.
+  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Analyze this insurance policy document text and extract the following information.
 
 Document Text:
 ${pdfText.substring(0, 4000)} 
@@ -278,19 +321,25 @@ Return ONLY a valid JSON object with these exact keys (use null if not found):
   "policyNumber": "the policy number/ID",
   "holderName": "name of the policy holder/insured person",
   "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
+  "motorPolicyType": "for Motor Insurance only: COMPREHENSIVE (if both OD and TP), OD_ONLY (if only Own Damage), TP_ONLY (if only Third Party/Liability), else null",
   "companyName": "name of the insurance company",
-  "premiumAmount": numeric value of premium amount (no currency symbol),
-  "sumAssured": numeric value of sum assured/insured (no currency symbol),
+  "premiumAmount": numeric value of total/gross premium amount (no currency symbol),
+  "odPremium": numeric value of OD (Own Damage) premium for motor insurance (no currency symbol), null for non-motor,
+  "tpPremium": numeric value of TP (Third Party/Liability) premium for motor insurance (no currency symbol), null for non-motor,
+  "netPremium": numeric value of net premium (excluding GST/taxes) (no currency symbol),
+  "sumAssured": numeric value of sum assured/insured/IDV (no currency symbol),
   "startDate": "policy start date in YYYY-MM-DD format",
   "endDate": "policy end date/expiry date in YYYY-MM-DD format",
   "vehicleNumber": "vehicle registration number if motor insurance, else null",
   "planName": "name of the insurance plan/scheme if mentioned"
 }
 
-Important:
-- Extract dates and convert to YYYY-MM-DD format
+Important Instructions:
+- Extract dates and convert to YYYY-MM-DD format (Indian dates are usually DD/MM/YYYY)
 - Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
-- For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other
+- For Motor Insurance, look for OD Premium, TP Premium, Net Premium in the breakdown
+- Determine motorPolicyType based on premiums present or policy type mentioned
+- For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, etc.
 - Be accurate - only extract information that is clearly visible in the text`;
 
   if (!openai) {
@@ -324,8 +373,12 @@ Important:
       policyNumber: extracted.policyNumber || null,
       holderName: extracted.holderName || null,
       policyType: extracted.policyType || null,
+      motorPolicyType: extracted.motorPolicyType || null,
       companyName: extracted.companyName || null,
       premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
+      odPremium: extracted.odPremium ? Number(extracted.odPremium) : null,
+      tpPremium: extracted.tpPremium ? Number(extracted.tpPremium) : null,
+      netPremium: extracted.netPremium ? Number(extracted.netPremium) : null,
       sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
       startDate: extracted.startDate || null,
       endDate: extracted.endDate || null,
@@ -339,7 +392,7 @@ Important:
 };
 
 const extractTextWithGemini = async (pdfText: string): Promise<ExtractedPolicyData> => {
-  const prompt = `You are an expert insurance document analyzer. Analyze this insurance policy document text and extract the following information.
+  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Analyze this insurance policy document text and extract the following information.
 
 Document Text:
 ${pdfText.substring(0, 4000)} 
@@ -349,19 +402,24 @@ Return ONLY a valid JSON object with these exact keys (use null if not found):
   "policyNumber": "the policy number/ID",
   "holderName": "name of the policy holder/insured person",
   "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
+  "motorPolicyType": "for Motor Insurance only: COMPREHENSIVE (if both OD and TP), OD_ONLY (if only Own Damage), TP_ONLY (if only Third Party/Liability), else null",
   "companyName": "name of the insurance company",
-  "premiumAmount": numeric value of premium amount (no currency symbol),
-  "sumAssured": numeric value of sum assured/insured (no currency symbol),
+  "premiumAmount": numeric value of total/gross premium amount (no currency symbol),
+  "odPremium": numeric value of OD (Own Damage) premium for motor insurance (no currency symbol), null for non-motor,
+  "tpPremium": numeric value of TP (Third Party/Liability) premium for motor insurance (no currency symbol), null for non-motor,
+  "netPremium": numeric value of net premium (excluding GST/taxes) (no currency symbol),
+  "sumAssured": numeric value of sum assured/insured/IDV (no currency symbol),
   "startDate": "policy start date in YYYY-MM-DD format",
   "endDate": "policy end date/expiry date in YYYY-MM-DD format",
   "vehicleNumber": "vehicle registration number if motor insurance, else null",
   "planName": "name of the insurance plan/scheme if mentioned"
 }
 
-Important:
-- Extract dates and convert to YYYY-MM-DD format
+Important Instructions:
+- Extract dates and convert to YYYY-MM-DD format (Indian dates are usually DD/MM/YYYY)
 - Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
-- For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other`;
+- For Motor Insurance, look for OD Premium, TP Premium, Net Premium in the breakdown
+- Determine motorPolicyType based on premiums present or policy type mentioned`;
 
   try {
     const model = gemini!.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -381,8 +439,12 @@ Important:
       policyNumber: extracted.policyNumber || null,
       holderName: extracted.holderName || null,
       policyType: extracted.policyType || null,
+      motorPolicyType: extracted.motorPolicyType || null,
       companyName: extracted.companyName || null,
       premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
+      odPremium: extracted.odPremium ? Number(extracted.odPremium) : null,
+      tpPremium: extracted.tpPremium ? Number(extracted.tpPremium) : null,
+      netPremium: extracted.netPremium ? Number(extracted.netPremium) : null,
       sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
       startDate: extracted.startDate || null,
       endDate: extracted.endDate || null,
