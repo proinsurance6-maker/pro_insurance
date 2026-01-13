@@ -70,42 +70,38 @@ const extractWithOpenAI = async (
   mimeType: string
 ): Promise<ExtractedPolicyData> => {
 
-  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Analyze this insurance policy document image and extract the following information.
+  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Carefully analyze ALL pages of this insurance policy document and extract EVERY detail.
+
+IMPORTANT: Scan the ENTIRE document thoroughly. Look for tables, schedules, and all sections.
 
 Return ONLY a valid JSON object with these exact keys (use null if not found):
 {
-  "policyNumber": "the policy number/ID",
-  "holderName": "name of the policy holder/insured person",
-  "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
-  "motorPolicyType": "for Motor Insurance only: COMPREHENSIVE (if both OD and TP), OD_ONLY (if only Own Damage), TP_ONLY (if only Third Party/Liability), else null",
-  "companyName": "name of the insurance company",
-  "premiumAmount": numeric value of total/gross premium amount (no currency symbol),
-  "odPremium": numeric value of OD (Own Damage) premium for motor insurance (no currency symbol), null for non-motor,
-  "tpPremium": numeric value of TP (Third Party/Liability) premium for motor insurance (no currency symbol), null for non-motor,
-  "netPremium": numeric value of net premium (excluding GST/taxes) (no currency symbol),
-  "sumAssured": numeric value of sum assured/insured/IDV (no currency symbol),
-  "startDate": "policy start date in YYYY-MM-DD format",
-  "endDate": "policy end date/expiry date in YYYY-MM-DD format",
-  "vehicleNumber": "vehicle registration number if motor insurance, else null",
-  "planName": "name of the insurance plan/scheme if mentioned"
+  "policyNumber": "the policy number/ID (look for 'Policy No', 'Policy Number', 'Certificate No')",
+  "holderName": "name of the policy holder/insured person (look for 'Name', 'Insured Name', 'Proposer')",
+  "policyType": "type of insurance - return 'Motor Insurance' for any vehicle/car/bike policy",
+  "motorPolicyType": "MUST detect: 'OD_ONLY' for Standalone Own Damage, 'TP_ONLY' for Standalone Third Party/Liability Only, 'COMPREHENSIVE' for Package/Comprehensive with both OD and TP",
+  "companyName": "FULL insurance company name (e.g., 'TATA AIG General Insurance', 'ICICI Lombard', 'Bajaj Allianz')",
+  "premiumAmount": total premium amount payable (look for 'Total Premium', 'Total Amount Payable', 'Gross Premium'),
+  "odPremium": OD/Own Damage premium amount (look for 'Total Own Damage Premium', 'OD Premium', 'Section A' premium),
+  "tpPremium": TP/Third Party/Liability premium amount (look for 'TP Premium', 'Third Party Premium', 'Liability Premium'),
+  "netPremium": Net premium before GST (look for 'Net Premium', 'Premium before tax', usually OD+TP or basic premium),
+  "sumAssured": IDV or Sum Insured value (look for 'IDV', 'Insured Declared Value', 'Sum Insured', 'Sum Assured'),
+  "startDate": "policy start date in YYYY-MM-DD format (look for 'Valid From', 'Start Date', 'Period From')",
+  "endDate": "policy end date in YYYY-MM-DD format (look for 'Valid Till', 'Expiry Date', 'Valid Upto')",
+  "vehicleNumber": "vehicle registration number (look for 'Registration No', 'Reg No', 'Vehicle No' - format like 'UP 16 EC 5046' or 'MH01AB1234')",
+  "planName": "policy plan name if mentioned"
 }
 
-Important Instructions:
-- Extract dates and convert to YYYY-MM-DD format (Indian dates are usually DD/MM/YYYY or DD-MM-YYYY)
-- Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
-- For Motor Insurance:
-  * Look for "OD Premium", "Own Damage Premium", "OD" in premium breakdown
-  * Look for "TP Premium", "Third Party Premium", "Liability Premium", "TP" in premium breakdown
-  * Look for "Net Premium", "Basic Premium" (amount before GST/taxes)
-  * Determine motorPolicyType: 
-    - If both OD and TP premiums exist → COMPREHENSIVE
-    - If only OD premium → OD_ONLY  
-    - If only TP/Liability premium → TP_ONLY
-    - For "Package Policy" or "Comprehensive" → COMPREHENSIVE
-    - For "Standalone OD" → OD_ONLY
-    - For "Standalone TP" or "Act Only" or "Liability Only" → TP_ONLY
-- For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other
-- Be accurate - only extract information that is clearly visible in the document`;
+CRITICAL EXTRACTION RULES:
+1. For VEHICLE NUMBER: Look in 'Vehicle Details' section. Format is usually STATE CODE + DISTRICT + LETTERS + NUMBERS (e.g., UP 16 EC 5046)
+2. For OD PREMIUM: In Schedule of Premium, find 'Total Own Damage Premium' or 'Section A' total
+3. For NET PREMIUM: Find 'Net Premium (A+B)' or 'Premium before GST/Tax'
+4. For COMPANY NAME: Look at header/logo area - extract FULL name like 'TATA AIG General Insurance Company'
+5. For DATES: Convert DD/MM/YYYY to YYYY-MM-DD format
+6. For motorPolicyType: If title says 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY, 'Comprehensive/Package' → COMPREHENSIVE
+7. Remove ALL currency symbols (₹, Rs, INR) - return ONLY numbers
+
+Be thorough - scan every table and section in the document.`;
 
   if (!openai) {
     throw new Error('OpenAI client not initialized');
@@ -178,42 +174,38 @@ const extractWithGemini = async (
   mimeType: string
 ): Promise<ExtractedPolicyData> => {
   
-  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Analyze this insurance policy document image and extract the following information.
+  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Carefully analyze ALL pages of this insurance policy document and extract EVERY detail.
+
+IMPORTANT: Scan the ENTIRE document thoroughly. Look for tables, schedules, and all sections.
 
 Return ONLY a valid JSON object with these exact keys (use null if not found):
 {
-  "policyNumber": "the policy number/ID",
-  "holderName": "name of the policy holder/insured person",
-  "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
-  "motorPolicyType": "for Motor Insurance only: COMPREHENSIVE (if both OD and TP), OD_ONLY (if only Own Damage), TP_ONLY (if only Third Party/Liability), else null",
-  "companyName": "name of the insurance company",
-  "premiumAmount": numeric value of total/gross premium amount (no currency symbol),
-  "odPremium": numeric value of OD (Own Damage) premium for motor insurance (no currency symbol), null for non-motor,
-  "tpPremium": numeric value of TP (Third Party/Liability) premium for motor insurance (no currency symbol), null for non-motor,
-  "netPremium": numeric value of net premium (excluding GST/taxes) (no currency symbol),
-  "sumAssured": numeric value of sum assured/insured/IDV (no currency symbol),
-  "startDate": "policy start date in YYYY-MM-DD format",
-  "endDate": "policy end date/expiry date in YYYY-MM-DD format",
-  "vehicleNumber": "vehicle registration number if motor insurance, else null",
-  "planName": "name of the insurance plan/scheme if mentioned"
+  "policyNumber": "the policy number/ID (look for 'Policy No', 'Policy Number', 'Certificate No')",
+  "holderName": "name of the policy holder/insured person (look for 'Name', 'Insured Name', 'Proposer')",
+  "policyType": "type of insurance - return 'Motor Insurance' for any vehicle/car/bike policy",
+  "motorPolicyType": "MUST detect: 'OD_ONLY' for Standalone Own Damage, 'TP_ONLY' for Standalone Third Party/Liability Only, 'COMPREHENSIVE' for Package/Comprehensive with both OD and TP",
+  "companyName": "FULL insurance company name (e.g., 'TATA AIG General Insurance', 'ICICI Lombard', 'Bajaj Allianz')",
+  "premiumAmount": total premium amount payable (look for 'Total Premium', 'Total Amount Payable', 'Gross Premium'),
+  "odPremium": OD/Own Damage premium amount (look for 'Total Own Damage Premium', 'OD Premium', 'Section A' premium),
+  "tpPremium": TP/Third Party/Liability premium amount (look for 'TP Premium', 'Third Party Premium', 'Liability Premium'),
+  "netPremium": Net premium before GST (look for 'Net Premium', 'Premium before tax', usually OD+TP or basic premium),
+  "sumAssured": IDV or Sum Insured value (look for 'IDV', 'Insured Declared Value', 'Sum Insured', 'Sum Assured'),
+  "startDate": "policy start date in YYYY-MM-DD format (look for 'Valid From', 'Start Date', 'Period From')",
+  "endDate": "policy end date in YYYY-MM-DD format (look for 'Valid Till', 'Expiry Date', 'Valid Upto')",
+  "vehicleNumber": "vehicle registration number (look for 'Registration No', 'Reg No', 'Vehicle No' - format like 'UP 16 EC 5046' or 'MH01AB1234')",
+  "planName": "policy plan name if mentioned"
 }
 
-Important Instructions:
-- Extract dates and convert to YYYY-MM-DD format (Indian dates are usually DD/MM/YYYY or DD-MM-YYYY)
-- Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
-- For Motor Insurance:
-  * Look for "OD Premium", "Own Damage Premium", "OD" in premium breakdown
-  * Look for "TP Premium", "Third Party Premium", "Liability Premium", "TP" in premium breakdown
-  * Look for "Net Premium", "Basic Premium" (amount before GST/taxes)
-  * Determine motorPolicyType: 
-    - If both OD and TP premiums exist → COMPREHENSIVE
-    - If only OD premium → OD_ONLY  
-    - If only TP/Liability premium → TP_ONLY
-    - For "Package Policy" or "Comprehensive" → COMPREHENSIVE
-    - For "Standalone OD" → OD_ONLY
-    - For "Standalone TP" or "Act Only" or "Liability Only" → TP_ONLY
-- For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, Term Insurance, ULIP, Endowment, Money Back, Pension Plan, Child Plan, Travel Insurance, Home Insurance, or Other
-- Be accurate - only extract information that is clearly visible in the document`;
+CRITICAL EXTRACTION RULES:
+1. For VEHICLE NUMBER: Look in 'Vehicle Details' section. Format is usually STATE CODE + DISTRICT + LETTERS + NUMBERS (e.g., UP 16 EC 5046)
+2. For OD PREMIUM: In Schedule of Premium, find 'Total Own Damage Premium' or 'Section A' total
+3. For NET PREMIUM: Find 'Net Premium (A+B)' or 'Premium before GST/Tax'
+4. For COMPANY NAME: Look at header/logo area - extract FULL name like 'TATA AIG General Insurance Company'
+5. For DATES: Convert DD/MM/YYYY to YYYY-MM-DD format
+6. For motorPolicyType: If title says 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY, 'Comprehensive/Package' → COMPREHENSIVE
+7. Remove ALL currency symbols (₹, Rs, INR) - return ONLY numbers
+
+Be thorough - scan every table and section in the document.`;
 
   try {
     const model = gemini!.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -311,36 +303,36 @@ export const extractPolicyFromText = async (
 
 const extractTextWithOpenAI = async (pdfText: string): Promise<ExtractedPolicyData> => {
 
-  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Analyze this insurance policy document text and extract the following information.
+  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Carefully analyze this insurance policy document text and extract ALL details.
 
 Document Text:
-${pdfText.substring(0, 4000)} 
+${pdfText.substring(0, 8000)} 
 
 Return ONLY a valid JSON object with these exact keys (use null if not found):
 {
-  "policyNumber": "the policy number/ID",
+  "policyNumber": "the policy number/ID (look for 'Policy No', 'Policy Number', 'Certificate No')",
   "holderName": "name of the policy holder/insured person",
-  "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
-  "motorPolicyType": "for Motor Insurance only: COMPREHENSIVE (if both OD and TP), OD_ONLY (if only Own Damage), TP_ONLY (if only Third Party/Liability), else null",
-  "companyName": "name of the insurance company",
-  "premiumAmount": numeric value of total/gross premium amount (no currency symbol),
-  "odPremium": numeric value of OD (Own Damage) premium for motor insurance (no currency symbol), null for non-motor,
-  "tpPremium": numeric value of TP (Third Party/Liability) premium for motor insurance (no currency symbol), null for non-motor,
-  "netPremium": numeric value of net premium (excluding GST/taxes) (no currency symbol),
-  "sumAssured": numeric value of sum assured/insured/IDV (no currency symbol),
-  "startDate": "policy start date in YYYY-MM-DD format",
-  "endDate": "policy end date/expiry date in YYYY-MM-DD format",
-  "vehicleNumber": "vehicle registration number if motor insurance, else null",
-  "planName": "name of the insurance plan/scheme if mentioned"
+  "policyType": "return 'Motor Insurance' for any vehicle/car/bike policy",
+  "motorPolicyType": "'OD_ONLY' for Standalone Own Damage, 'TP_ONLY' for Third Party Only, 'COMPREHENSIVE' for Package/Comprehensive",
+  "companyName": "FULL company name (e.g., 'TATA AIG General Insurance Company Limited')",
+  "premiumAmount": total premium payable (Total Amount Payable, Gross Premium),
+  "odPremium": OD/Own Damage premium (Total Own Damage Premium, Section A total),
+  "tpPremium": TP/Third Party premium (TP Premium, Liability Premium),
+  "netPremium": Net premium before GST (Net Premium A+B, Premium before tax),
+  "sumAssured": IDV or Sum Insured value,
+  "startDate": "start date in YYYY-MM-DD format",
+  "endDate": "end date in YYYY-MM-DD format",
+  "vehicleNumber": "Registration No like 'UP 16 EC 5046'",
+  "planName": "plan name if mentioned"
 }
 
-Important Instructions:
-- Extract dates and convert to YYYY-MM-DD format (Indian dates are usually DD/MM/YYYY)
-- Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
-- For Motor Insurance, look for OD Premium, TP Premium, Net Premium in the breakdown
-- Determine motorPolicyType based on premiums present or policy type mentioned
-- For policy type, standardize to: Life Insurance, Health Insurance, Motor Insurance, etc.
-- Be accurate - only extract information that is clearly visible in the text`;
+EXTRACTION RULES:
+1. VEHICLE NUMBER: Find 'Registration No' - format STATE+DISTRICT+LETTERS+NUMBERS (UP 16 EC 5046)
+2. OD PREMIUM: Find 'Total Own Damage Premium' amount in Schedule of Premium
+3. NET PREMIUM: Find 'Net Premium (A+B)' or total before GST
+4. Convert DD/MM/YYYY dates to YYYY-MM-DD
+5. Remove ₹, Rs, INR from amounts
+6. 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY`;
 
   if (!openai) {
     throw new Error('OpenAI client not initialized');
@@ -392,34 +384,36 @@ Important Instructions:
 };
 
 const extractTextWithGemini = async (pdfText: string): Promise<ExtractedPolicyData> => {
-  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Analyze this insurance policy document text and extract the following information.
+  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Carefully analyze this insurance policy document text and extract ALL details.
 
 Document Text:
-${pdfText.substring(0, 4000)} 
+${pdfText.substring(0, 8000)} 
 
 Return ONLY a valid JSON object with these exact keys (use null if not found):
 {
-  "policyNumber": "the policy number/ID",
+  "policyNumber": "the policy number/ID (look for 'Policy No', 'Policy Number', 'Certificate No')",
   "holderName": "name of the policy holder/insured person",
-  "policyType": "type of insurance (Life, Health, Motor, Term, ULIP, etc.)",
-  "motorPolicyType": "for Motor Insurance only: COMPREHENSIVE (if both OD and TP), OD_ONLY (if only Own Damage), TP_ONLY (if only Third Party/Liability), else null",
-  "companyName": "name of the insurance company",
-  "premiumAmount": numeric value of total/gross premium amount (no currency symbol),
-  "odPremium": numeric value of OD (Own Damage) premium for motor insurance (no currency symbol), null for non-motor,
-  "tpPremium": numeric value of TP (Third Party/Liability) premium for motor insurance (no currency symbol), null for non-motor,
-  "netPremium": numeric value of net premium (excluding GST/taxes) (no currency symbol),
-  "sumAssured": numeric value of sum assured/insured/IDV (no currency symbol),
-  "startDate": "policy start date in YYYY-MM-DD format",
-  "endDate": "policy end date/expiry date in YYYY-MM-DD format",
-  "vehicleNumber": "vehicle registration number if motor insurance, else null",
-  "planName": "name of the insurance plan/scheme if mentioned"
+  "policyType": "return 'Motor Insurance' for any vehicle/car/bike policy",
+  "motorPolicyType": "'OD_ONLY' for Standalone Own Damage, 'TP_ONLY' for Third Party Only, 'COMPREHENSIVE' for Package/Comprehensive",
+  "companyName": "FULL company name (e.g., 'TATA AIG General Insurance Company Limited')",
+  "premiumAmount": total premium payable (Total Amount Payable, Gross Premium),
+  "odPremium": OD/Own Damage premium (Total Own Damage Premium, Section A total),
+  "tpPremium": TP/Third Party premium (TP Premium, Liability Premium),
+  "netPremium": Net premium before GST (Net Premium A+B, Premium before tax),
+  "sumAssured": IDV or Sum Insured value,
+  "startDate": "start date in YYYY-MM-DD format",
+  "endDate": "end date in YYYY-MM-DD format",
+  "vehicleNumber": "Registration No like 'UP 16 EC 5046'",
+  "planName": "plan name if mentioned"
 }
 
-Important Instructions:
-- Extract dates and convert to YYYY-MM-DD format (Indian dates are usually DD/MM/YYYY)
-- Remove currency symbols (₹, Rs, INR) from amounts, return only numbers
-- For Motor Insurance, look for OD Premium, TP Premium, Net Premium in the breakdown
-- Determine motorPolicyType based on premiums present or policy type mentioned`;
+EXTRACTION RULES:
+1. VEHICLE NUMBER: Find 'Registration No' - format STATE+DISTRICT+LETTERS+NUMBERS (UP 16 EC 5046)
+2. OD PREMIUM: Find 'Total Own Damage Premium' amount in Schedule of Premium
+3. NET PREMIUM: Find 'Net Premium (A+B)' or total before GST
+4. Convert DD/MM/YYYY dates to YYYY-MM-DD
+5. Remove ₹, Rs, INR from amounts
+6. 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY`;
 
   try {
     const model = gemini!.getGenerativeModel({ model: 'gemini-1.5-flash' });
