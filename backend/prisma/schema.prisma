@@ -132,6 +132,8 @@ model SubAgent {
   panNumber            String?  @map("pan_number")
   commissionPercentage Decimal  @default(50) @map("commission_percentage") @db.Decimal(5, 2)
   ledgerBalance        Decimal  @default(0) @map("ledger_balance") @db.Decimal(12, 2) // Negative means owes to agent
+  kycStatus            String   @default("PENDING") @map("kyc_status") // PENDING, SUBMITTED, APPROVED, REJECTED
+  kycDocuments         String?  @map("kyc_documents") // JSON string of uploaded documents
   isActive             Boolean  @default(true) @map("is_active")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")

@@ -101,6 +101,11 @@ export const agentAPI = {
   
   deleteSubAgent: (id: string) =>
     api.delete(`/agent/sub-agents/${id}`),
+
+  uploadSubAgentKyc: (id: string, formData: FormData) =>
+    api.post(`/agent/sub-agents/${id}/kyc`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
 };
 
 // ==========================================

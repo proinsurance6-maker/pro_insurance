@@ -127,16 +127,42 @@ export const getSubAgents = async (req: Request, res: Response, next: NextFuncti
     const agentId = (req as any).user.userId;
     const subAgents = await prisma.subAgent.findMany({
       where: { agentId },
+      include: {
+        _count: {
+          select: {
+            policies: true
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
 
+    // Get client counts separately as SubAgent doesn't directly relate to clients
+    const subAgentsWithCounts = await Promise.all(
+      subAgents.map(async (subAgent) => {
+        const clientCount = await prisma.client.count({
+          where: { 
+            policies: { 
+              some: { subAgentId: subAgent.id } 
+            } 
+          }
+        });
+
+        return {
+          ...subAgent,
+          commissionPercentage: subAgent.commissionPercentage.toString(),
+          ledgerBalance: subAgent.ledgerBalance.toString(),
+          _count: {
+            policies: subAgent._count.policies,
+            clients: clientCount
+          }
+        };
+      })
+    );
+
     res.json({
       success: true,
-      data: subAgents.map(s => ({
-        ...s,
-        commissionPercentage: s.commissionPercentage.toString(),
-        ledgerBalance: s.ledgerBalance.toString()
-      }))
+      data: subAgentsWithCounts
     });
   } catch (error) {
     next(error);
@@ -251,6 +277,54 @@ export const deleteSubAgent = async (req: Request, res: Response, next: NextFunc
     res.json({
       success: true,
       message: 'Sub-agent deactivated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// UPLOAD SUB-AGENT KYC DOCUMENTS
+// ==========================================
+export const uploadSubAgentKyc = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const { id } = req.params;
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+      throw new AppError('No files uploaded', 400, 'NO_FILES');
+    }
+
+    const subAgent = await prisma.subAgent.findFirst({
+      where: { id, agentId }
+    });
+
+    if (!subAgent) {
+      throw new AppError('Sub-agent not found', 404, 'NOT_FOUND');
+    }
+
+    // For now, just store file information in database
+    // In production, you would upload to cloud storage
+    const kycDocuments = files.map(file => ({
+      fileName: file.originalname,
+      fileType: file.mimetype,
+      fileSize: file.size,
+      uploadDate: new Date()
+    }));
+
+    await prisma.subAgent.update({
+      where: { id },
+      data: { 
+        kycStatus: 'SUBMITTED',
+        kycDocuments: JSON.stringify(kycDocuments)
+      }
+    });
+
+    res.json({
+      success: true,
+      data: { uploadedFiles: kycDocuments.length },
+      message: 'KYC documents uploaded successfully'
     });
   } catch (error) {
     next(error);
