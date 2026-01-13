@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
-import { uploadSubAgentKyc } from '../services/cloudinary.service';
+import { uploadSubAgentKyc as uploadKycToCloudinary } from '../services/cloudinary.service';
 
 // ==========================================
 // GET AGENT DASHBOARD STATS
@@ -306,7 +306,7 @@ export const uploadSubAgentKyc = async (req: Request, res: Response, next: NextF
     }
 
     // Upload to Cloudinary
-    const uploadedDocuments = await uploadSubAgentKyc(files, subAgent.subAgentCode);
+    const uploadedDocuments = await uploadKycToCloudinary(files, subAgent.subAgentCode);
 
     // Update sub-agent with KYC info
     await prisma.subAgent.update({

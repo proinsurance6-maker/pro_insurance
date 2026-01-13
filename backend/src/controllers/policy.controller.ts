@@ -315,10 +315,10 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
             data: Object.entries(uploadedDocuments).map(([type, doc]: [string, any]) => ({
               policyId: policy.id,
               agentId,
-              documentType: type.toUpperCase(),
-              fileName: doc.original_filename,
-              fileUrl: doc.secure_url,
-              cloudinaryPublicId: doc.public_id,
+              documentType: type.toUpperCase() as any,
+              documentName: doc.original_filename,
+              documentUrl: doc.secure_url,
+              mimeType: doc.resource_type === 'raw' ? 'application/pdf' : `image/${doc.format}`,
               fileSize: doc.bytes,
               uploadedAt: new Date()
             }))
