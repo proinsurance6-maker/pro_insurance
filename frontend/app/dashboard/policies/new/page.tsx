@@ -1045,14 +1045,12 @@ export default function NewPolicyPage() {
               </div>
             </div>
 
-            {/* Sub-Agent / Broker Assignment */}
+            {/* Broker Selection */}
             <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Broker & Sub-Agent (Optional)</h3>
-              
-              {/* Broker Selection */}
+              <h3 className="font-medium text-gray-900 border-b pb-2">Broker (Optional)</h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Broker (PolicyBazaar, MitPro, Probus, etc.)
+                  Select Broker (PolicyBazaar, MitPro, Probus, etc.)
                 </label>
                 {!showNewBrokerForm ? (
                   <div>
@@ -1112,7 +1110,38 @@ export default function NewPolicyPage() {
                   </div>
                 )}
               </div>
+            </div>
 
+            {/* Sub-Agent Assignment */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-gray-900 border-b pb-2">Sub-Agent (Optional)</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign Sub-Agent
+                </label>
+                <select
+                  name="subAgentId"
+                  value={formData.subAgentId}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">No Sub-Agent (Direct)</option>
+                  {subAgents.map((sa) => (
+                    <option key={sa.id} value={sa.id}>
+                      {sa.name} ({sa.subAgentCode})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  <Link href="/dashboard/sub-agents" className="text-blue-600 hover:underline">Manage Sub-Agents</Link>
+                </p>
+              </div>
+            </div>
+
+            {/* Commission Section */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-gray-900 border-b pb-2">Commission Details</h3>
+              
               {/* Broker Commission (Manual Input) */}
               {formData.brokerId && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -1129,60 +1158,10 @@ export default function NewPolicyPage() {
                     className="bg-white"
                   />
                   <p className="text-xs text-purple-600 mt-1">
-                    Enter the total commission you will receive from the broker
+                    Total commission you will receive from {brokers.find(b => b.id === formData.brokerId)?.name || 'broker'}
                   </p>
                 </div>
               )}
-
-              {/* Sub-Agent Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assign Sub-Agent
-                </label>
-                <select
-                  name="subAgentId"
-                  value={formData.subAgentId}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">No Sub-Agent (Direct)</option>
-                  {subAgents.map((sa) => (
-                    <option key={sa.id} value={sa.id}>
-                      {sa.name} ({sa.subAgentCode}) - {sa.commissionPercentage}% default share
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  <Link href="/dashboard/sub-agents" className="text-blue-600 hover:underline">Manage Sub-Agents</Link>
-                </p>
-              </div>
-
-              {/* Agent/SubAgent Commission Split */}
-              {formData.subAgentId && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <label className="block text-sm font-medium text-orange-800 mb-2">
-                    Agent का हिस्सा (%)
-                  </label>
-                  <Input
-                    type="number"
-                    name="agentSharePercent"
-                    value={formData.agentSharePercent}
-                    onChange={handleChange}
-                    placeholder={`Default: ${100 - parseFloat(subAgents.find(s => s.id === formData.subAgentId)?.commissionPercentage || '50')}%`}
-                    step="0.01"
-                    max="100"
-                    className="bg-white"
-                  />
-                  <p className="text-xs text-orange-600 mt-1">
-                    Agent keeps this %, rest ({100 - (parseFloat(formData.agentSharePercent) || (100 - parseFloat(subAgents.find(s => s.id === formData.subAgentId)?.commissionPercentage || '50')))}%) goes to Sub-Agent
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Commission Section */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Commission Details</h3>
               
               {/* Motor Commission Rates */}
               {formData.policyType === 'Motor Insurance' && formData.motorPolicyType && (
@@ -1267,8 +1246,30 @@ export default function NewPolicyPage() {
                 </div>
               )}
 
+              {/* Agent/SubAgent Commission Split */}
+              {formData.subAgentId && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <label className="block text-sm font-medium text-orange-800 mb-2">
+                    Agent का हिस्सा (%) - Commission Split
+                  </label>
+                  <Input
+                    type="number"
+                    name="agentSharePercent"
+                    value={formData.agentSharePercent}
+                    onChange={handleChange}
+                    placeholder={`Default: ${100 - parseFloat(subAgents.find(s => s.id === formData.subAgentId)?.commissionPercentage || '50')}%`}
+                    step="0.01"
+                    max="100"
+                    className="bg-white"
+                  />
+                  <p className="text-xs text-orange-600 mt-1">
+                    Agent keeps this %, rest goes to Sub-Agent ({subAgents.find(s => s.id === formData.subAgentId)?.name})
+                  </p>
+                </div>
+              )}
+
               {/* Commission Calculation Preview */}
-              {(formData.premiumAmount || formData.odPremium || formData.tpPremium) && (
+              {(formData.premiumAmount || formData.odPremium || formData.tpPremium || formData.brokerCommissionAmount) && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-medium text-blue-800 mb-2">Commission Preview</h4>
                   <div className="text-sm space-y-1">
@@ -1286,6 +1287,62 @@ export default function NewPolicyPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Documents Section */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-gray-900 border-b pb-2">Documents (Optional)</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* Policy Copy Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
+                  <input
+                    type="file"
+                    id="policyCopy"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, policyCopyFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="policyCopy" className="cursor-pointer">
+                    <div className="text-3xl mb-2">📄</div>
+                    <div className="text-sm font-medium text-gray-700">Policy Copy</div>
+                    <div className="text-xs text-gray-500">PDF, JPG, PNG</div>
+                    {(formData as any).policyCopyFile && (
+                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).policyCopyFile.name}</div>
+                    )}
+                  </label>
+                </div>
+
+                {/* KYC Document Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
+                  <input
+                    type="file"
+                    id="kycDocument"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData(prev => ({ ...prev, kycDocumentFile: file } as any));
+                      }
+                    }}
+                  />
+                  <label htmlFor="kycDocument" className="cursor-pointer">
+                    <div className="text-3xl mb-2">🪪</div>
+                    <div className="text-sm font-medium text-gray-700">KYC Document</div>
+                    <div className="text-xs text-gray-500">Aadhaar, PAN, etc.</div>
+                    {(formData as any).kycDocumentFile && (
+                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).kycDocumentFile.name}</div>
+                    )}
+                  </label>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">Upload policy copy and KYC documents for record keeping</p>
             </div>
 
             {/* Remarks */}
