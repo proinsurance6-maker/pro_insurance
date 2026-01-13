@@ -9,10 +9,24 @@ interface DashboardLayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children?: { name: string; href: string }[];
+}
+
+const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Clients', href: '/dashboard/clients', icon: UsersIcon },
-  { name: 'Policies', href: '/dashboard/policies', icon: DocumentIcon },
+  { 
+    name: 'Policies', 
+    icon: DocumentIcon,
+    children: [
+      { name: 'All Policies', href: '/dashboard/policies' },
+      { name: 'Add New Policy', href: '/dashboard/policies/new' },
+    ]
+  },
   { name: 'Renewals', href: '/dashboard/renewals', icon: CalendarIcon },
   { name: 'Ledger', href: '/dashboard/ledger', icon: WalletIcon },
   { name: 'Commissions', href: '/dashboard/commissions', icon: CurrencyIcon },
@@ -22,9 +36,20 @@ const navigation = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Policies']);
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout, loading } = useAuth();
+
+  const toggleMenu = (menuName: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(menuName) 
+        ? prev.filter(m => m !== menuName)
+        : [...prev, menuName]
+    );
+  };
+
+  const isMenuExpanded = (menuName: string) => expandedMenus.includes(menuName);
 
   // Redirect if not logged in
   if (loading) {
@@ -62,11 +87,58 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
         <nav className="mt-4 px-2">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            const hasChildren = item.children && item.children.length > 0;
+            const isExpanded = isMenuExpanded(item.name);
+            const isParentActive = hasChildren && item.children?.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
+            const isActive = item.href ? (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) : isParentActive;
+            
+            if (hasChildren) {
+              return (
+                <div key={item.name}>
+                  <button
+                    onClick={() => toggleMenu(item.name)}
+                    className={`w-full flex items-center justify-between px-4 py-3 mb-1 rounded-lg transition ${
+                      isParentActive
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <item.icon className="w-5 h-5 mr-3" />
+                      {item.name}
+                    </div>
+                    <ChevronIcon className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isExpanded && (
+                    <div className="ml-4 mb-1">
+                      {item.children?.map((child) => {
+                        const isChildActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                        return (
+                          <Link
+                            key={child.name}
+                            href={child.href}
+                            className={`flex items-center px-4 py-2 mb-1 rounded-lg transition text-sm ${
+                              isChildActive
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-gray-500 hover:bg-gray-100'
+                            }`}
+                            onClick={() => setSidebarOpen(false)}
+                          >
+                            <span className={`w-2 h-2 rounded-full mr-3 ${isChildActive ? 'bg-blue-600' : 'bg-gray-300'}`}></span>
+                            {child.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            
             return (
               <Link
                 key={item.name}
-                href={item.href}
+                href={item.href!}
                 className={`flex items-center px-4 py-3 mb-1 rounded-lg transition ${
                   isActive 
                     ? 'bg-blue-50 text-blue-600' 
@@ -90,11 +162,57 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           <nav className="flex-1 mt-4 px-2">
             {navigation.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+              const hasChildren = item.children && item.children.length > 0;
+              const isExpanded = isMenuExpanded(item.name);
+              const isParentActive = hasChildren && item.children?.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
+              const isActive = item.href ? (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) : isParentActive;
+              
+              if (hasChildren) {
+                return (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => toggleMenu(item.name)}
+                      className={`w-full flex items-center justify-between px-4 py-3 mb-1 rounded-lg transition ${
+                        isParentActive
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <item.icon className="w-5 h-5 mr-3" />
+                        {item.name}
+                      </div>
+                      <ChevronIcon className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isExpanded && (
+                      <div className="ml-4 mb-1">
+                        {item.children?.map((child) => {
+                          const isChildActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                          return (
+                            <Link
+                              key={child.name}
+                              href={child.href}
+                              className={`flex items-center px-4 py-2 mb-1 rounded-lg transition text-sm ${
+                                isChildActive
+                                  ? 'bg-blue-50 text-blue-600'
+                                  : 'text-gray-500 hover:bg-gray-100'
+                              }`}
+                            >
+                              <span className={`w-2 h-2 rounded-full mr-3 ${isChildActive ? 'bg-blue-600' : 'bg-gray-300'}`}></span>
+                              {child.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
+                  href={item.href!}
                   className={`flex items-center px-4 py-3 mb-1 rounded-lg transition ${
                     isActive 
                       ? 'bg-blue-50 text-blue-600' 
@@ -250,6 +368,14 @@ function LogoutIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
   );
 }
