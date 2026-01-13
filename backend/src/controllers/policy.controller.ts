@@ -125,10 +125,15 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
     const agentId = (req as any).user.userId;
     const {
       clientId, companyId, subAgentId, familyMemberId,
-      policyNumber, policyType, planName, policySource,
+      policyNumber, policyType, motorPolicyType, planName, policySource,
       vehicleNumber, startDate, endDate,
       premiumAmount, sumAssured, premiumFrequency,
-      premiumPaidBy, commissionPercent, remarks
+      // Motor premium breakdown
+      odPremium, tpPremium, netPremium,
+      // Commission rates
+      premiumPaidBy, commissionPercent, 
+      odCommissionRate, tpCommissionRate, netCommissionRate, renewalCommissionRate,
+      remarks
     } = req.body;
 
     if (!clientId || !companyId || !policyNumber || !policyType || !startDate || !endDate || !premiumAmount) {
@@ -151,20 +156,47 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
       throw new AppError('Insurance company not found', 404, 'COMPANY_NOT_FOUND');
     }
 
-    const rate = commissionPercent || 15;
-    const commissionAmount = (premiumAmount * rate) / 100;
+    // Calculate commission based on policy type
+    const isMotor = policyType === 'Motor Insurance';
+    let totalCommissionAmount = 0;
+    let odCommissionAmount = 0;
+    let tpCommissionAmount = 0;
+    let netCommissionAmount = 0;
+    let totalRate = commissionPercent || 15;
 
-    // Get sub-agent if specified
+    if (isMotor && motorPolicyType) {
+      // Motor policy - calculate OD/TP based commission
+      if (motorPolicyType === 'COMPREHENSIVE' || motorPolicyType === 'OD_ONLY') {
+        odCommissionAmount = ((odPremium || 0) * (odCommissionRate || 0)) / 100;
+      }
+      if (motorPolicyType === 'COMPREHENSIVE' || motorPolicyType === 'TP_ONLY') {
+        tpCommissionAmount = ((tpPremium || 0) * (tpCommissionRate || 0)) / 100;
+      }
+      if (netCommissionRate && netPremium) {
+        netCommissionAmount = (netPremium * netCommissionRate) / 100;
+      }
+      totalCommissionAmount = odCommissionAmount + tpCommissionAmount + netCommissionAmount;
+    } else {
+      // Other policies - Net/Premium based commission
+      const commissionBase = netPremium || premiumAmount;
+      const rate = netCommissionRate || commissionPercent || 15;
+      totalCommissionAmount = (commissionBase * rate) / 100;
+      netCommissionAmount = totalCommissionAmount;
+    }
+
+    // Get sub-agent split if specified
     let subAgentCommission = 0;
-    let agentCommission = commissionAmount;
+    let agentCommission = totalCommissionAmount;
+    let subAgentSharePercent = 0;
     
     if (subAgentId) {
       const subAgent = await prisma.subAgent.findFirst({
         where: { id: subAgentId, agentId }
       });
       if (subAgent) {
-        subAgentCommission = (commissionAmount * Number(subAgent.commissionPercentage)) / 100;
-        agentCommission = commissionAmount - subAgentCommission;
+        subAgentSharePercent = Number(subAgent.commissionPercentage);
+        subAgentCommission = (totalCommissionAmount * subAgentSharePercent) / 100;
+        agentCommission = totalCommissionAmount - subAgentCommission;
       }
     }
 
@@ -178,12 +210,16 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
           familyMemberId: familyMemberId || null,
           policyNumber,
           policyType,
+          motorPolicyType: isMotor ? motorPolicyType : null,
           planName,
           policySource: policySource || 'NEW',
-          vehicleNumber,
+          vehicleNumber: isMotor ? vehicleNumber : null,
           startDate: new Date(startDate),
           endDate: new Date(endDate),
           premiumAmount,
+          odPremium: isMotor ? odPremium : null,
+          tpPremium: isMotor ? tpPremium : null,
+          netPremium: netPremium || null,
           sumAssured,
           premiumFrequency: premiumFrequency || 'yearly',
           premiumPaidBy: premiumPaidBy || 'CLIENT'
@@ -196,10 +232,20 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
           agentId,
           subAgentId: subAgentId || null,
           companyId,
-          totalCommissionPercent: rate,
-          totalCommissionAmount: commissionAmount,
+          totalCommissionPercent: totalRate,
+          totalCommissionAmount: totalCommissionAmount,
+          // Motor-specific commission breakdown
+          odCommissionPercent: isMotor ? odCommissionRate : null,
+          odCommissionAmount: isMotor ? odCommissionAmount : null,
+          tpCommissionPercent: isMotor ? tpCommissionRate : null,
+          tpCommissionAmount: isMotor ? tpCommissionAmount : null,
+          netCommissionPercent: netCommissionRate || null,
+          netCommissionAmount: netCommissionAmount || null,
+          renewalCommissionPercent: renewalCommissionRate || null,
+          // Agent/SubAgent split
           agentCommissionAmount: agentCommission,
-          subAgentCommissionAmount: subAgentCommission || null
+          subAgentCommissionAmount: subAgentCommission || null,
+          subAgentSharePercent: subAgentSharePercent || null
         }
       });
 

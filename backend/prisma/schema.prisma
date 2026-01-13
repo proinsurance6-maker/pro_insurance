@@ -50,6 +50,12 @@ enum PaymentBy {
   CLIENT     // Client paid directly
 }
 
+enum MotorPolicyType {
+  COMPREHENSIVE  // OD + TP combined
+  OD_ONLY        // Own Damage only
+  TP_ONLY        // Third Party only
+}
+
 enum DocumentType {
   AADHAAR
   PAN
@@ -276,11 +282,16 @@ model Policy {
   clientId          String       @map("client_id") @db.Uuid
   familyMemberId    String?      @map("family_member_id") @db.Uuid
   policyType        String       @map("policy_type") // Motor, Health, Life, etc.
+  motorPolicyType   String?      @map("motor_policy_type") // COMPREHENSIVE, OD_ONLY, TP_ONLY (for Motor only)
   planName          String?      @map("plan_name")
   policySource      PolicySource @default(NEW) @map("policy_source")
   previousPolicyId  String?      @map("previous_policy_id") @db.Uuid
   sumAssured        Decimal?     @map("sum_assured") @db.Decimal(15, 2)
   premiumAmount     Decimal      @map("premium_amount") @db.Decimal(12, 2)
+  // Motor Premium Breakdown
+  odPremium         Decimal?     @map("od_premium") @db.Decimal(12, 2)
+  tpPremium         Decimal?     @map("tp_premium") @db.Decimal(12, 2)
+  netPremium        Decimal?     @map("net_premium") @db.Decimal(12, 2) // Premium excluding GST
   premiumFrequency  String       @default("yearly") @map("premium_frequency")
   premiumPaidBy     PaymentBy    @default(CLIENT) @map("premium_paid_by")
   startDate         DateTime     @map("start_date") @db.Date
@@ -321,10 +332,22 @@ model Commission {
   agentId                  String    @map("agent_id") @db.Uuid
   subAgentId               String?   @map("sub_agent_id") @db.Uuid
   companyId                String    @map("company_id") @db.Uuid
+  // Base commission rates
   totalCommissionPercent   Decimal   @map("total_commission_percent") @db.Decimal(5, 2)
   totalCommissionAmount    Decimal   @map("total_commission_amount") @db.Decimal(12, 2)
+  // Motor-specific commission (OD/TP/Net based)
+  odCommissionPercent      Decimal?  @map("od_commission_percent") @db.Decimal(5, 2)
+  odCommissionAmount       Decimal?  @map("od_commission_amount") @db.Decimal(12, 2)
+  tpCommissionPercent      Decimal?  @map("tp_commission_percent") @db.Decimal(5, 2)
+  tpCommissionAmount       Decimal?  @map("tp_commission_amount") @db.Decimal(12, 2)
+  netCommissionPercent     Decimal?  @map("net_commission_percent") @db.Decimal(5, 2)
+  netCommissionAmount      Decimal?  @map("net_commission_amount") @db.Decimal(12, 2)
+  // Renewal commission rate (for future renewals)
+  renewalCommissionPercent Decimal?  @map("renewal_commission_percent") @db.Decimal(5, 2)
+  // Agent/SubAgent split
   agentCommissionAmount    Decimal   @map("agent_commission_amount") @db.Decimal(12, 2)
   subAgentCommissionAmount Decimal?  @map("sub_agent_commission_amount") @db.Decimal(12, 2)
+  subAgentSharePercent     Decimal?  @map("sub_agent_share_percent") @db.Decimal(5, 2) // % of total given to sub-agent
   paymentStatus            String    @default("pending") @map("payment_status")
   receivedFromCompany      Boolean   @default(false) @map("received_from_company")
   receivedDate             DateTime? @map("received_date") @db.Date

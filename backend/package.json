@@ -21,6 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@prisma/client": "^6.1.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
@@ -41,7 +42,6 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.12",
     "openai": "^6.15.0",
-    "@google/generative-ai": "^0.21.0",
     "pdf-parse": "^1.1.1",
     "prisma": "^6.1.0",
     "twilio": "^5.11.2",

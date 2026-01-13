@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { policyAPI, clientAPI } from '@/lib/api';
+import { policyAPI, clientAPI, agentAPI } from '@/lib/api';
 
 interface Company {
   id: string;
@@ -18,6 +18,13 @@ interface Client {
   id: string;
   name: string;
   phone: string;
+}
+
+interface SubAgent {
+  id: string;
+  name: string;
+  subAgentCode: string;
+  commissionPercentage: string;
 }
 
 type EntryMode = 'manual' | 'scan' | 'excel';
@@ -37,6 +44,12 @@ const POLICY_TYPES = [
   'Other'
 ];
 
+const MOTOR_POLICY_TYPES = [
+  { value: 'COMPREHENSIVE', label: 'Comprehensive (OD + TP)' },
+  { value: 'OD_ONLY', label: 'OD Only (Own Damage)' },
+  { value: 'TP_ONLY', label: 'TP Only (Third Party)' }
+];
+
 const PAYMENT_MODES = ['yearly', 'half-yearly', 'quarterly', 'monthly', 'single'];
 
 export default function NewPolicyPage() {
@@ -54,11 +67,22 @@ export default function NewPolicyPage() {
   const [success, setSuccess] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [subAgents, setSubAgents] = useState<SubAgent[]>([]);
   const [clientSearch, setClientSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [excelData, setExcelData] = useState<any[]>([]);
   const [excelFileName, setExcelFileName] = useState('');
+  
+  // New client form data
+  const [newClientData, setNewClientData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: ''
+  });
+  const [creatingClient, setCreatingClient] = useState(false);
   
   const [formData, setFormData] = useState({
     clientId: preSelectedClientId || '',
@@ -66,13 +90,25 @@ export default function NewPolicyPage() {
     companyId: '',
     policyNumber: '',
     policyType: '',
+    motorPolicyType: '', // COMPREHENSIVE, OD_ONLY, TP_ONLY
     planName: '',
     sumAssured: '',
     premiumAmount: '',
+    // Motor premium breakdown
+    odPremium: '',
+    tpPremium: '',
+    netPremium: '',
     paymentMode: 'yearly',
     startDate: new Date().toISOString().split('T')[0],
     endDate: '',
+    // Commission fields
     commissionRate: '',
+    odCommissionRate: '',
+    tpCommissionRate: '',
+    netCommissionRate: '',
+    renewalCommissionRate: '',
+    // Sub-agent
+    subAgentId: '',
     holderName: '',
     vehicleNumber: '',
     remarks: '',
@@ -96,16 +132,18 @@ export default function NewPolicyPage() {
 
   const fetchData = async () => {
     try {
-      const [companiesRes, clientsRes] = await Promise.all([
+      const [companiesRes, clientsRes, subAgentsRes] = await Promise.all([
         policyAPI.getCompanies(),
-        clientAPI.getAll()
+        clientAPI.getAll(),
+        agentAPI.getSubAgents()
       ]);
       setCompanies(Array.isArray(companiesRes.data.data) ? companiesRes.data.data : []);
       setClients(clientsRes.data.data?.clients || []);
+      setSubAgents(subAgentsRes.data.data || []);
       
       // Set pre-selected client name
       if (preSelectedClientId) {
-        const client = clientsRes.data.data?.find((c: Client) => c.id === preSelectedClientId);
+        const client = clientsRes.data.data?.clients?.find((c: Client) => c.id === preSelectedClientId);
         if (client) {
           setFormData(prev => ({ ...prev, clientName: client.name }));
           setClientSearch(client.name);
@@ -131,6 +169,62 @@ export default function NewPolicyPage() {
     client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
     client.phone.includes(clientSearch)
   );
+
+  // Create new client inline
+  const handleCreateClient = async () => {
+    if (!newClientData.name || !newClientData.phone) {
+      setError('Client name and phone are required');
+      return;
+    }
+    setCreatingClient(true);
+    try {
+      const response = await clientAPI.create(newClientData);
+      const newClient = response.data.data;
+      // Add to list and select
+      setClients(prev => [newClient, ...prev]);
+      setFormData(prev => ({ ...prev, clientId: newClient.id, clientName: newClient.name }));
+      setClientSearch(newClient.name);
+      setShowNewClientForm(false);
+      setShowClientDropdown(false);
+      setNewClientData({ name: '', phone: '', email: '', address: '' });
+      setSuccess('✅ New client created and selected');
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to create client');
+    } finally {
+      setCreatingClient(false);
+    }
+  };
+
+  // Calculate total commission for motor policies
+  const calculateTotalCommission = () => {
+    const isMotor = formData.policyType === 'Motor Insurance';
+    if (isMotor && formData.motorPolicyType === 'COMPREHENSIVE') {
+      const odComm = (parseFloat(formData.odPremium) || 0) * (parseFloat(formData.odCommissionRate) || 0) / 100;
+      const tpComm = (parseFloat(formData.tpPremium) || 0) * (parseFloat(formData.tpCommissionRate) || 0) / 100;
+      return odComm + tpComm;
+    } else if (isMotor && formData.motorPolicyType === 'OD_ONLY') {
+      return (parseFloat(formData.odPremium) || 0) * (parseFloat(formData.odCommissionRate) || 0) / 100;
+    } else if (isMotor && formData.motorPolicyType === 'TP_ONLY') {
+      return (parseFloat(formData.tpPremium) || 0) * (parseFloat(formData.tpCommissionRate) || 0) / 100;
+    } else {
+      // Other policies - Net based
+      return (parseFloat(formData.netPremium || formData.premiumAmount) || 0) * (parseFloat(formData.netCommissionRate || formData.commissionRate) || 0) / 100;
+    }
+  };
+
+  // Get selected sub-agent commission share
+  const getSubAgentShare = () => {
+    if (!formData.subAgentId) return null;
+    const subAgent = subAgents.find(sa => sa.id === formData.subAgentId);
+    if (!subAgent) return null;
+    const totalComm = calculateTotalCommission();
+    const subAgentPercent = parseFloat(subAgent.commissionPercentage) || 0;
+    return {
+      subAgentAmount: (totalComm * subAgentPercent) / 100,
+      agentAmount: totalComm - (totalComm * subAgentPercent) / 100,
+      subAgentPercent
+    };
+  };
 
   // Handle document scan/upload
   const handleDocumentScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,18 +348,32 @@ export default function NewPolicyPage() {
     setLoading(true);
 
     try {
+      const isMotor = formData.policyType === 'Motor Insurance';
       await policyAPI.create({
         clientId: formData.clientId,
         companyId: formData.companyId,
         policyNumber: formData.policyNumber,
         policyType: formData.policyType,
+        motorPolicyType: isMotor ? formData.motorPolicyType : undefined,
         sumAssured: parseFloat(formData.sumAssured) || 0,
         premiumAmount: parseFloat(formData.premiumAmount),
+        // Motor premium breakdown
+        odPremium: isMotor ? parseFloat(formData.odPremium) || undefined : undefined,
+        tpPremium: isMotor ? parseFloat(formData.tpPremium) || undefined : undefined,
+        netPremium: parseFloat(formData.netPremium) || undefined,
         paymentMode: formData.paymentMode,
         startDate: new Date(formData.startDate),
         endDate: new Date(formData.endDate),
+        // Commission rates
         commissionRate: parseFloat(formData.commissionRate) || 0,
+        odCommissionRate: isMotor ? parseFloat(formData.odCommissionRate) || undefined : undefined,
+        tpCommissionRate: isMotor ? parseFloat(formData.tpCommissionRate) || undefined : undefined,
+        netCommissionRate: parseFloat(formData.netCommissionRate) || undefined,
+        renewalCommissionRate: parseFloat(formData.renewalCommissionRate) || undefined,
+        // Sub-agent
+        subAgentId: formData.subAgentId || undefined,
         holderName: formData.holderName || undefined,
+        vehicleNumber: isMotor ? formData.vehicleNumber : undefined,
         remarks: formData.remarks || undefined,
       });
       router.push('/dashboard/policies');
@@ -527,23 +635,51 @@ export default function NewPolicyPage() {
                   required
                 />
                 {showClientDropdown && clientSearch && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {filteredClients.length === 0 ? (
-                      <div className="p-3 text-gray-500 text-center">
-                        No clients found. <Link href="/dashboard/clients/new" className="text-blue-600">Add new</Link>
+                      <div className="p-3">
+                        <p className="text-gray-500 text-sm mb-2">No clients found matching "{clientSearch}"</p>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          onClick={() => {
+                            setShowNewClientForm(true);
+                            setShowClientDropdown(false);
+                            setNewClientData(prev => ({ ...prev, name: clientSearch }));
+                          }}
+                          className="w-full"
+                        >
+                          ➕ Add New Client
+                        </Button>
                       </div>
                     ) : (
-                      filteredClients.slice(0, 5).map((client) => (
-                        <button
-                          key={client.id}
-                          type="button"
-                          onClick={() => handleClientSelect(client)}
-                          className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0"
-                        >
-                          <p className="font-medium">{client.name}</p>
-                          <p className="text-sm text-gray-500">{client.phone}</p>
-                        </button>
-                      ))
+                      <>
+                        {filteredClients.slice(0, 5).map((client) => (
+                          <button
+                            key={client.id}
+                            type="button"
+                            onClick={() => handleClientSelect(client)}
+                            className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0"
+                          >
+                            <p className="font-medium">{client.name}</p>
+                            <p className="text-sm text-gray-500">{client.phone}</p>
+                          </button>
+                        ))}
+                        <div className="p-2 border-t bg-gray-50">
+                          <Button 
+                            type="button" 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setShowNewClientForm(true);
+                              setShowClientDropdown(false);
+                            }}
+                            className="w-full"
+                          >
+                            ➕ Add New Client
+                          </Button>
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -551,6 +687,46 @@ export default function NewPolicyPage() {
                   <p className="text-sm text-green-600 mt-1">✓ Client selected: {formData.clientName}</p>
                 )}
               </div>
+
+              {/* Inline New Client Form */}
+              {showNewClientForm && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium text-blue-800">Add New Client</h4>
+                    <button type="button" onClick={() => setShowNewClientForm(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      placeholder="Client Name *"
+                      value={newClientData.name}
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Phone Number *"
+                      value={newClientData.phone}
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Email (optional)"
+                      value={newClientData.email}
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Address (optional)"
+                      value={newClientData.address}
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, address: e.target.value }))}
+                    />
+                  </div>
+                  <Button 
+                    type="button" 
+                    onClick={handleCreateClient} 
+                    disabled={creatingClient || !newClientData.name || !newClientData.phone}
+                    className="w-full"
+                  >
+                    {creatingClient ? 'Creating...' : '✓ Create & Select Client'}
+                  </Button>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -621,26 +797,67 @@ export default function NewPolicyPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Payment Mode <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="paymentMode"
-                    value={formData.paymentMode}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    {PAYMENT_MODES.map((mode) => (
-                      <option key={mode} value={mode} className="capitalize">
-                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                
+                {/* Motor Policy Sub-Type */}
+                {formData.policyType === 'Motor Insurance' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Motor Policy Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="motorPolicyType"
+                      value={formData.motorPolicyType}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select motor type</option>
+                      {MOTOR_POLICY_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {formData.policyType !== 'Motor Insurance' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Payment Mode <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="paymentMode"
+                      value={formData.paymentMode}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      {PAYMENT_MODES.map((mode) => (
+                        <option key={mode} value={mode} className="capitalize">
+                          {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
+              {/* Vehicle Number for Motor */}
+              {formData.policyType === 'Motor Insurance' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Vehicle Number <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    name="vehicleNumber"
+                    value={formData.vehicleNumber}
+                    onChange={handleChange}
+                    placeholder="e.g., MH01AB1234"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Premium Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -656,7 +873,7 @@ export default function NewPolicyPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Premium Amount (₹) <span className="text-red-500">*</span>
+                    Total Premium (₹) <span className="text-red-500">*</span>
                   </label>
                   <Input
                     type="number"
@@ -668,6 +885,65 @@ export default function NewPolicyPage() {
                   />
                 </div>
               </div>
+
+              {/* Motor Premium Breakdown */}
+              {formData.policyType === 'Motor Insurance' && formData.motorPolicyType && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-yellow-800">Premium Breakdown</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">OD Premium (₹)</label>
+                        <Input
+                          type="number"
+                          name="odPremium"
+                          value={formData.odPremium}
+                          onChange={handleChange}
+                          placeholder="0"
+                        />
+                      </div>
+                    )}
+                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">TP Premium (₹)</label>
+                        <Input
+                          type="number"
+                          name="tpPremium"
+                          value={formData.tpPremium}
+                          onChange={handleChange}
+                          placeholder="0"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Net Premium (₹)</label>
+                      <Input
+                        type="number"
+                        name="netPremium"
+                        value={formData.netPremium}
+                        onChange={handleChange}
+                        placeholder="Excl. GST"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Non-Motor Net Premium */}
+              {formData.policyType && formData.policyType !== 'Motor Insurance' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Net Premium (₹) <span className="text-gray-400 text-xs">for commission calculation</span>
+                  </label>
+                  <Input
+                    type="number"
+                    name="netPremium"
+                    value={formData.netPremium}
+                    onChange={handleChange}
+                    placeholder="Premium excluding GST"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -695,26 +971,140 @@ export default function NewPolicyPage() {
                   />
                 </div>
               </div>
+            </div>
 
+            {/* Sub-Agent / Broker Assignment */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-gray-900 border-b pb-2">Sub-Agent / Broker (Optional)</h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Commission Rate (%)
+                  Assign Sub-Agent
                 </label>
-                <Input
-                  type="number"
-                  name="commissionRate"
-                  value={formData.commissionRate}
+                <select
+                  name="subAgentId"
+                  value={formData.subAgentId}
                   onChange={handleChange}
-                  placeholder="e.g., 15"
-                  step="0.01"
-                  max="100"
-                />
-                {formData.premiumAmount && formData.commissionRate && (
-                  <p className="text-sm text-green-600 mt-1">
-                    Expected commission: ₹{(parseFloat(formData.premiumAmount) * parseFloat(formData.commissionRate) / 100).toFixed(2)}
-                  </p>
-                )}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">No Sub-Agent (Direct)</option>
+                  {subAgents.map((sa) => (
+                    <option key={sa.id} value={sa.id}>
+                      {sa.name} ({sa.subAgentCode}) - {sa.commissionPercentage}% share
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  <Link href="/dashboard/sub-agents" className="text-blue-600 hover:underline">Manage Sub-Agents</Link>
+                </p>
               </div>
+            </div>
+
+            {/* Commission Section */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-gray-900 border-b pb-2">Commission Details</h3>
+              
+              {/* Motor Commission Rates */}
+              {formData.policyType === 'Motor Insurance' && formData.motorPolicyType && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-green-800">Commission Rates (%)</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">OD Commission %</label>
+                        <Input
+                          type="number"
+                          name="odCommissionRate"
+                          value={formData.odCommissionRate}
+                          onChange={handleChange}
+                          placeholder="e.g., 15"
+                          step="0.01"
+                          max="100"
+                        />
+                      </div>
+                    )}
+                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">TP Commission %</label>
+                        <Input
+                          type="number"
+                          name="tpCommissionRate"
+                          value={formData.tpCommissionRate}
+                          onChange={handleChange}
+                          placeholder="e.g., 5"
+                          step="0.01"
+                          max="100"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Net Commission %</label>
+                      <Input
+                        type="number"
+                        name="netCommissionRate"
+                        value={formData.netCommissionRate}
+                        onChange={handleChange}
+                        placeholder="Optional"
+                        step="0.01"
+                        max="100"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Non-Motor Commission */}
+              {formData.policyType && formData.policyType !== 'Motor Insurance' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Commission Rate (%)
+                    </label>
+                    <Input
+                      type="number"
+                      name="commissionRate"
+                      value={formData.commissionRate}
+                      onChange={handleChange}
+                      placeholder="e.g., 15"
+                      step="0.01"
+                      max="100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Renewal Commission (%)
+                    </label>
+                    <Input
+                      type="number"
+                      name="renewalCommissionRate"
+                      value={formData.renewalCommissionRate}
+                      onChange={handleChange}
+                      placeholder="For future renewals"
+                      step="0.01"
+                      max="100"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Commission Calculation Preview */}
+              {(formData.premiumAmount || formData.odPremium || formData.tpPremium) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-800 mb-2">Commission Preview</h4>
+                  <div className="text-sm space-y-1">
+                    <p>Total Commission: <span className="font-bold text-green-700">₹{calculateTotalCommission().toFixed(2)}</span></p>
+                    {formData.subAgentId && getSubAgentShare() && (
+                      <>
+                        <p className="text-gray-600">
+                          → Your Share: <span className="font-medium">₹{getSubAgentShare()?.agentAmount.toFixed(2)}</span>
+                        </p>
+                        <p className="text-gray-600">
+                          → Sub-Agent ({getSubAgentShare()?.subAgentPercent}%): <span className="font-medium">₹{getSubAgentShare()?.subAgentAmount.toFixed(2)}</span>
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Remarks */}
