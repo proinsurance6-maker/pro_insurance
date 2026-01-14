@@ -63,6 +63,7 @@ export default function NewPolicyPage() {
   const searchParams = useSearchParams();
   const preSelectedClientId = searchParams.get('clientId');
   const excelInputRef = useRef<HTMLInputElement>(null);
+  const scanInputRef = useRef<HTMLInputElement>(null);
   
   const [entryMode, setEntryMode] = useState<EntryMode>('manual');
   const [loading, setLoading] = useState(false);
@@ -70,6 +71,7 @@ export default function NewPolicyPage() {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showScanModal, setShowScanModal] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [subAgents, setSubAgents] = useState<SubAgent[]>([]);
@@ -602,6 +604,14 @@ export default function NewPolicyPage() {
           </button>
           
           <button
+            onClick={() => { setShowScanModal(true); setError(''); setSuccess(''); }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border transition-all text-sm font-medium border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 text-gray-600"
+          >
+            <span>📷</span>
+            <span>Scan Document</span>
+          </button>
+          
+          <button
             onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border transition-all text-sm font-medium ${
               entryMode === 'excel' 
@@ -614,7 +624,7 @@ export default function NewPolicyPage() {
           </button>
         </div>
 
-        {/* Hidden File Input for Excel */}
+        {/* Hidden File Inputs */}
         <input
           type="file"
           ref={excelInputRef}
@@ -622,6 +632,46 @@ export default function NewPolicyPage() {
           accept=".xlsx,.xls,.csv"
           className="hidden"
         />
+        <input
+          type="file"
+          ref={scanInputRef}
+          onChange={(e) => {
+            handleDocumentScan(e);
+            setShowScanModal(false);
+            setEntryMode('manual');
+          }}
+          accept="image/*,.pdf"
+          className="hidden"
+        />
+
+        {/* Scan Document Modal - Probus Style */}
+        {showScanModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowScanModal(false)}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-6 py-4 border-b">
+                <h3 className="text-lg font-semibold text-gray-800">Upload Offline Motor Policy PDF</h3>
+                <button onClick={() => setShowScanModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+              </div>
+              <div className="p-8">
+                <div 
+                  onClick={() => scanInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
+                >
+                  {scanning ? (
+                    <div className="text-blue-600">
+                      <div className="text-3xl mb-3 animate-spin">⏳</div>
+                      <p className="text-sm font-medium">Extracting details...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-gray-400 text-sm">Click to upload pdf.</div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Excel Mode UI */}
       {entryMode === 'excel' && (
@@ -1186,18 +1236,16 @@ export default function NewPolicyPage() {
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-gray-600 text-xs">6</span>
                 Documents
-                {scanning && <span className="ml-2 text-xs text-blue-600 animate-pulse">⏳ Extracting details...</span>}
               </h3>
               
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                {/* Policy Copy - with OCR */}
+                {/* Policy Copy */}
                 <div>
-                  <input type="file" id="policyCopy" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleDocumentScan} />
+                  <input type="file" id="policyCopy" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, policyCopyFile: file } as any)); }} />
                   <label htmlFor="policyCopy" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-blue-300 bg-blue-50'}`}>
-                      <div className="text-lg">{scanning ? '⏳' : '📄'}</div>
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-lg">📄</div>
                       <div className="text-[10px] font-medium text-gray-700">Policy</div>
-                      {!(formData as any).policyCopyFile && <div className="text-[8px] text-blue-500">Auto-fill</div>}
                     </div>
                   </label>
                   {(formData as any).policyCopyFile && (
