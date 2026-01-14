@@ -580,58 +580,58 @@ export default function NewPolicyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/dashboard/policies" className="text-blue-600 hover:underline text-sm mb-2 inline-block">
-            ← Back to Policies
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-800">Add New Policy</h1>
-          <p className="text-gray-600">Choose how you want to add policy details</p>
+    <div className="min-h-screen bg-slate-100">
+      {/* Sticky Header */}
+      <div className="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/policies" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+              <span>←</span> Back to Policies
+            </Link>
+            <span className="text-gray-300">|</span>
+            <h1 className="text-lg font-semibold text-gray-800">Add New Policy</h1>
+          </div>
+          <p className="text-sm text-gray-500">Choose how you want to add policy details</p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Entry Mode Selection */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="max-w-[1600px] mx-auto px-6 py-4">
+        {/* Entry Mode Selection - Compact */}
+        <div className="flex gap-3 mb-4">
           <button
             onClick={() => { setEntryMode('manual'); setError(''); setSuccess(''); }}
-            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border transition-all text-sm font-medium ${
               entryMode === 'manual' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'
             }`}
           >
-            <div className="text-3xl mb-2">✏️</div>
-            <div className="font-semibold text-base">Manual</div>
-            <div className="text-sm text-gray-500">Type details</div>
+            <span>✏️</span>
+            <span>Manual</span>
           </button>
           
           <button
             onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
-            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border transition-all text-sm font-medium ${
               entryMode === 'scan' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'
             }`}
           >
-            <div className="text-3xl mb-2">📷</div>
-            <div className="font-semibold text-base">Scan Document</div>
-            <div className="text-sm text-gray-500">Auto-fill from image</div>
+            <span>📷</span>
+            <span>Scan Document</span>
           </button>
           
           <button
             onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
-            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border transition-all text-sm font-medium ${
               entryMode === 'excel' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'
             }`}
           >
-            <div className="text-3xl mb-2">📊</div>
-            <div className="font-semibold text-base">Excel Import</div>
-            <div className="text-sm text-gray-500">Bulk upload</div>
+            <span>📊</span>
+            <span>Excel Import</span>
           </button>
         </div>
 
@@ -797,1028 +797,604 @@ export default function NewPolicyPage() {
 
       {/* Manual Form - show for manual mode, or after scan/excel fills data */}
       {(entryMode === 'manual' || (entryMode === 'scan' && scannedImage)) && (
-        <div className="bg-white rounded-xl shadow-lg border">
-          <div className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-                  {error}
-                </div>
-              )}
+        <div className="bg-white rounded-lg shadow-sm border">
+          <form onSubmit={handleSubmit}>
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="mx-6 mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+            
+            {success && entryMode === 'scan' && (
+              <div className="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                {success}
+              </div>
+            )}
+
+            {/* Section: Client Details */}
+            <div className="p-6 border-b">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center text-blue-600 text-xs">1</span>
+                Client Details
+              </h3>
               
-              {success && entryMode === 'scan' && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
-                  {success}
-                </div>
-              )}
-
-              {/* Form Grid Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column */}
-                <div className="space-y-6">"
-
-                  {/* Client Selection */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <span className="text-blue-500 mr-2">👤</span>
-                      Client Details
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select Client <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="text"
-                          value={clientSearch}
-                          onChange={(e) => {
-                            setClientSearch(e.target.value);
-                            setShowClientDropdown(true);
-                            setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
-                          }}
-                          onFocus={() => setShowClientDropdown(true)}
-                          placeholder="Search client by name or phone..."
-                          required
-                          className="h-12 text-base"
-                        />
-                        {showClientDropdown && clientSearch && (
-                          <div className="absolute z-10 w-full mt-1 bg-white border rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                            {filteredClients.length === 0 ? (
-                              <div className="p-4">
-                                <p className="text-gray-500 text-sm mb-3">No clients found matching "{clientSearch}"</p>
-                                <Button 
-                                  type="button" 
-                                  size="sm" 
-                                  onClick={() => {
-                                    setShowNewClientForm(true);
-                                    setShowClientDropdown(false);
-                                    setNewClientData(prev => ({ ...prev, name: clientSearch }));
-                                  }}
-                                  className="w-full"
-                                >
-                                  ➕ Add New Client
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                {filteredClients.slice(0, 5).map((client) => (
-                                  <button
-                                    key={client.id}
-                                    type="button"
-                                    onClick={() => handleClientSelect(client)}
-                                    className="w-full text-left p-4 hover:bg-gray-50 border-b last:border-b-0"
-                                  >
-                                    <p className="font-medium">{client.name}</p>
-                                    <p className="text-sm text-gray-500">{client.phone}</p>
-                                  </button>
-                                ))}
-                                <div className="p-3 border-t bg-gray-50">
-                                  <Button 
-                                    type="button" 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => {
-                                      setShowNewClientForm(true);
-                                      setShowClientDropdown(false);
-                                    }}
-                                    className="w-full"
-                                  >
-                                    ➕ Add New Client
-                                  </Button>
-                                </div>
-                              </>
-                            )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Client Search */}
+                <div className="relative">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Select Client <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    value={clientSearch}
+                    onChange={(e) => {
+                      setClientSearch(e.target.value);
+                      setShowClientDropdown(true);
+                      setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
+                    }}
+                    onFocus={() => setShowClientDropdown(true)}
+                    placeholder="Search client by name or phone..."
+                    required
+                    className="h-10 text-sm"
+                  />
+                  {showClientDropdown && clientSearch && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {filteredClients.length === 0 ? (
+                        <div className="p-3">
+                          <p className="text-gray-500 text-xs mb-2">No clients found</p>
+                          <Button 
+                            type="button" 
+                            size="sm" 
+                            onClick={() => {
+                              setShowNewClientForm(true);
+                              setShowClientDropdown(false);
+                              setNewClientData(prev => ({ ...prev, name: clientSearch }));
+                            }}
+                            className="w-full text-xs"
+                          >
+                            + Add New Client
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          {filteredClients.slice(0, 5).map((client) => (
+                            <button
+                              key={client.id}
+                              type="button"
+                              onClick={() => handleClientSelect(client)}
+                              className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b last:border-b-0 text-sm"
+                            >
+                              <p className="font-medium text-gray-800">{client.name}</p>
+                              <p className="text-xs text-gray-500">{client.phone}</p>
+                            </button>
+                          ))}
+                          <div className="p-2 border-t bg-gray-50">
+                            <Button 
+                              type="button" 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setShowNewClientForm(true);
+                                setShowClientDropdown(false);
+                              }}
+                              className="w-full text-xs"
+                            >
+                              + Add New Client
+                            </Button>
                           </div>
-                        )}
-                        
-                        {formData.clientId && (
-                          <p className="text-sm text-green-600 mt-1">✓ Client selected: {formData.clientName}</p>
-                        )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  
+                  {formData.clientId && (
+                    <p className="text-xs text-green-600 mt-1">✓ {formData.clientName}</p>
+                  )}
+                </div>
+
+                {/* Policy Holder Name */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Policy Holder Name
+                  </label>
+                  <Input
+                    name="holderName"
+                    value={formData.holderName}
+                    onChange={handleChange}
+                    placeholder="If different from client"
+                    className="h-10 text-sm"
+                  />
+                </div>
+
+                {/* Vehicle Number (show for motor) */}
+                {formData.policyType === 'Motor Insurance' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                      Vehicle Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      name="vehicleNumber"
+                      value={formData.vehicleNumber}
+                      onChange={handleChange}
+                      placeholder="e.g., MH01AB1234"
+                      required
+                      className="h-10 text-sm uppercase"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Inline New Client Form */}
               {showNewClientForm && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-medium text-blue-800">Add New Client</h4>
-                    <button type="button" onClick={() => setShowNewClientForm(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-medium text-blue-800 text-sm">Add New Client</h4>
+                    <button type="button" onClick={() => setShowNewClientForm(false)} className="text-gray-500 hover:text-gray-700 text-lg">×</button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      placeholder="Client Name *"
-                      value={newClientData.name}
-                      onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Phone Number *"
-                      value={newClientData.phone}
-                      onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Email (optional)"
-                      value={newClientData.email}
-                      onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Address (optional)"
-                      value={newClientData.address}
-                      onChange={(e) => setNewClientData(prev => ({ ...prev, address: e.target.value }))}
-                    />
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <Input placeholder="Client Name *" value={newClientData.name} onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))} className="h-10 text-sm" />
+                    <Input placeholder="Phone Number *" value={newClientData.phone} onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))} className="h-10 text-sm" />
+                    <Input placeholder="Email" value={newClientData.email} onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))} className="h-10 text-sm" />
+                    <Button type="button" onClick={handleCreateClient} disabled={creatingClient || !newClientData.name || !newClientData.phone} className="h-10 text-sm">
+                      {creatingClient ? 'Creating...' : '✓ Create Client'}
+                    </Button>
                   </div>
-                  <Button 
-                    type="button" 
-                    onClick={handleCreateClient} 
-                    disabled={creatingClient || !newClientData.name || !newClientData.phone}
-                    className="w-full"
-                  >
-                    {creatingClient ? 'Creating...' : '✓ Create & Select Client'}
-                  </Button>
                 </div>
               )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Policy Holder Name (if different from client)
-                </label>
-                <Input
-                  name="holderName"
-                  value={formData.holderName}
-                  onChange={handleChange}
-                  placeholder="Leave empty if same as client"
-                />
-              </div>
             </div>
 
-            {/* Policy Details */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Policy Details</h3>
+            {/* Section: Policy Details */}
+            <div className="p-6 border-b">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center text-blue-600 text-xs">2</span>
+                Policy Details
+              </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
                     Insurance Company <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="companyId"
                     value={formData.companyId}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     required
                   >
-                    <option value="">Select company</option>
+                    <option value="">Select Company</option>
                     {companies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
+                      <option key={company.id} value={company.id}>{company.name}</option>
                     ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
                     Policy Number <span className="text-red-500">*</span>
                   </label>
-                  <Input
-                    name="policyNumber"
-                    value={formData.policyNumber}
-                    onChange={handleChange}
-                    placeholder="e.g., POL123456"
-                    required
-                  />
+                  <Input name="policyNumber" value={formData.policyNumber} onChange={handleChange} placeholder="POL123456" required className="h-10 text-sm" />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
                     Policy Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="policyType"
                     value={formData.policyType}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     required
                   >
-                    <option value="">Select type</option>
+                    <option value="">Select Type</option>
                     {POLICY_TYPES.map((type) => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
                 </div>
-                
-                {/* Motor Policy Sub-Type */}
+
                 {formData.policyType === 'Motor Insurance' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Motor Policy Type <span className="text-red-500">*</span>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                      Motor Type <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="motorPolicyType"
                       value={formData.motorPolicyType}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       required
                     >
-                      <option value="">Select motor type</option>
+                      <option value="">Select</option>
                       {MOTOR_POLICY_TYPES.map((type) => (
                         <option key={type.value} value={type.value}>{type.label}</option>
                       ))}
                     </select>
                   </div>
                 )}
-                
-                {formData.policyType !== 'Motor Insurance' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Payment Mode <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="paymentMode"
-                      value={formData.paymentMode}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      {PAYMENT_MODES.map((mode) => (
-                        <option key={mode} value={mode} className="capitalize">
-                          {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
 
-              {/* Vehicle Number for Motor */}
-              {formData.policyType === 'Motor Insurance' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Vehicle Number <span className="text-red-500">*</span>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Payment Mode
                   </label>
-                  <Input
-                    name="vehicleNumber"
-                    value={formData.vehicleNumber}
+                  <select
+                    name="paymentMode"
+                    value={formData.paymentMode}
                     onChange={handleChange}
-                    placeholder="e.g., MH01AB1234"
-                    required
-                  />
-                </div>
-              )}
-
-              {/* Premium Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sum Assured (₹)
-                  </label>
-                  <Input
-                    type="number"
-                    name="sumAssured"
-                    value={formData.sumAssured}
-                    onChange={handleChange}
-                    placeholder="e.g., 1000000"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Total Premium (₹) <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="number"
-                    name="premiumAmount"
-                    value={formData.premiumAmount}
-                    onChange={handleChange}
-                    placeholder="e.g., 25000"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Motor Premium Breakdown */}
-              {formData.policyType === 'Motor Insurance' && formData.motorPolicyType && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-3">
-                  <h4 className="font-medium text-yellow-800">Premium Breakdown</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">OD Premium (₹)</label>
-                        <Input
-                          type="number"
-                          name="odPremium"
-                          value={formData.odPremium}
-                          onChange={handleChange}
-                          placeholder="0"
-                        />
-                      </div>
-                    )}
-                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">TP Premium (₹)</label>
-                        <Input
-                          type="number"
-                          name="tpPremium"
-                          value={formData.tpPremium}
-                          onChange={handleChange}
-                          placeholder="0"
-                        />
-                      </div>
-                    )}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Net Premium (₹)</label>
-                      <Input
-                        type="number"
-                        name="netPremium"
-                        value={formData.netPremium}
-                        onChange={handleChange}
-                        placeholder="Excl. GST"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Non-Motor Net Premium */}
-              {formData.policyType && formData.policyType !== 'Motor Insurance' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Net Premium (₹) <span className="text-gray-400 text-xs">for commission calculation</span>
-                  </label>
-                  <Input
-                    type="number"
-                    name="netPremium"
-                    value={formData.netPremium}
-                    onChange={handleChange}
-                    placeholder="Premium excluding GST"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Broker Selection */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Broker (Optional)</h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Broker (PolicyBazaar, MitPro, Probus, etc.)
-                </label>
-                {!showNewBrokerForm ? (
-                  <div>
-                    <select
-                      name="brokerId"
-                      value={formData.brokerId}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Direct / No Broker</option>
-                      {brokers.map((broker) => (
-                        <option key={broker.id} value={broker.id}>
-                          {broker.name} {broker.code ? `(${broker.code})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => setShowNewBrokerForm(true)}
-                      className="text-xs text-blue-600 hover:underline mt-1"
-                    >
-                      + Add New Broker
-                    </button>
-                  </div>
-                ) : (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-purple-800">Add New Broker</span>
-                      <button type="button" onClick={() => setShowNewBrokerForm(false)} className="text-xs text-gray-500">Cancel</button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        placeholder="Broker Name *"
-                        value={newBrokerData.name}
-                        onChange={(e) => setNewBrokerData(prev => ({ ...prev, name: e.target.value }))}
-                      />
-                      <Input
-                        placeholder="Phone"
-                        value={newBrokerData.phone}
-                        onChange={(e) => setNewBrokerData(prev => ({ ...prev, phone: e.target.value }))}
-                      />
-                    </div>
-                    <Input
-                      placeholder="Email"
-                      type="email"
-                      value={newBrokerData.email}
-                      onChange={(e) => setNewBrokerData(prev => ({ ...prev, email: e.target.value }))}
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleCreateBroker}
-                      disabled={creatingBroker || !newBrokerData.name}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-sm"
-                    >
-                      {creatingBroker ? 'Creating...' : '✓ Create & Select Broker'}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Sub-Agent Assignment */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Sub-Agent (Optional)</h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assign Sub-Agent
-                </label>
-                <select
-                  name="subAgentId"
-                  value={formData.subAgentId}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">No Sub-Agent (Direct)</option>
-                  {subAgents.map((sa) => (
-                    <option key={sa.id} value={sa.id}>
-                      {sa.name} ({sa.subAgentCode})
-                    </option>
-                  ))}
-                </select>
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-xs text-gray-500">
-                    <Link href="/dashboard/sub-agents" className="text-blue-600 hover:underline">Manage Sub-Agents</Link>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowSubAgentForm(!showSubAgentForm)}
-                    className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
-                    {showSubAgentForm ? 'Cancel' : '+ Add New Sub-Agent'}
-                  </button>
+                    {PAYMENT_MODES.map((mode) => (
+                      <option key={mode} value={mode}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</option>
+                    ))}
+                  </select>
                 </div>
-                
-                {/* Inline Sub-Agent Creation Form */}
-                {showSubAgentForm && (
-                  <div className="mt-4 p-4 border border-blue-200 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-3">Add New Sub-Agent</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={newSubAgentData.name}
-                          onChange={(e) => setNewSubAgentData(prev => ({ ...prev, name: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Sub-Agent full name"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone *
-                        </label>
-                        <input
-                          type="tel"
-                          value={newSubAgentData.phone}
-                          onChange={(e) => setNewSubAgentData(prev => ({ ...prev, phone: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="10-digit mobile number"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email (Optional)
-                        </label>
-                        <input
-                          type="email"
-                          value={newSubAgentData.email}
-                          onChange={(e) => setNewSubAgentData(prev => ({ ...prev, email: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="email@example.com"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Commission % (Default)
-                        </label>
-                        <input
-                          type="number"
-                          value={newSubAgentData.commissionPercentage}
-                          onChange={(e) => setNewSubAgentData(prev => ({ ...prev, commissionPercentage: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="10"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={handleCreateSubAgent}
-                      disabled={creatingSubAgent || !newSubAgentData.name}
-                      className="mt-4 bg-blue-600 hover:bg-blue-700"
-                    >
-                      {creatingSubAgent ? 'Creating...' : '✓ Create & Select Sub-Agent'}
-                    </Button>
-                  </div>
-                )}
+              </div>
+
+              {/* Dates Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Start Date <span className="text-red-500">*</span></label>
+                  <Input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required className="h-10 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">End Date <span className="text-red-500">*</span></label>
+                  <Input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="h-10 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Sum Assured (₹)</label>
+                  <Input type="number" name="sumAssured" value={formData.sumAssured} onChange={handleChange} placeholder="1000000" className="h-10 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Plan Name</label>
+                  <Input name="planName" value={formData.planName} onChange={handleChange} placeholder="Plan name" className="h-10 text-sm" />
+                </div>
               </div>
             </div>
 
-            {/* Commission Section */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 border-b pb-2">Commission Details</h3>
+            {/* Section: Premium Details */}
+            <div className="p-6 border-b bg-gradient-to-r from-amber-50 to-orange-50">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-amber-600 text-xs">3</span>
+                Premium Details
+              </h3>
               
-              {/* Broker Commission (Manual Input) */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Total Premium (₹) <span className="text-red-500">*</span></label>
+                  <Input type="number" name="premiumAmount" value={formData.premiumAmount} onChange={handleChange} placeholder="25000" required className="h-10 text-sm bg-white" />
+                </div>
+
+                {formData.policyType === 'Motor Insurance' && (formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">OD Premium (₹)</label>
+                    <Input type="number" name="odPremium" value={formData.odPremium} onChange={handleChange} placeholder="0" className="h-10 text-sm bg-white" />
+                  </div>
+                )}
+
+                {formData.policyType === 'Motor Insurance' && (formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">TP Premium (₹)</label>
+                    <Input type="number" name="tpPremium" value={formData.tpPremium} onChange={handleChange} placeholder="0" className="h-10 text-sm bg-white" />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Net Premium (₹)</label>
+                  <Input type="number" name="netPremium" value={formData.netPremium} onChange={handleChange} placeholder="Excl. GST" className="h-10 text-sm bg-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* Section: Broker & Sub-Agent */}
+            <div className="p-6 border-b">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-xs">4</span>
+                Broker & Sub-Agent
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Broker Selection */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Broker (PolicyBazaar, Probus, etc.)</label>
+                  {!showNewBrokerForm ? (
+                    <div className="flex gap-2">
+                      <select
+                        name="brokerId"
+                        value={formData.brokerId}
+                        onChange={handleChange}
+                        className="flex-1 h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      >
+                        <option value="">Direct / No Broker</option>
+                        {brokers.map((broker) => (
+                          <option key={broker.id} value={broker.id}>{broker.name}</option>
+                        ))}
+                      </select>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setShowNewBrokerForm(true)} className="text-xs whitespace-nowrap">+ Add</Button>
+                    </div>
+                  ) : (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-purple-800">Add New Broker</span>
+                        <button type="button" onClick={() => setShowNewBrokerForm(false)} className="text-gray-500 text-lg">×</button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input placeholder="Broker Name *" value={newBrokerData.name} onChange={(e) => setNewBrokerData(prev => ({ ...prev, name: e.target.value }))} className="h-9 text-sm" />
+                        <Input placeholder="Phone" value={newBrokerData.phone} onChange={(e) => setNewBrokerData(prev => ({ ...prev, phone: e.target.value }))} className="h-9 text-sm" />
+                        <Button type="button" onClick={handleCreateBroker} disabled={creatingBroker || !newBrokerData.name} className="h-9 text-xs bg-purple-600 hover:bg-purple-700">
+                          {creatingBroker ? '...' : '✓ Create'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sub-Agent Selection */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Assign Sub-Agent</label>
+                  <div className="flex gap-2">
+                    <select
+                      name="subAgentId"
+                      value={formData.subAgentId}
+                      onChange={handleChange}
+                      className="flex-1 h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="">No Sub-Agent</option>
+                      {subAgents.map((sa) => (
+                        <option key={sa.id} value={sa.id}>{sa.name} ({sa.subAgentCode})</option>
+                      ))}
+                    </select>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setShowSubAgentForm(!showSubAgentForm)} className="text-xs whitespace-nowrap">
+                      {showSubAgentForm ? 'Cancel' : '+ Add'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Inline Sub-Agent Form */}
+              {showSubAgentForm && (
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-800 text-sm mb-3">Add New Sub-Agent</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <Input placeholder="Name *" value={newSubAgentData.name} onChange={(e) => setNewSubAgentData(prev => ({ ...prev, name: e.target.value }))} className="h-9 text-sm" />
+                    <Input placeholder="Phone *" value={newSubAgentData.phone} onChange={(e) => setNewSubAgentData(prev => ({ ...prev, phone: e.target.value }))} className="h-9 text-sm" />
+                    <Input placeholder="Email" value={newSubAgentData.email} onChange={(e) => setNewSubAgentData(prev => ({ ...prev, email: e.target.value }))} className="h-9 text-sm" />
+                    <Input type="number" placeholder="Commission %" value={newSubAgentData.commissionPercentage} onChange={(e) => setNewSubAgentData(prev => ({ ...prev, commissionPercentage: e.target.value }))} className="h-9 text-sm" />
+                    <Button type="button" onClick={handleCreateSubAgent} disabled={creatingSubAgent || !newSubAgentData.name} className="h-9 text-xs">
+                      {creatingSubAgent ? '...' : '✓ Create Sub-Agent'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Broker Commission Input */}
               {formData.brokerId && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <label className="block text-sm font-medium text-purple-800 mb-2">
-                    💰 Commission Received from Broker (₹)
-                  </label>
+                <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <label className="block text-xs font-medium text-purple-800 mb-1.5">Commission from Broker (₹)</label>
                   <Input
                     type="number"
                     name="brokerCommissionAmount"
                     value={formData.brokerCommissionAmount}
                     onChange={handleChange}
-                    placeholder="Enter commission amount from broker"
-                    step="0.01"
-                    className="bg-white"
+                    placeholder="Enter commission amount"
+                    className="h-10 text-sm bg-white max-w-xs"
                   />
-                  <p className="text-xs text-purple-600 mt-1">
-                    Total commission you will receive from {brokers.find(b => b.id === formData.brokerId)?.name || 'broker'}
-                  </p>
                 </div>
               )}
-              
-              {/* Received Payout - Motor Commission Rates */}
-              {formData.policyType === 'Motor Insurance' && formData.motorPolicyType && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-                  <h4 className="font-medium text-green-800">Received Payout (%)</h4>
+            </div>
+
+            {/* Section: Commission Rates */}
+            <div className="p-6 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-green-100 rounded flex items-center justify-center text-green-600 text-xs">5</span>
+                Commission Rates
+              </h3>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Received Commission Rates */}
+                <div className="bg-white rounded-lg p-4 border">
+                  <h4 className="text-xs font-semibold text-green-700 uppercase mb-3">📥 Received Payout (%)</h4>
                   <div className="grid grid-cols-3 gap-3">
-                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                    {formData.policyType === 'Motor Insurance' && (formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">OD Rate %</label>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          name="odCommissionRate"
-                          value={formData.odCommissionRate}
-                          onChange={handleChange}
-                          placeholder="e.g., 15"
-                          max="100"
-                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
+                        <label className="block text-xs text-gray-500 mb-1">OD Rate</label>
+                        <Input type="text" inputMode="decimal" name="odCommissionRate" value={formData.odCommissionRate} onChange={handleChange} placeholder="15" className="h-9 text-sm" />
                       </div>
                     )}
-                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
+                    {formData.policyType === 'Motor Insurance' && (formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">TP Rate %</label>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          name="tpCommissionRate"
-                          value={formData.tpCommissionRate}
-                          onChange={handleChange}
-                          placeholder="e.g., 5"
-                          max="100"
-                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
+                        <label className="block text-xs text-gray-500 mb-1">TP Rate</label>
+                        <Input type="text" inputMode="decimal" name="tpCommissionRate" value={formData.tpCommissionRate} onChange={handleChange} placeholder="5" className="h-9 text-sm" />
                       </div>
                     )}
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Net Rate %</label>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        name="netCommissionRate"
-                        value={formData.netCommissionRate}
-                        onChange={handleChange}
-                        placeholder="Optional"
-                        max="100"
-                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
+                      <label className="block text-xs text-gray-500 mb-1">{formData.policyType === 'Motor Insurance' ? 'Net Rate' : 'Commission %'}</label>
+                      <Input type="text" inputMode="decimal" name={formData.policyType === 'Motor Insurance' ? 'netCommissionRate' : 'commissionRate'} value={formData.policyType === 'Motor Insurance' ? formData.netCommissionRate : formData.commissionRate} onChange={handleChange} placeholder="10" className="h-9 text-sm" />
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Paid Amount - Motor Commission Rates for Sub-Agent */}
-              {formData.policyType === 'Motor Insurance' && formData.motorPolicyType && formData.subAgentId && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-3">
-                  <h4 className="font-medium text-orange-800">Paid Amount (%) - To Sub-Agent</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                    {formData.policyType !== 'Motor Insurance' && (
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">OD Rate %</label>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          name="subAgentOdRate"
-                          value={(formData as any).subAgentOdRate || ''}
-                          onChange={handleChange}
-                          placeholder="e.g., 10"
-                          max="100"
-                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
+                        <label className="block text-xs text-gray-500 mb-1">Renewal %</label>
+                        <Input type="text" inputMode="decimal" name="renewalCommissionRate" value={formData.renewalCommissionRate} onChange={handleChange} placeholder="5" className="h-9 text-sm" />
                       </div>
                     )}
-                    {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
+                  </div>
+                </div>
+
+                {/* Sub-Agent Payout Rates */}
+                {formData.subAgentId && formData.policyType === 'Motor Insurance' && (
+                  <div className="bg-white rounded-lg p-4 border border-orange-200">
+                    <h4 className="text-xs font-semibold text-orange-700 uppercase mb-3">📤 Paid to Sub-Agent (%)</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">OD Rate</label>
+                          <Input type="text" inputMode="decimal" name="subAgentOdRate" value={(formData as any).subAgentOdRate || ''} onChange={handleChange} placeholder="10" className="h-9 text-sm" />
+                        </div>
+                      )}
+                      {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">TP Rate</label>
+                          <Input type="text" inputMode="decimal" name="subAgentTpRate" value={(formData as any).subAgentTpRate || ''} onChange={handleChange} placeholder="3" className="h-9 text-sm" />
+                        </div>
+                      )}
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">TP Rate %</label>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          name="subAgentTpRate"
-                          value={(formData as any).subAgentTpRate || ''}
-                          onChange={handleChange}
-                          placeholder="e.g., 3"
-                          max="100"
-                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
+                        <label className="block text-xs text-gray-500 mb-1">Net Rate</label>
+                        <Input type="text" inputMode="decimal" name="subAgentNetRate" value={(formData as any).subAgentNetRate || ''} onChange={handleChange} placeholder="8" className="h-9 text-sm" />
                       </div>
-                    )}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Net Rate %</label>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        name="subAgentNetRate"
-                        value={(formData as any).subAgentNetRate || ''}
-                        onChange={handleChange}
-                        placeholder="Optional"
-                        max="100"
-                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Non-Motor Commission */}
-              {formData.policyType && formData.policyType !== 'Motor Insurance' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Commission Rate (%)
-                    </label>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      name="commissionRate"
-                      value={formData.commissionRate}
-                      onChange={handleChange}
-                      placeholder="e.g., 15"
-                      max="100"
-                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Renewal Commission (%)
-                    </label>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      name="renewalCommissionRate"
-                      value={formData.renewalCommissionRate}
-                      onChange={handleChange}
-                      placeholder="For future renewals"
-                      max="100"
-                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Commission Calculation Preview */}
+              {/* Commission Preview */}
               {(formData.odCommissionRate || formData.tpCommissionRate || formData.netCommissionRate || formData.commissionRate || formData.brokerCommissionAmount) && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                  <h4 className="font-medium text-indigo-800 mb-2">Commission Preview</h4>
-                  <div className="text-sm space-y-2">
-                    <p>Total Commission: <span className="font-bold text-green-700">₹{calculateTotalCommission().toFixed(2)}</span></p>
-                    <p className="text-indigo-700">
-                      Your Payout: <span className="font-bold text-indigo-800">₹{calculateAgentPayout().toFixed(2)}</span>
-                    </p>
+                <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <h4 className="text-xs font-semibold text-indigo-800 uppercase mb-2">Commission Preview</h4>
+                  <div className="flex items-center gap-6 text-sm">
+                    <div>
+                      <span className="text-gray-600">Total:</span>
+                      <span className="font-bold text-green-700 ml-1">₹{calculateTotalCommission().toFixed(0)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Your Payout:</span>
+                      <span className="font-bold text-indigo-700 ml-1">₹{calculateAgentPayout().toFixed(0)}</span>
+                    </div>
                     {formData.subAgentId && calculateSubAgentPayout() > 0 && (
-                      <>
-                        <p className="text-orange-700">
-                          Paid to Sub-Agent: <span className="font-bold text-orange-800">₹{calculateSubAgentPayout().toFixed(2)}</span>
-                        </p>
-                        <p className="text-xs text-gray-600 italic">
-                          * Agent payout calculated from manually mentioned rates only
-                        </p>
-                      </>
-                    )}
-                    {formData.subAgentId && calculateSubAgentPayout() === 0 && (
-                      <p className="text-xs text-amber-600 italic">
-                        * No rates mentioned for sub-agent. Agent gets full payout.
-                      </p>
+                      <div>
+                        <span className="text-gray-600">Sub-Agent:</span>
+                        <span className="font-bold text-orange-700 ml-1">₹{calculateSubAgentPayout().toFixed(0)}</span>
+                      </div>
                     )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Documents Section */}
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <span className="text-blue-500 mr-2">📎</span>
+            {/* Section: Documents */}
+            <div className="p-6 border-b">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-gray-600 text-xs">6</span>
                 Documents
               </h3>
               
-              {/* Document Upload Grid */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                {/* Policy Copy Upload */}
-                <div className="group">
-                  <input
-                    type="file"
-                    id="policyCopy"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, policyCopyFile: file } as any));
-                      }
-                    }}
-                  />
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                {/* Policy Copy */}
+                <div>
+                  <input type="file" id="policyCopy" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, policyCopyFile: file } as any)); }} />
                   <label htmlFor="policyCopy" className="cursor-pointer block">
-                    <div className={`relative bg-gradient-to-br from-purple-50 to-purple-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
-                      (formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-purple-200 hover:border-purple-300'
-                    }`}>
-                      <div className="text-2xl mb-2">📄</div>
-                      <div className="text-sm font-medium text-gray-700">Policy Copy</div>
-                      {(formData as any).policyCopyFile ? (
-                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
-                      ) : (
-                        <div className="text-xs text-gray-400">PDF, JPG, PNG</div>
-                      )}
+                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-xl mb-1">📄</div>
+                      <div className="text-xs font-medium text-gray-700">Policy</div>
+                      {(formData as any).policyCopyFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
                     </div>
                   </label>
                 </div>
 
-                {/* RC Upload */}
-                <div className="group">
-                  <input
-                    type="file"
-                    id="rcDocument"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, rcDocumentFile: file } as any));
-                      }
-                    }}
-                  />
+                {/* RC Document */}
+                <div>
+                  <input type="file" id="rcDocument" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, rcDocumentFile: file } as any)); }} />
                   <label htmlFor="rcDocument" className="cursor-pointer block">
-                    <div className={`relative bg-gradient-to-br from-blue-50 to-blue-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
-                      (formData as any).rcDocumentFile ? 'border-green-400 bg-green-50' : 'border-blue-200 hover:border-blue-300'
-                    }`}>
-                      <div className="text-2xl mb-2">🚗</div>
-                      <div className="text-sm font-medium text-gray-700">RC Document</div>
-                      {(formData as any).rcDocumentFile ? (
-                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
-                      ) : (
-                        <div className="text-xs text-gray-400">Registration</div>
-                      )}
+                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).rcDocumentFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-xl mb-1">🚗</div>
+                      <div className="text-xs font-medium text-gray-700">RC</div>
+                      {(formData as any).rcDocumentFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
                     </div>
                   </label>
                 </div>
 
                 {/* Aadhar Front */}
-                <div className="group">
-                  <input
-                    type="file"
-                    id="aadharFront"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, aadharFrontFile: file } as any));
-                      }
-                    }}
-                  />
+                <div>
+                  <input type="file" id="aadharFront" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, aadharFrontFile: file } as any)); }} />
                   <label htmlFor="aadharFront" className="cursor-pointer block">
-                    <div className={`relative bg-gradient-to-br from-orange-50 to-orange-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
-                      (formData as any).aadharFrontFile ? 'border-green-400 bg-green-50' : 'border-orange-200 hover:border-orange-300'
-                    }`}>
-                      <div className="text-2xl mb-2">🪪</div>
-                      <div className="text-sm font-medium text-gray-700">Aadhar Front</div>
-                      {(formData as any).aadharFrontFile ? (
-                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
-                      ) : (
-                        <div className="text-xs text-gray-400">Front side</div>
-                      )}
+                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).aadharFrontFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-xl mb-1">🪪</div>
+                      <div className="text-xs font-medium text-gray-700">Aadhar F</div>
+                      {(formData as any).aadharFrontFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
                     </div>
                   </label>
                 </div>
 
                 {/* Aadhar Back */}
-                <div className="group">
-                  <input
-                    type="file"
-                    id="aadharBack"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, aadharBackFile: file } as any));
-                      }
-                    }}
-                  />
+                <div>
+                  <input type="file" id="aadharBack" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, aadharBackFile: file } as any)); }} />
                   <label htmlFor="aadharBack" className="cursor-pointer block">
-                    <div className={`relative bg-gradient-to-br from-orange-50 to-orange-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
-                      (formData as any).aadharBackFile ? 'border-green-400 bg-green-50' : 'border-orange-200 hover:border-orange-300'
-                    }`}>
-                      <div className="text-2xl mb-2">🪪</div>
-                      <div className="text-sm font-medium text-gray-700">Aadhar Back</div>
-                      {(formData as any).aadharBackFile ? (
-                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
-                      ) : (
-                        <div className="text-xs text-gray-400">Back side</div>
-                      )}
+                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).aadharBackFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-xl mb-1">🪪</div>
+                      <div className="text-xs font-medium text-gray-700">Aadhar B</div>
+                      {(formData as any).aadharBackFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
                     </div>
                   </label>
                 </div>
-              </div>
 
-              {/* Second Row of Documents */}
-              <div className="grid grid-cols-3 gap-4">
                 {/* PAN Card */}
-                <div className="group">
-                  <input
-                    type="file"
-                    id="panCard"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, panCardFile: file } as any));
-                      }
-                    }}
-                  />
+                <div>
+                  <input type="file" id="panCard" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, panCardFile: file } as any)); }} />
                   <label htmlFor="panCard" className="cursor-pointer block">
-                    <div className={`relative bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
-                      (formData as any).panCardFile ? 'border-green-400 bg-green-50' : 'border-indigo-200 hover:border-indigo-300'
-                    }`}>
-                      <div className="text-2xl mb-2">🆔</div>
-                      <div className="text-sm font-medium text-gray-700">PAN Card</div>
-                      {(formData as any).panCardFile ? (
-                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
-                      ) : (
-                        <div className="text-xs text-gray-400">Tax ID</div>
-                      )}
+                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).panCardFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-xl mb-1">🆔</div>
+                      <div className="text-xs font-medium text-gray-700">PAN</div>
+                      {(formData as any).panCardFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
                     </div>
                   </label>
                 </div>
 
                 {/* Photo */}
-                <div className="group">
-                  <input
-                    type="file"
-                    id="photo"
-                    accept=".jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, photoFile: file } as any));
-                      }
-                    }}
-                  />
+                <div>
+                  <input type="file" id="photo" accept=".jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, photoFile: file } as any)); }} />
                   <label htmlFor="photo" className="cursor-pointer block">
-                    <div className={`relative bg-gradient-to-br from-green-50 to-green-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
-                      (formData as any).photoFile ? 'border-green-400 bg-green-50' : 'border-green-200 hover:border-green-300'
-                    }`}>
-                      <div className="text-2xl mb-2">📸</div>
-                      <div className="text-sm font-medium text-gray-700">Photo</div>
-                      {(formData as any).photoFile ? (
-                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
-                      ) : (
-                        <div className="text-xs text-gray-400">Passport size</div>
-                      )}
+                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).photoFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-xl mb-1">📸</div>
+                      <div className="text-xs font-medium text-gray-700">Photo</div>
+                      {(formData as any).photoFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
                     </div>
                   </label>
                 </div>
 
                 {/* Cancel Cheque */}
-                <div className="group">
-                  <input
-                    type="file"
-                    id="cancelCheque"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, cancelChequeFile: file } as any));
-                      }
-                    }}
-                  />
+                <div>
+                  <input type="file" id="cancelCheque" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, cancelChequeFile: file } as any)); }} />
                   <label htmlFor="cancelCheque" className="cursor-pointer block">
-                    <div className={`relative bg-gradient-to-br from-rose-50 to-rose-100 border-2 rounded-xl p-4 text-center transition-all hover:shadow-md ${
-                      (formData as any).cancelChequeFile ? 'border-green-400 bg-green-50' : 'border-rose-200 hover:border-rose-300'
-                    }`}>
-                      <div className="text-2xl mb-2">🏦</div>
-                      <div className="text-sm font-medium text-gray-700">Cancel Cheque</div>
-                      {(formData as any).cancelChequeFile ? (
-                        <div className="text-xs text-green-600 mt-1">✓ Uploaded</div>
-                      ) : (
-                        <div className="text-xs text-gray-400">Bank proof</div>
-                      )}
+                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).cancelChequeFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-xl mb-1">🏦</div>
+                      <div className="text-xs font-medium text-gray-700">Cheque</div>
+                      {(formData as any).cancelChequeFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
                     </div>
                   </label>
                 </div>
               </div>
+            </div>
 
-              <p className="text-sm text-gray-500 mt-4 text-center">Upload policy copy and KYC documents for record keeping</p>
-                    </div>
-                  </div>
-                </div>
+            {/* Section: Remarks */}
+            <div className="p-6">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-gray-600 text-xs">7</span>
+                Remarks
+              </h3>
+              <textarea
+                name="remarks"
+                value={formData.remarks || ''}
+                onChange={handleChange}
+                placeholder="Add any notes..."
+                rows={2}
+                className="w-full p-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              />
+            </div>
 
-                {/* Remarks Section */}
-                <div className="col-span-1 lg:col-span-2">
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <span className="text-purple-500 mr-2">📝</span>
-                      Remarks
-                    </h3>
-                    <textarea
-                      name="remarks"
-                      value={formData.remarks || ''}
-                      onChange={handleChange}
-                      placeholder="Add any additional notes or remarks..."
-                      rows={4}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="sticky bottom-0 bg-white border-t pt-6 mt-8">
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.back()}
-                    className="flex-1 h-12 text-base font-medium border-2"
-                  >
-                    <span className="mr-2">←</span>
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading || !formData.clientId || !formData.companyId || !formData.policyNumber}
-                    className="flex-1 h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg"
-                  >
-                    {loading ? (
-                      <>
-                        <span className="animate-spin mr-2">⏳</span>
-                        Saving Policy...
-                      </>
-                    ) : (
-                      <>
-                        <span className="mr-2">💾</span>
-                        Save Policy
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          </div>
+            {/* Sticky Footer with Action Buttons */}
+            <div className="sticky bottom-0 bg-white border-t p-4 flex items-center justify-between">
+              <Button type="button" variant="outline" onClick={() => router.back()} className="h-11 px-6">
+                ← Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading || !formData.clientId || !formData.companyId || !formData.policyNumber}
+                className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
+              >
+                {loading ? '⏳ Saving...' : '💾 Save Policy'}
+              </Button>
+            </div>
+          </form>
         </div>
       )}
 
