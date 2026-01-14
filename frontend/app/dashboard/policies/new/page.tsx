@@ -304,23 +304,81 @@ export default function NewPolicyPage() {
 
   // Get selected sub-agent commission share
   // Commission flow: Broker → Agent keeps X% → Sub-Agent gets rest
+  // Calculate agent payout based on manually mentioned rates
+  const calculateAgentPayout = () => {
+    if (!formData.subAgentId) return calculateTotalCommission(); // No sub-agent, agent gets all
+    
+    const isMotor = formData.policyType === 'Motor Insurance';
+    const totalReceived = calculateTotalCommission();
+    
+    if (isMotor) {
+      // For Motor: Calculate based on manually mentioned OD/TP rates or Net rate
+      const formDataAny = formData as any;
+      const netRate = parseFloat(formDataAny.subAgentNetRate) || 0;
+      
+      if (netRate > 0) {
+        // Use Net rate calculation for sub-agent payout
+        const netPremium = parseFloat(formData.netPremium || formData.premiumAmount) || 0;
+        const subAgentPayout = netPremium * netRate / 100;
+        return Math.max(0, totalReceived - subAgentPayout);
+      } else {
+        // Use OD/TP separate calculations for sub-agent payout
+        const odRate = parseFloat(formDataAny.subAgentOdRate) || 0;
+        const tpRate = parseFloat(formDataAny.subAgentTpRate) || 0;
+        const odPayout = (parseFloat(formData.odPremium) || 0) * odRate / 100;
+        const tpPayout = (parseFloat(formData.tpPremium) || 0) * tpRate / 100;
+        const subAgentPayout = odPayout + tpPayout;
+        return Math.max(0, totalReceived - subAgentPayout);
+      }
+    } else {
+      // For Non-Motor: No manual rate input implemented yet, agent gets full amount
+      return totalReceived;
+    }
+  };
+
+  // Calculate sub-agent payout based on manually mentioned rates
+  const calculateSubAgentPayout = () => {
+    if (!formData.subAgentId) return 0;
+    
+    const isMotor = formData.policyType === 'Motor Insurance';
+    
+    if (isMotor) {
+      const formDataAny = formData as any;
+      const netRate = parseFloat(formDataAny.subAgentNetRate) || 0;
+      
+      if (netRate > 0) {
+        // Use Net rate calculation
+        const netPremium = parseFloat(formData.netPremium || formData.premiumAmount) || 0;
+        return netPremium * netRate / 100;
+      } else {
+        // Use OD/TP separate calculations
+        const odRate = parseFloat(formDataAny.subAgentOdRate) || 0;
+        const tpRate = parseFloat(formDataAny.subAgentTpRate) || 0;
+        const odPayout = (parseFloat(formData.odPremium) || 0) * odRate / 100;
+        const tpPayout = (parseFloat(formData.tpPremium) || 0) * tpRate / 100;
+        return odPayout + tpPayout;
+      }
+    }
+    
+    return 0; // No sub-agent payout for non-motor yet
+  };
+
   const getSubAgentShare = () => {
     if (!formData.subAgentId) return null;
     const subAgent = subAgents.find(sa => sa.id === formData.subAgentId);
     if (!subAgent) return null;
-    const totalComm = calculateTotalCommission();
     
-    // If agent share is manually specified, use that. Otherwise use sub-agent's default split
-    const agentKeeps = formData.agentSharePercent 
-      ? parseFloat(formData.agentSharePercent) 
-      : (100 - parseFloat(subAgent.commissionPercentage));
-    const subAgentPercent = 100 - agentKeeps;
+    const totalComm = calculateTotalCommission();
+    const agentAmount = calculateAgentPayout();
+    const subAgentAmount = calculateSubAgentPayout();
+    const subAgentPercent = totalComm > 0 ? (subAgentAmount / totalComm * 100) : 0;
+    const agentKeeps = totalComm > 0 ? (agentAmount / totalComm * 100) : 100;
     
     return {
-      subAgentAmount: (totalComm * subAgentPercent) / 100,
-      agentAmount: (totalComm * agentKeeps) / 100,
-      subAgentPercent,
-      agentKeeps
+      subAgentAmount,
+      agentAmount,
+      subAgentPercent: parseFloat(subAgentPercent.toFixed(2)),
+      agentKeeps: parseFloat(agentKeeps.toFixed(2))
     };
   };
 
@@ -1463,20 +1521,25 @@ export default function NewPolicyPage() {
               {(formData.odCommissionRate || formData.tpCommissionRate || formData.netCommissionRate || formData.commissionRate || formData.brokerCommissionAmount) && (
                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                   <h4 className="font-medium text-indigo-800 mb-2">Commission Preview</h4>
-                  <div className="text-sm space-y-1">
+                  <div className="text-sm space-y-2">
                     <p>Total Commission: <span className="font-bold text-green-700">₹{calculateTotalCommission().toFixed(2)}</span></p>
-                    {!formData.subAgentId && (
-                      <p className="text-indigo-700">Your Payout: <span className="font-bold text-indigo-800">₹{calculateTotalCommission().toFixed(2)}</span></p>
-                    )}
-                    {formData.subAgentId && getSubAgentShare() && (
+                    <p className="text-indigo-700">
+                      Your Payout: <span className="font-bold text-indigo-800">₹{calculateAgentPayout().toFixed(2)}</span>
+                    </p>
+                    {formData.subAgentId && calculateSubAgentPayout() > 0 && (
                       <>
-                        <p className="text-indigo-700">
-                          Your Payout: <span className="font-bold text-indigo-800">₹{getSubAgentShare()?.agentAmount.toFixed(2)}</span>
-                        </p>
                         <p className="text-orange-700">
-                          Paid to Sub-Agent: <span className="font-bold text-orange-800">₹{getSubAgentShare()?.subAgentAmount.toFixed(2)}</span> ({getSubAgentShare()?.subAgentPercent}% to {subAgents.find(s => s.id === formData.subAgentId)?.name})
+                          Paid to Sub-Agent: <span className="font-bold text-orange-800">₹{calculateSubAgentPayout().toFixed(2)}</span>
+                        </p>
+                        <p className="text-xs text-gray-600 italic">
+                          * Agent payout calculated from manually mentioned rates only
                         </p>
                       </>
+                    )}
+                    {formData.subAgentId && calculateSubAgentPayout() === 0 && (
+                      <p className="text-xs text-amber-600 italic">
+                        * No rates mentioned for sub-agent. Agent gets full payout.
+                      </p>
                     )}
                   </div>
                 </div>
