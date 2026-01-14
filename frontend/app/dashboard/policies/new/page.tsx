@@ -33,7 +33,7 @@ interface Broker {
   code: string | null;
 }
 
-type EntryMode = 'manual' | 'scan' | 'excel';
+type EntryMode = 'manual' | 'excel';
 
 const POLICY_TYPES = [
   'Life Insurance',
@@ -62,7 +62,6 @@ export default function NewPolicyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preSelectedClientId = searchParams.get('clientId');
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
   
   const [entryMode, setEntryMode] = useState<EntryMode>('manual');
@@ -80,7 +79,6 @@ export default function NewPolicyPage() {
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [showNewBrokerForm, setShowNewBrokerForm] = useState(false);
   const [showSubAgentForm, setShowSubAgentForm] = useState(false);
-  const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [excelData, setExcelData] = useState<any[]>([]);
   const [excelFileName, setExcelFileName] = useState('');
   
@@ -382,7 +380,7 @@ export default function NewPolicyPage() {
     };
   };
 
-  // Handle document scan/upload
+  // Handle document scan/upload - OCR for policy copy
   const handleDocumentScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -392,14 +390,7 @@ export default function NewPolicyPage() {
     setSuccess('');
 
     try {
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setScannedImage(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      // Also set the scanned file as policy copy
+      // Set the file as policy copy
       setFormData(prev => ({ 
         ...prev, 
         policyCopyFile: file 
@@ -607,19 +598,7 @@ export default function NewPolicyPage() {
             }`}
           >
             <span>✏️</span>
-            <span>Manual</span>
-          </button>
-          
-          <button
-            onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg border transition-all text-sm font-medium ${
-              entryMode === 'scan' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' 
-                : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'
-            }`}
-          >
-            <span>📷</span>
-            <span>Scan Document</span>
+            <span>Manual Entry</span>
           </button>
           
           <button
@@ -635,14 +614,7 @@ export default function NewPolicyPage() {
           </button>
         </div>
 
-        {/* Hidden File Inputs */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleDocumentScan}
-          accept="image/*,.pdf"
-          className="hidden"
-        />
+        {/* Hidden File Input for Excel */}
         <input
           type="file"
           ref={excelInputRef}
@@ -650,53 +622,6 @@ export default function NewPolicyPage() {
           accept=".xlsx,.xls,.csv"
           className="hidden"
         />
-
-        {/* Scan Mode UI */}
-        {entryMode === 'scan' && (
-          <Card className="mb-6 shadow-lg">
-            <CardContent className="p-8">
-              <div className="text-center">
-              <div className="text-4xl mb-3">📄</div>
-              <h3 className="font-medium text-gray-900 mb-2">Scan Policy Document</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Upload policy copy image or PDF to auto-extract details
-              </p>
-              
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={scanning}
-                className="mb-4"
-              >
-                {scanning ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    Scanning...
-                  </>
-                ) : (
-                  <>📷 Choose File / Take Photo</>
-                )}
-              </Button>
-
-              {scannedImage && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 mb-2">Uploaded Document:</p>
-                  <img 
-                    src={scannedImage} 
-                    alt="Scanned document" 
-                    className="max-h-48 mx-auto rounded-lg border"
-                  />
-                </div>
-              )}
-
-              {success && (
-                <div className="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                  {success}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Excel Mode UI */}
       {entryMode === 'excel' && (
@@ -795,8 +720,8 @@ export default function NewPolicyPage() {
         </Card>
       )}
 
-      {/* Manual Form - show for manual mode, or after scan/excel fills data */}
-      {(entryMode === 'manual' || (entryMode === 'scan' && scannedImage)) && (
+      {/* Manual Form - show for manual mode */}
+      {entryMode === 'manual' && (
         <div className="bg-white rounded-lg shadow-sm border">
           <form onSubmit={handleSubmit}>
             {/* Error/Success Messages */}
@@ -806,7 +731,7 @@ export default function NewPolicyPage() {
               </div>
             )}
             
-            {success && entryMode === 'scan' && (
+            {success && (
               <div className="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
                 {success}
               </div>
@@ -1261,16 +1186,18 @@ export default function NewPolicyPage() {
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-gray-600 text-xs">6</span>
                 Documents
+                {scanning && <span className="ml-2 text-xs text-blue-600 animate-pulse">⏳ Extracting details...</span>}
               </h3>
               
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                {/* Policy Copy */}
+                {/* Policy Copy - with OCR */}
                 <div>
-                  <input type="file" id="policyCopy" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, policyCopyFile: file } as any)); }} />
+                  <input type="file" id="policyCopy" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleDocumentScan} />
                   <label htmlFor="policyCopy" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
-                      <div className="text-lg">📄</div>
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-blue-300 bg-blue-50'}`}>
+                      <div className="text-lg">{scanning ? '⏳' : '📄'}</div>
                       <div className="text-[10px] font-medium text-gray-700">Policy</div>
+                      {!(formData as any).policyCopyFile && <div className="text-[8px] text-blue-500">Auto-fill</div>}
                     </div>
                   </label>
                   {(formData as any).policyCopyFile && (
