@@ -580,61 +580,56 @@ export default function NewPolicyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/dashboard/policies" className="text-blue-600 hover:underline text-sm mb-2 inline-block">
-            ← Back to Policies
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-800">Add New Policy</h1>
-          <p className="text-gray-600">Choose how you want to add policy details</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Compact Header with Entry Mode Pills */}
+      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b sticky top-0 z-10">
+        <div className="px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/policies" className="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
+              <span>←</span>
+              <span className="text-sm">Back</span>
+            </Link>
+            <div className="border-l pl-4">
+              <h1 className="text-xl font-bold text-gray-800">Add New Policy</h1>
+            </div>
+          </div>
+          {/* Entry Mode Pills */}
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+            <button
+              onClick={() => { setEntryMode('manual'); setError(''); setSuccess(''); }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                entryMode === 'manual' 
+                  ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' 
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              ✏️ Manual
+            </button>
+            <button
+              onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                entryMode === 'scan' 
+                  ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' 
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              📷 Scan
+            </button>
+            <button
+              onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                entryMode === 'excel' 
+                  ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' 
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              📊 Excel
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Entry Mode Selection */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <button
-            onClick={() => { setEntryMode('manual'); setError(''); setSuccess(''); }}
-            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
-              entryMode === 'manual' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
-            }`}
-          >
-            <div className="text-3xl mb-2">✏️</div>
-            <div className="font-semibold text-base">Manual</div>
-            <div className="text-sm text-gray-500">Type details</div>
-          </button>
-          
-          <button
-            onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
-            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
-              entryMode === 'scan' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
-            }`}
-          >
-            <div className="text-3xl mb-2">📷</div>
-            <div className="font-semibold text-base">Scan Document</div>
-            <div className="text-sm text-gray-500">Auto-fill from image</div>
-          </button>
-          
-          <button
-            onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
-            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
-              entryMode === 'excel' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
-            }`}
-          >
-            <div className="text-3xl mb-2">📊</div>
-            <div className="font-semibold text-base">Excel Import</div>
-            <div className="text-sm text-gray-500">Bulk upload</div>
-          </button>
-        </div>
-
+      <div className="p-4 lg:p-6">
         {/* Hidden File Inputs */}
         <input
           type="file"
@@ -797,29 +792,29 @@ export default function NewPolicyPage() {
 
       {/* Manual Form - show for manual mode, or after scan/excel fills data */}
       {(entryMode === 'manual' || (entryMode === 'scan' && scannedImage)) && (
-        <div className="bg-white rounded-xl shadow-lg border">
-          <div className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="p-6 lg:p-8">
+            <form onSubmit={handleSubmit}>
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-6">
                   {error}
                 </div>
               )}
               
               {success && entryMode === 'scan' && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mb-6">
                   {success}
                 </div>
               )}
 
-              {/* Form Grid Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column */}
-                <div className="space-y-6">"
+              {/* Form Grid Layout - 3 Columns */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Column 1 - Client & Policy */}
+                <div className="space-y-5">
 
                   {/* Client Selection */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+                    <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                       <span className="text-blue-500 mr-2">👤</span>
                       Client Details
                     </h3>
