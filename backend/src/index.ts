@@ -17,9 +17,32 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
+// CORS configuration - Allow multiple origins for Vercel deployments
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://insurancebook.vercel.app',
+  'https://insurance-book.vercel.app',
+  process.env.CORS_ORIGIN,
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches any allowed origin or Vercel preview URLs
+    const isAllowed = allowedOrigins.includes(origin) || 
+                      origin.includes('vercel.app') || 
+                      origin.includes('localhost');
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
