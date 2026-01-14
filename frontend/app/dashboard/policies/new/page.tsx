@@ -580,56 +580,61 @@ export default function NewPolicyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Compact Header with Entry Mode Pills */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b sticky top-0 z-10">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/policies" className="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
-              <span>←</span>
-              <span className="text-sm">Back</span>
-            </Link>
-            <div className="border-l pl-4">
-              <h1 className="text-xl font-bold text-gray-800">Add New Policy</h1>
-            </div>
-          </div>
-          {/* Entry Mode Pills */}
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-            <button
-              onClick={() => { setEntryMode('manual'); setError(''); setSuccess(''); }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                entryMode === 'manual' 
-                  ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' 
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              ✏️ Manual
-            </button>
-            <button
-              onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                entryMode === 'scan' 
-                  ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' 
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              📷 Scan
-            </button>
-            <button
-              onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                entryMode === 'excel' 
-                  ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' 
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              📊 Excel
-            </button>
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Link href="/dashboard/policies" className="text-blue-600 hover:underline text-sm mb-2 inline-block">
+            ← Back to Policies
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-800">Add New Policy</h1>
+          <p className="text-gray-600">Choose how you want to add policy details</p>
         </div>
       </div>
 
-      <div className="p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Entry Mode Selection */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <button
+            onClick={() => { setEntryMode('manual'); setError(''); setSuccess(''); }}
+            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+              entryMode === 'manual' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
+                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+            }`}
+          >
+            <div className="text-3xl mb-2">✏️</div>
+            <div className="font-semibold text-base">Manual</div>
+            <div className="text-sm text-gray-500">Type details</div>
+          </button>
+          
+          <button
+            onClick={() => { setEntryMode('scan'); setError(''); setSuccess(''); }}
+            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+              entryMode === 'scan' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
+                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+            }`}
+          >
+            <div className="text-3xl mb-2">📷</div>
+            <div className="font-semibold text-base">Scan Document</div>
+            <div className="text-sm text-gray-500">Auto-fill from image</div>
+          </button>
+          
+          <button
+            onClick={() => { setEntryMode('excel'); setError(''); setSuccess(''); }}
+            className={`p-6 rounded-xl border-2 transition-all shadow-sm ${
+              entryMode === 'excel' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
+                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+            }`}
+          >
+            <div className="text-3xl mb-2">📊</div>
+            <div className="font-semibold text-base">Excel Import</div>
+            <div className="text-sm text-gray-500">Bulk upload</div>
+          </button>
+        </div>
+
         {/* Hidden File Inputs */}
         <input
           type="file"
@@ -792,29 +797,29 @@ export default function NewPolicyPage() {
 
       {/* Manual Form - show for manual mode, or after scan/excel fills data */}
       {(entryMode === 'manual' || (entryMode === 'scan' && scannedImage)) && (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="p-6 lg:p-8">
-            <form onSubmit={handleSubmit}>
+        <div className="bg-white rounded-xl shadow-lg border">
+          <div className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-6">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
                   {error}
                 </div>
               )}
               
               {success && entryMode === 'scan' && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mb-6">
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
                   {success}
                 </div>
               )}
 
-              {/* Form Grid Layout - 3 Columns */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Column 1 - Client & Policy */}
-                <div className="space-y-5">
+              {/* Form Grid Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column */}
+                <div className="space-y-6">"
 
                   {/* Client Selection */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
-                    <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                       <span className="text-blue-500 mr-2">👤</span>
                       Client Details
                     </h3>
@@ -1779,123 +1784,7 @@ export default function NewPolicyPage() {
                     />
                   </div>
                 </div>
-              }
-
-                {/* Aadhar Back */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition">
-                  <input
-                    type="file"
-                    id="aadharBack"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, aadharBackFile: file } as any));
-                      }
-                    }}
-                  />
-                  <label htmlFor="aadharBack" className="cursor-pointer">
-                    <div className="text-2xl mb-1">🪪</div>
-                    <div className="text-xs font-medium text-gray-700">Aadhar Back</div>
-                    {(formData as any).aadharBackFile && (
-                      <div className="text-xs text-green-600 mt-1">✓ Done</div>
-                    )}
-                  </label>
-                </div>
-
-                {/* PAN Card */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition">
-                  <input
-                    type="file"
-                    id="panCard"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, panCardFile: file } as any));
-                      }
-                    }}
-                  />
-                  <label htmlFor="panCard" className="cursor-pointer">
-                    <div className="text-2xl mb-1">💳</div>
-                    <div className="text-xs font-medium text-gray-700">PAN Card</div>
-                    {(formData as any).panCardFile && (
-                      <div className="text-xs text-green-600 mt-1">✓ Done</div>
-                    )}
-                  </label>
-                </div>
               </div>
-
-              {/* Photo and Cheque Row */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Photo */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
-                  <input
-                    type="file"
-                    id="photo"
-                    accept=".jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, photoFile: file } as any));
-                      }
-                    }}
-                  />
-                  <label htmlFor="photo" className="cursor-pointer">
-                    <div className="text-3xl mb-2">📷</div>
-                    <div className="text-sm font-medium text-gray-700">Photo</div>
-                    <div className="text-xs text-gray-500">Passport size photo</div>
-                    {(formData as any).photoFile && (
-                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).photoFile.name}</div>
-                    )}
-                  </label>
-                </div>
-
-                {/* Cancel Cheque */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition">
-                  <input
-                    type="file"
-                    id="cancelCheque"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setFormData(prev => ({ ...prev, cancelChequeFile: file } as any));
-                      }
-                    }}
-                  />
-                  <label htmlFor="cancelCheque" className="cursor-pointer">
-                    <div className="text-3xl mb-2">🏦</div>
-                    <div className="text-sm font-medium text-gray-700">Cancel Cheque</div>
-                    <div className="text-xs text-gray-500">Bank account proof</div>
-                    {(formData as any).cancelChequeFile && (
-                      <div className="text-xs text-green-600 mt-1">✓ {(formData as any).cancelChequeFile.name}</div>
-                    )}
-                  </label>
-                </div>
-              </div>
-              
-              <p className="text-xs text-gray-500">Upload policy copy and KYC documents for record keeping</p>
-            </div>
-
-            {/* Remarks */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Remarks
-              </label>
-              <textarea
-                name="remarks"
-                value={formData.remarks}
-                onChange={handleChange}
-                placeholder="Any additional notes..."
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
 
               {/* Action Buttons */}
               <div className="sticky bottom-0 bg-white border-t pt-6 mt-8">
@@ -1939,6 +1828,7 @@ export default function NewPolicyPage() {
           {error}
         </div>
       )}
+      </div>
     </div>
   );
 }
