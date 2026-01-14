@@ -48,7 +48,10 @@ export default function LoginPage() {
       login(token, agent);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Signup failed. Please try again.');
+      const errorMsg = err.response?.data?.error?.message || 
+                       err.response?.data?.message || 
+                       'Signup failed. Please try again.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
