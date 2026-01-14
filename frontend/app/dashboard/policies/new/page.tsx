@@ -1167,21 +1167,6 @@ export default function NewPolicyPage() {
                   </div>
                 </div>
               )}
-
-              {/* Broker Commission Input */}
-              {formData.brokerId && (
-                <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <label className="block text-xs font-medium text-purple-800 mb-1.5">Commission from Broker (₹)</label>
-                  <Input
-                    type="number"
-                    name="brokerCommissionAmount"
-                    value={formData.brokerCommissionAmount}
-                    onChange={handleChange}
-                    placeholder="Enter commission amount"
-                    className="h-10 text-sm bg-white max-w-xs"
-                  />
-                </div>
-              )}
             </div>
 
             {/* Section: Commission Rates */}
@@ -1283,84 +1268,126 @@ export default function NewPolicyPage() {
                 <div>
                   <input type="file" id="policyCopy" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, policyCopyFile: file } as any)); }} />
                   <label htmlFor="policyCopy" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
-                      <div className="text-xl mb-1">📄</div>
-                      <div className="text-xs font-medium text-gray-700">Policy</div>
-                      {(formData as any).policyCopyFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).policyCopyFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-lg">📄</div>
+                      <div className="text-[10px] font-medium text-gray-700">Policy</div>
                     </div>
                   </label>
+                  {(formData as any).policyCopyFile && (
+                    <div className="flex justify-center gap-1 mt-1">
+                      <button type="button" onClick={() => window.open(URL.createObjectURL((formData as any).policyCopyFile), '_blank')} className="text-[9px] text-blue-600 hover:underline">View</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, policyCopyFile: undefined } as any))} className="text-[9px] text-red-500 hover:underline">Remove</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* RC Document */}
                 <div>
                   <input type="file" id="rcDocument" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, rcDocumentFile: file } as any)); }} />
                   <label htmlFor="rcDocument" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).rcDocumentFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
-                      <div className="text-xl mb-1">🚗</div>
-                      <div className="text-xs font-medium text-gray-700">RC</div>
-                      {(formData as any).rcDocumentFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).rcDocumentFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-lg">🚗</div>
+                      <div className="text-[10px] font-medium text-gray-700">RC</div>
                     </div>
                   </label>
+                  {(formData as any).rcDocumentFile && (
+                    <div className="flex justify-center gap-1 mt-1">
+                      <button type="button" onClick={() => window.open(URL.createObjectURL((formData as any).rcDocumentFile), '_blank')} className="text-[9px] text-blue-600 hover:underline">View</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, rcDocumentFile: undefined } as any))} className="text-[9px] text-red-500 hover:underline">Remove</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Aadhar Front */}
                 <div>
                   <input type="file" id="aadharFront" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, aadharFrontFile: file } as any)); }} />
                   <label htmlFor="aadharFront" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).aadharFrontFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
-                      <div className="text-xl mb-1">🪪</div>
-                      <div className="text-xs font-medium text-gray-700">Aadhar F</div>
-                      {(formData as any).aadharFrontFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).aadharFrontFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-lg">🪪</div>
+                      <div className="text-[10px] font-medium text-gray-700">Aadhar F</div>
                     </div>
                   </label>
+                  {(formData as any).aadharFrontFile && (
+                    <div className="flex justify-center gap-1 mt-1">
+                      <button type="button" onClick={() => window.open(URL.createObjectURL((formData as any).aadharFrontFile), '_blank')} className="text-[9px] text-blue-600 hover:underline">View</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, aadharFrontFile: undefined } as any))} className="text-[9px] text-red-500 hover:underline">Remove</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Aadhar Back */}
                 <div>
                   <input type="file" id="aadharBack" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, aadharBackFile: file } as any)); }} />
                   <label htmlFor="aadharBack" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).aadharBackFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
-                      <div className="text-xl mb-1">🪪</div>
-                      <div className="text-xs font-medium text-gray-700">Aadhar B</div>
-                      {(formData as any).aadharBackFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).aadharBackFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-lg">🪪</div>
+                      <div className="text-[10px] font-medium text-gray-700">Aadhar B</div>
                     </div>
                   </label>
+                  {(formData as any).aadharBackFile && (
+                    <div className="flex justify-center gap-1 mt-1">
+                      <button type="button" onClick={() => window.open(URL.createObjectURL((formData as any).aadharBackFile), '_blank')} className="text-[9px] text-blue-600 hover:underline">View</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, aadharBackFile: undefined } as any))} className="text-[9px] text-red-500 hover:underline">Remove</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* PAN Card */}
                 <div>
                   <input type="file" id="panCard" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, panCardFile: file } as any)); }} />
                   <label htmlFor="panCard" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).panCardFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
-                      <div className="text-xl mb-1">🆔</div>
-                      <div className="text-xs font-medium text-gray-700">PAN</div>
-                      {(formData as any).panCardFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).panCardFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-lg">🆔</div>
+                      <div className="text-[10px] font-medium text-gray-700">PAN</div>
                     </div>
                   </label>
+                  {(formData as any).panCardFile && (
+                    <div className="flex justify-center gap-1 mt-1">
+                      <button type="button" onClick={() => window.open(URL.createObjectURL((formData as any).panCardFile), '_blank')} className="text-[9px] text-blue-600 hover:underline">View</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, panCardFile: undefined } as any))} className="text-[9px] text-red-500 hover:underline">Remove</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Photo */}
                 <div>
                   <input type="file" id="photo" accept=".jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, photoFile: file } as any)); }} />
                   <label htmlFor="photo" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).photoFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
-                      <div className="text-xl mb-1">📸</div>
-                      <div className="text-xs font-medium text-gray-700">Photo</div>
-                      {(formData as any).photoFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).photoFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-lg">📸</div>
+                      <div className="text-[10px] font-medium text-gray-700">Photo</div>
                     </div>
                   </label>
+                  {(formData as any).photoFile && (
+                    <div className="flex justify-center gap-1 mt-1">
+                      <button type="button" onClick={() => window.open(URL.createObjectURL((formData as any).photoFile), '_blank')} className="text-[9px] text-blue-600 hover:underline">View</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, photoFile: undefined } as any))} className="text-[9px] text-red-500 hover:underline">Remove</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Cancel Cheque */}
                 <div>
                   <input type="file" id="cancelCheque" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setFormData(prev => ({ ...prev, cancelChequeFile: file } as any)); }} />
                   <label htmlFor="cancelCheque" className="cursor-pointer block">
-                    <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all hover:border-blue-400 ${(formData as any).cancelChequeFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
-                      <div className="text-xl mb-1">🏦</div>
-                      <div className="text-xs font-medium text-gray-700">Cheque</div>
-                      {(formData as any).cancelChequeFile && <div className="text-[10px] text-green-600 mt-0.5">✓</div>}
+                    <div className={`border-2 border-dashed rounded-lg p-2 text-center transition-all hover:border-blue-400 ${(formData as any).cancelChequeFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}>
+                      <div className="text-lg">🏦</div>
+                      <div className="text-[10px] font-medium text-gray-700">Cheque</div>
                     </div>
                   </label>
+                  {(formData as any).cancelChequeFile && (
+                    <div className="flex justify-center gap-1 mt-1">
+                      <button type="button" onClick={() => window.open(URL.createObjectURL((formData as any).cancelChequeFile), '_blank')} className="text-[9px] text-blue-600 hover:underline">View</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, cancelChequeFile: undefined } as any))} className="text-[9px] text-red-500 hover:underline">Remove</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
