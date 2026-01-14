@@ -602,3 +602,112 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
     next(error);
   }
 };
+
+// ==========================================
+// FORGOT PIN - SEND OTP
+// ==========================================
+export const forgotPinSendOTP = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone || phone.length !== 10) {
+      throw new AppError('Valid 10-digit phone number is required', 400, 'VALIDATION_ERROR');
+    }
+
+    // Check if agent exists
+    const agent = await prisma.agent.findUnique({ where: { phone } });
+    if (!agent) {
+      throw new AppError('No account found with this phone number', 404, 'AGENT_NOT_FOUND');
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP in database
+    await prisma.agent.update({
+      where: { phone },
+      data: {
+        otp,
+        otpExpiry
+      }
+    });
+
+    // Send OTP via SMS
+    try {
+      await sendOTPviaMsg91(phone, otp);
+    } catch (smsError) {
+      console.error('SMS sending failed:', smsError);
+      // For development, log the OTP
+      console.log(`[DEV] OTP for ${phone}: ${otp}`);
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP sent successfully to your registered mobile number',
+      data: {
+        phone: phone.slice(0, 3) + '****' + phone.slice(-3),
+        otpExpiry: otpExpiry.toISOString()
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// FORGOT PIN - VERIFY OTP & RESET PIN
+// ==========================================
+export const forgotPinResetPin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { phone, otp, newPin } = req.body;
+
+    if (!phone || phone.length !== 10) {
+      throw new AppError('Valid 10-digit phone number is required', 400, 'VALIDATION_ERROR');
+    }
+
+    if (!otp || otp.length !== 6) {
+      throw new AppError('Valid 6-digit OTP is required', 400, 'VALIDATION_ERROR');
+    }
+
+    if (!newPin || newPin.length !== 6 || !/^\d+$/.test(newPin)) {
+      throw new AppError('New PIN must be a 6-digit number', 400, 'VALIDATION_ERROR');
+    }
+
+    // Find agent and verify OTP
+    const agent = await prisma.agent.findUnique({ where: { phone } });
+    if (!agent) {
+      throw new AppError('No account found with this phone number', 404, 'AGENT_NOT_FOUND');
+    }
+
+    // Check OTP
+    if (!agent.otp || agent.otp !== otp) {
+      throw new AppError('Invalid OTP', 400, 'INVALID_OTP');
+    }
+
+    // Check OTP expiry
+    if (!agent.otpExpiry || new Date() > agent.otpExpiry) {
+      throw new AppError('OTP has expired. Please request a new one.', 400, 'OTP_EXPIRED');
+    }
+
+    // Hash new PIN
+    const hashedPin = await bcrypt.hash(newPin, 10);
+
+    // Update PIN and clear OTP
+    await prisma.agent.update({
+      where: { phone },
+      data: {
+        pin: hashedPin,
+        otp: null,
+        otpExpiry: null
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'PIN reset successfully! You can now login with your new PIN.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};

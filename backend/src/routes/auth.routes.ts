@@ -6,7 +6,9 @@ import {
   clientVerifyOTP,
   getMe,
   agentSignup,
-  agentLogin
+  agentLogin,
+  forgotPinSendOTP,
+  forgotPinResetPin
 } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth';
 
@@ -21,6 +23,12 @@ router.post('/agent/signup', agentSignup);
 
 // Agent login with PIN
 router.post('/agent/login', agentLogin);
+
+// Forgot PIN - Send OTP
+router.post('/agent/forgot-pin', forgotPinSendOTP);
+
+// Forgot PIN - Reset PIN with OTP
+router.post('/agent/reset-pin', forgotPinResetPin);
 
 // OTP routes (kept for backward compatibility - commented out for now)
 // router.post('/agent/send-otp', sendOTP);

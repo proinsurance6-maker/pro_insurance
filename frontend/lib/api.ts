@@ -50,6 +50,14 @@ export const authAPI = {
   agentLogin: (data: { phone: string; pin: string }) =>
     api.post('/auth/agent/login', data),
   
+  // Forgot PIN - Send OTP
+  forgotPinSendOTP: (phone: string) =>
+    api.post('/auth/agent/forgot-pin', { phone }),
+  
+  // Forgot PIN - Reset PIN with OTP
+  forgotPinResetPin: (data: { phone: string; otp: string; newPin: string }) =>
+    api.post('/auth/agent/reset-pin', data),
+  
   // Agent OTP Auth (kept for backward compatibility)
   sendAgentOTP: (phone: string) =>
     api.post('/auth/agent/send-otp', { phone }),
