@@ -231,10 +231,10 @@ export default function PoliciesPage() {
       (status === 'active' && !expired) ||
       (status === 'expired' && expired);
     
-    // Date filter
-    const policyDate = new Date(policy.startDate);
-    const matchesFromDate = !fromDate || policyDate >= new Date(fromDate);
-    const matchesToDate = !toDate || policyDate <= new Date(toDate);
+    // Date filter (based on entry date - createdAt)
+    const entryDate = new Date(policy.createdAt);
+    const matchesFromDate = !fromDate || entryDate >= new Date(fromDate);
+    const matchesToDate = !toDate || entryDate <= new Date(toDate);
     
     return matchesSearch && matchesType && matchesCompany && matchesBroker && matchesSubAgent && matchesStatus && matchesFromDate && matchesToDate;
   });
@@ -291,9 +291,9 @@ export default function PoliciesPage() {
         {showFilters && (
           <div className="p-2.5 bg-white">
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2">
-              {/* From Date */}
+              {/* Entry From Date */}
               <div>
-                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">From Date</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Entry From Date</label>
                 <input
                   type="text"
                   value={formatDateForDisplay(fromDate)}
@@ -314,9 +314,9 @@ export default function PoliciesPage() {
                 />
               </div>
               
-              {/* To Date */}
+              {/* Entry To Date */}
               <div>
-                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">To Date</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Entry To Date</label>
                 <input
                   type="text"
                   value={formatDateForDisplay(toDate)}
@@ -479,7 +479,7 @@ export default function PoliciesPage() {
             <thead>
               <tr>
                 <th>Action</th>
-                <th>Date</th>
+                <th>Entry Date</th>
                 <th>Client Name</th>
                 <th>Mobile</th>
                 <th>Email</th>
