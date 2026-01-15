@@ -76,12 +76,16 @@ const POLICY_TYPES = [
 export default function PoliciesPage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [brokers, setBrokers] = useState<any[]>([]);
+  const [subAgents, setSubAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
   const [search, setSearch] = useState('');
   const [policyType, setPolicyType] = useState('All');
   const [companyId, setCompanyId] = useState('');
+  const [brokerId, setBrokerId] = useState('');
+  const [subAgentId, setSubAgentId] = useState('');
   const [status, setStatus] = useState<'all' | 'active' | 'expired'>('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
@@ -93,12 +97,25 @@ export default function PoliciesPage() {
 
   const fetchData = async () => {
     try {
-      const [policiesRes, companiesRes] = await Promise.all([
+      const promises: Promise<any>[] = [
         policyAPI.getAll({ limit: 100 }),
         policyAPI.getCompanies()
+      ];
+      
+      // Fetch brokers and sub-agents
+      const brokerPromise = import('@/lib/api').then(m => m.brokerAPI.getAll().catch(() => ({ data: { data: [] } })));
+      const subAgentPromise = import('@/lib/api').then(m => m.agentAPI.getSubAgents().catch(() => ({ data: { data: [] } })));
+      
+      const [policiesRes, companiesRes, brokersRes, subAgentsRes] = await Promise.all([
+        ...promises,
+        brokerPromise,
+        subAgentPromise
       ]);
+      
       setPolicies(policiesRes.data.data.policies || []);
       setCompanies(companiesRes.data.data || []);
+      setBrokers(brokersRes.data.data || []);
+      setSubAgents(subAgentsRes.data.data || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -122,6 +139,43 @@ export default function PoliciesPage() {
     });
   };
 
+  const formatDateInput = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const downloadExcel = () => {
+    const headers = ['Date', 'Client Name', 'Mobile', 'Email', 'Reg No', 'Policy No', 'Type', 'Premium', 'Company', 'Status'];
+    const rows = filteredPolicies.map(p => [
+      formatDate(p.createdAt),
+      p.client.name,
+      p.client.phone,
+      p.client.email || '-',
+      p.vehicleNumber || '-',
+      p.policyNumber,
+      p.policyType,
+      p.premiumAmount,
+      p.company.name,
+      isExpired(p.endDate) ? 'Expired' : 'Active'
+    ]);
+    
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+      csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `policies-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
   const isExpired = (endDate: string) => new Date(endDate) < new Date();
 
   const filteredPolicies = policies.filter(policy => {
@@ -138,6 +192,12 @@ export default function PoliciesPage() {
     // Company filter
     const matchesCompany = !companyId || policy.company.id === companyId;
     
+    // Broker filter
+    const matchesBroker = !brokerId || policy.broker?.id === brokerId;
+    
+    // SubAgent filter
+    const matchesSubAgent = !subAgentId || policy.subAgent?.id === subAgentId;
+    
     // Status filter
     const expired = isExpired(policy.endDate);
     const matchesStatus = 
@@ -150,13 +210,15 @@ export default function PoliciesPage() {
     const matchesFromDate = !fromDate || policyDate >= new Date(fromDate);
     const matchesToDate = !toDate || policyDate <= new Date(toDate);
     
-    return matchesSearch && matchesType && matchesCompany && matchesStatus && matchesFromDate && matchesToDate;
+    return matchesSearch && matchesType && matchesCompany && matchesBroker && matchesSubAgent && matchesStatus && matchesFromDate && matchesToDate;
   });
 
   const resetFilters = () => {
     setSearch('');
     setPolicyType('All');
     setCompanyId('');
+    setBrokerId('');
+    setSubAgentId('');
     setStatus('all');
     setFromDate('');
     setToDate(new Date().toISOString().split('T')[0]);
@@ -172,46 +234,7 @@ export default function PoliciesPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header with Quick Add Buttons */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Policies</h1>
-            <p className="text-sm text-gray-500">{policies.length} total policies</p>
-          </div>
-          
-          {/* Quick Add Buttons - Probus Style */}
-          <div className="flex flex-wrap gap-2">
-            <Link href="/dashboard/policies/new?type=motor">
-              <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
-                Add Motor
-              </button>
-            </Link>
-            <Link href="/dashboard/policies/new?type=travel">
-              <button className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition">
-                Add Travel
-              </button>
-            </Link>
-            <Link href="/dashboard/policies/new?type=health">
-              <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition">
-                Add Health
-              </button>
-            </Link>
-            <Link href="/dashboard/policies/new?type=life">
-              <button className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition">
-                Add Life
-              </button>
-            </Link>
-            <Link href="/dashboard/policies/new">
-              <button className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition">
-                Add Other
-              </button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters Section - Probus Style */}
+      {/* Filters Section - Enhanced */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-4 border-b flex items-center justify-between">
           <h2 className="font-semibold text-gray-700 flex items-center gap-2">
@@ -236,8 +259,10 @@ export default function PoliciesPage() {
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
+                  placeholder="DD/MM/YYYY"
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {fromDate && <div className="text-xs text-gray-500 mt-1">{formatDateInput(fromDate)}</div>}
               </div>
               
               {/* To Date */}
@@ -247,8 +272,10 @@ export default function PoliciesPage() {
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
+                  placeholder="DD/MM/YYYY"
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {toDate && <div className="text-xs text-gray-500 mt-1">{formatDateInput(toDate)}</div>}
               </div>
               
               {/* Policy Type */}
@@ -280,6 +307,36 @@ export default function PoliciesPage() {
                 </select>
               </div>
               
+              {/* Broker */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Broker</label>
+                <select
+                  value={brokerId}
+                  onChange={(e) => setBrokerId(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">All</option>
+                  {brokers.map(broker => (
+                    <option key={broker.id} value={broker.id}>{broker.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Sub-Agent */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sub-Agent</label>
+                <select
+                  value={subAgentId}
+                  onChange={(e) => setSubAgentId(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">All</option>
+                  {subAgents.map(sa => (
+                    <option key={sa.id} value={sa.id}>{sa.name}</option>
+                  ))}
+                </select>
+              </div>
+              
               {/* Status */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
@@ -307,8 +364,8 @@ export default function PoliciesPage() {
               </div>
             </div>
             
-            {/* Filter Actions */}
-            <div className="flex items-center gap-3 mt-4">
+            {/* Filter Actions & Quick Add Buttons */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4">
               <button
                 onClick={resetFilters}
                 className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition"
@@ -318,55 +375,90 @@ export default function PoliciesPage() {
               <div className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg">
                 📊 Total: {filteredPolicies.length}
               </div>
+              <button
+                onClick={downloadExcel}
+                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+              >
+                📥 Export Excel
+              </button>
+              
+              {/* Quick Add Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <Link href="/dashboard/policies/new?type=motor">
+                  <button className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition">
+                    + Motor
+                  </button>
+                </Link>
+                <Link href="/dashboard/policies/new?type=travel">
+                  <button className="px-3 py-1.5 bg-teal-600 text-white text-xs font-medium rounded hover:bg-teal-700 transition">
+                    + Travel
+                  </button>
+                </Link>
+                <Link href="/dashboard/policies/new?type=health">
+                  <button className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition">
+                    + Health
+                  </button>
+                </Link>
+                <Link href="/dashboard/policies/new?type=life">
+                  <button className="px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded hover:bg-purple-700 transition">
+                    + Life
+                  </button>
+                </Link>
+                <Link href="/dashboard/policies/new">
+                  <button className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded hover:bg-gray-700 transition">
+                    + Other
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Table Section - Excel Style with Aptos Narrow Font */}
+      {/* Table Section - Probus Style Professional Grid */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="policy-table min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="policy-table min-w-full">
+            <thead>
               <tr>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">Date</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Client Name</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Mobile No.</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Registration No</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Policy No</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Fresh/Renewal</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Port</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Policy Type</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Net/Case Type</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Plan Name</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Policy Type</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">PPT</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">PT</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Insurer Name</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">PREMIUM</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Net Premium</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Payable Premium</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Our Annual</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">TDS</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Net our Amount</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Net Rate</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">TP RATE</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">OD RATE</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Paid Amount</th>
-                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Our Margin Amount</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Broker Name</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Percent</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Stnd Paid</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Docs to Agent</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Remarks</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">Action</th>
+                <th className="sticky left-0 z-10">Date</th>
+                <th>Client Name</th>
+                <th>Mobile No.</th>
+                <th>Email</th>
+                <th>Registration No</th>
+                <th>Policy No</th>
+                <th>Fresh/Renewal</th>
+                <th>Port</th>
+                <th>Policy Type</th>
+                <th className="text-right">Premium</th>
+                <th>Net/Case Type</th>
+                <th>Plan Name</th>
+                <th>Policy Type</th>
+                <th>PPT</th>
+                <th>PT</th>
+                <th>Insurer Name</th>
+                <th className="text-right">Premium</th>
+                <th className="text-right">OD Premium</th>
+                <th className="text-right">TP Premium</th>
+                <th className="text-right">Net Premium</th>
+                <th className="text-right">Payable Premium</th>
+                <th className="text-right">Our Commission</th>
+                <th className="text-right">TDS</th>
+                <th className="text-right">Net Amount</th>
+                <th>Net Rate</th>
+                <th>TP Rate</th>
+                <th>OD Rate</th>
+                <th className="text-right">Paid Amount</th>
+                <th className="text-right">Margin</th>
+                <th>Broker Name</th>
+                <th>Percent</th>
+                <th>Status</th>
+                <th>Documents</th>
+                <th>Remarks</th>
+                <th className="sticky right-0 z-10">Action</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {filteredPolicies.length === 0 ? (
                 <tr>
                   <td colSpan={35} className="px-4 py-12 text-center">
@@ -394,224 +486,192 @@ export default function PoliciesPage() {
                     : '0';
                   
                   return (
-                    <tr key={policy.id} className="hover:bg-gray-50 transition">
+                    <tr key={policy.id}>
                       {/* Date (Created At) */}
-                      <td className="px-2 py-2 whitespace-nowrap sticky left-0 bg-white z-10">
-                        <div className="text-xs text-gray-900">{formatDate(policy.createdAt)}</div>
+                      <td className="whitespace-nowrap sticky left-0 z-10">
+                        {formatDate(policy.createdAt)}
                       </td>
                       
                       {/* Client Name */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs font-medium text-gray-900">{policy.client.name}</div>
+                      <td className="whitespace-nowrap font-medium">
+                        {policy.client.name}
                       </td>
                       
                       {/* Mobile No */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-700">{policy.client.phone}</div>
+                      <td className="whitespace-nowrap">
+                        {policy.client.phone}
                       </td>
                       
                       {/* Email */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600">{policy.client.email || '-'}</div>
+                      <td className="whitespace-nowrap">
+                        {policy.client.email || '-'}
                       </td>
                       
                       {/* Registration No (Vehicle) */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs font-medium text-gray-900">{policy.vehicleNumber || '-'}</div>
+                      <td className="whitespace-nowrap font-medium">
+                        {policy.vehicleNumber || '-'}
                       </td>
                       
                       {/* Policy No */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs font-semibold text-blue-600">{policy.policyNumber}</div>
+                      <td className="whitespace-nowrap">
+                        <span className="text-blue-600 font-semibold">{policy.policyNumber}</span>
                       </td>
                       
                       {/* Fresh/Renewal */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                      <td className="whitespace-nowrap">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px]">
                           {policy.policySource || 'Fresh'}
                         </span>
                       </td>
                       
                       {/* Port */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600">-</div>
-                      </td>
+                      <td className="whitespace-nowrap">-</td>
                       
                       {/* Policy Type (Product) */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-900">{policy.policyType.replace(' Insurance', '')}</div>
+                      <td className="whitespace-nowrap">
+                        {policy.policyType.replace(' Insurance', '')}
                         {policy.motorPolicyType && (
-                          <div className="text-[10px] text-gray-500">{policy.motorPolicyType}</div>
+                          <div className="text-[9px] text-gray-500">{policy.motorPolicyType}</div>
                         )}
                       </td>
                       
                       {/* Premium */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs font-semibold text-gray-900">{formatCurrency(policy.premiumAmount)}</div>
+                      <td className="whitespace-nowrap text-right font-semibold">
+                        {formatCurrency(policy.premiumAmount)}
                       </td>
                       
                       {/* Net/Case Type */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600">
-                          {policy.policyType === 'Motor Insurance' ? policy.motorPolicyType : 'Net'}
-                        </div>
+                      <td className="whitespace-nowrap">
+                        {policy.policyType === 'Motor Insurance' ? policy.motorPolicyType : 'Net'}
                       </td>
                       
                       {/* Plan Name */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-700 max-w-[120px] truncate" title={policy.planName || '-'}>
-                          {policy.planName || '-'}
-                        </div>
+                      <td className="whitespace-nowrap max-w-[120px] truncate" title={policy.planName || '-'}>
+                        {policy.planName || '-'}
                       </td>
                       
                       {/* Policy Type (Duplicate - Motor specific) */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600">{policy.motorPolicyType || policy.policyType.split(' ')[0]}</div>
+                      <td className="whitespace-nowrap">
+                        {policy.motorPolicyType || policy.policyType.split(' ')[0]}
                       </td>
                       
                       {/* PPT (Premium Payment Term) */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600 capitalize">{policy.premiumFrequency === 'yearly' ? '1' : '-'}</div>
+                      <td className="whitespace-nowrap capitalize">
+                        {policy.premiumFrequency === 'yearly' ? '1' : '-'}
                       </td>
                       
                       {/* PT (Policy Term) */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600">1</div>
-                      </td>
+                      <td className="whitespace-nowrap">1</td>
                       
                       {/* Insurer Name */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs font-medium text-gray-900">{policy.company.name}</div>
+                      <td className="whitespace-nowrap font-medium">
+                        {policy.company.name}
                       </td>
                       
                       {/* Premium (Gross) */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs text-gray-900">{formatCurrency(policy.premiumAmount)}</div>
+                      <td className="whitespace-nowrap text-right">
+                        {formatCurrency(policy.premiumAmount)}
                       </td>
                       
                       {/* PREMIUM (OD) */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs text-gray-700">
-                          {policy.odPremium ? formatCurrency(policy.odPremium) : '-'}
-                        </div>
+                      <td className="whitespace-nowrap text-right">
+                        {policy.odPremium ? formatCurrency(policy.odPremium) : '-'}
                       </td>
                       
                       {/* Premium (TP) */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs text-gray-700">
-                          {policy.tpPremium ? formatCurrency(policy.tpPremium) : '-'}
-                        </div>
+                      <td className="whitespace-nowrap text-right">
+                        {policy.tpPremium ? formatCurrency(policy.tpPremium) : '-'}
                       </td>
                       
                       {/* Net Premium */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs font-medium text-gray-900">
-                          {policy.netPremium ? formatCurrency(policy.netPremium) : formatCurrency(policy.premiumAmount)}
-                        </div>
+                      <td className="whitespace-nowrap text-right">
+                        {policy.netPremium ? formatCurrency(policy.netPremium) : formatCurrency(policy.premiumAmount)}
                       </td>
                       
                       {/* Payable Premium */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs text-gray-900">{formatCurrency(policy.premiumAmount)}</div>
+                      <td className="whitespace-nowrap text-right">
+                        {formatCurrency(policy.premiumAmount)}
                       </td>
                       
                       {/* Our Annual (Agent Commission) */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs font-semibold text-green-600">
-                          {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
-                        </div>
+                      <td className="whitespace-nowrap text-right font-semibold text-green-600">
+                        {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
                       </td>
                       
                       {/* TDS (5%) */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs text-red-600">
-                          {commission ? formatCurrency(tdsAmount) : '-'}
-                        </div>
+                      <td className="whitespace-nowrap text-right text-red-600">
+                        {commission ? formatCurrency(tdsAmount) : '-'}
                       </td>
                       
                       {/* Net our Amount (After TDS) */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs font-semibold text-green-700">
-                          {commission ? formatCurrency(netAmount) : '-'}
-                        </div>
+                      <td className="whitespace-nowrap text-right font-semibold text-green-700">
+                        {commission ? formatCurrency(netAmount) : '-'}
                       </td>
                       
                       {/* Net Rate */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600">{commissionPercent}%</div>
+                      <td className="whitespace-nowrap">
+                        {commissionPercent}%
                       </td>
                       
                       {/* TP RATE */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600">
-                          {policy.tpPremium && policy.premiumAmount 
-                            ? ((Number(policy.tpPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
-                            : '-'}
-                        </div>
+                      <td className="whitespace-nowrap">
+                        {policy.tpPremium && policy.premiumAmount 
+                          ? ((Number(policy.tpPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
+                          : '-'}
                       </td>
                       
                       {/* OD RATE */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-600">
-                          {policy.odPremium && policy.premiumAmount 
-                            ? ((Number(policy.odPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
-                            : '-'}
-                        </div>
+                      <td className="whitespace-nowrap">
+                        {policy.odPremium && policy.premiumAmount 
+                          ? ((Number(policy.odPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
+                          : '-'}
                       </td>
                       
                       {/* Paid Amount */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs text-blue-600">
-                          {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
-                        </div>
+                      <td className="whitespace-nowrap text-right text-blue-600">
+                        {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
                       </td>
                       
                       {/* Our Margin Amount */}
-                      <td className="px-2 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs font-semibold text-purple-600">
-                          {commission ? formatCurrency(netAmount) : '-'}
-                        </div>
+                      <td className="whitespace-nowrap text-right font-semibold text-purple-600">
+                        {commission ? formatCurrency(netAmount) : '-'}
                       </td>
                       
                       {/* Broker Name */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-700">{policy.broker?.name || '-'}</div>
+                      <td className="whitespace-nowrap">
+                        {policy.broker?.name || '-'}
                       </td>
                       
                       {/* Percent (Commission %) */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="text-xs font-medium text-gray-900">{commissionPercent}%</div>
+                      <td className="whitespace-nowrap font-medium">
+                        {commissionPercent}%
                       </td>
                       
-                      {/* Stnd Paid */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      {/* Status */}
+                      <td className="whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
                           commission ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                         }`}>
                           {commission ? 'Paid' : 'Pending'}
                         </span>
                       </td>
                       
-                      {/* Docs to Agent */}
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            docsCount > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-                          }`}>
-                            {docsCount > 0 ? `✓ ${docsCount}` : '✗'}
-                          </span>
-                        </div>
+                      {/* Documents */}
+                      <td className="whitespace-nowrap text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                          docsCount > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                        }`}>
+                          {docsCount > 0 ? `✓ ${docsCount}` : '✗'}
+                        </span>
                       </td>
                       
                       {/* Remarks */}
-                      <td className="px-2 py-2">
-                        <div className="text-xs text-gray-600 max-w-[120px] truncate" title={policy.remarks || '-'}>
-                          {policy.remarks || '-'}
-                        </div>
+                      <td className="max-w-[120px] truncate" title={policy.remarks || '-'}>
+                        {policy.remarks || '-'}
                       </td>
                       
                       {/* Actions */}
-                      <td className="px-2 py-2 whitespace-nowrap sticky right-0 bg-white z-10">
+                      <td className="whitespace-nowrap sticky right-0 z-10">
                         <div className="flex items-center gap-1">
                           <Link href={`/dashboard/policies/${policy.id}`}>
                             <button className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition" title="View">
