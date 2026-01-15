@@ -92,7 +92,7 @@ export default function PoliciesPage() {
   const [subAgentId, setSubAgentId] = useState('');
   const [status, setStatus] = useState<'all' | 'active' | 'expired'>('all');
   const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
+  const [toDate, setToDate] = useState('');
   const [showFilters, setShowFilters] = useState(true);
   const [viewDocsModal, setViewDocsModal] = useState<Policy | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -247,7 +247,7 @@ export default function PoliciesPage() {
     setSubAgentId('');
     setStatus('all');
     setFromDate('');
-    setToDate(new Date().toISOString().split('T')[0]);
+    setToDate('');
   };
 
   const handleDelete = async (id: string) => {
