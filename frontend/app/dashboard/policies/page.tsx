@@ -93,6 +93,8 @@ export default function PoliciesPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [showFilters, setShowFilters] = useState(true);
+  const [viewDocsModal, setViewDocsModal] = useState<Policy | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -245,6 +247,17 @@ export default function PoliciesPage() {
     setStatus('all');
     setFromDate('');
     setToDate(new Date().toISOString().split('T')[0]);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await policyAPI.delete(id);
+      setPolicies(policies.filter(p => p.id !== id));
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('Failed to delete policy');
+    }
   };
 
   if (loading) {
@@ -542,6 +555,20 @@ export default function PoliciesPage() {
                               <EditIcon className="w-3 h-3" />
                             </button>
                           </Link>
+                          <button 
+                            onClick={() => setViewDocsModal(policy)}
+                            className="p-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition" 
+                            title="View Documents"
+                          >
+                            <DocumentIcon className="w-3 h-3" />
+                          </button>
+                          <button 
+                            onClick={() => setDeleteConfirm(policy.id)}
+                            className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition" 
+                            title="Delete"
+                          >
+                            <TrashIcon className="w-3 h-3" />
+                          </button>
                         </div>
                       </td>
                       
@@ -743,6 +770,82 @@ export default function PoliciesPage() {
           </div>
         )}
       </div>
+
+      {/* View Documents Modal */}
+      {viewDocsModal && (
+        <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden relative z-[10000]">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">View Uploaded documents</h2>
+              <button
+                onClick={() => setViewDocsModal(null)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="space-y-4">
+                {[
+                  { label: 'Policy Pdf', type: 'POLICY_PDF' },
+                  { label: 'Client Pdf', type: 'POLICYCOPY' },
+                  { label: 'Mandate Pdf', type: 'AADHARFRONT' },
+                  { label: 'Proposer Form Pdf', type: 'AADHARBACK' },
+                  { label: 'Illustration Form Pdf', type: 'PANCARD' },
+                  { label: 'Payout Proof Pdf', type: 'CANCELCHEQUE' }
+                ].map((doc) => {
+                  const document = viewDocsModal.documents?.find(d => d.documentType === doc.type);
+                  return (
+                    <div key={doc.type} className="flex items-center justify-between py-2 border-b">
+                      <span className="text-sm font-medium text-gray-700">{doc.label}</span>
+                      {document ? (
+                        <a
+                          href={document.documentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm underline"
+                        >
+                          {document.documentName}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full relative z-[10000]">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Delete</h3>
+              <p className="text-gray-600 mb-6">Are you sure you want to delete this policy? This action cannot be undone.</p>
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteConfirm)}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -777,6 +880,14 @@ function DocumentIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
   );
 }

@@ -45,7 +45,8 @@ export const getPolicies = async (req: Request, res: Response, next: NextFunctio
           company: { select: { id: true, name: true, code: true } },
           subAgent: { select: { id: true, name: true, subAgentCode: true } },
           broker: { select: { id: true, name: true } },
-          commissions: true
+          commissions: true,
+          documents: true
         },
         orderBy: { createdAt: 'desc' },
         skip,
