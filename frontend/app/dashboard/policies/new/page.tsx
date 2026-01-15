@@ -928,25 +928,25 @@ export default function NewPolicyPage() {
 
       {/* Manual Form - show for manual mode */}
       {entryMode === 'manual' && (
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           <form onSubmit={handleSubmit}>
             {/* Error/Success Messages */}
             {error && (
-              <div className="mx-6 mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
+              <div className="mx-6 mt-4 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                <span className="text-red-500">⚠</span> {error}
               </div>
             )}
             
             {success && (
-              <div className="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                {success}
+              <div className="mx-6 mt-4 bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                <span className="text-emerald-500">✓</span> {success}
               </div>
             )}
 
             {/* Section: Client Details */}
-            <div className="p-6 border-b">
+            <div className="p-6 border-b border-gray-100">
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center text-blue-600 text-xs">1</span>
+                <span className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">1</span>
                 Client Details
               </h3>
               
@@ -1138,7 +1138,7 @@ export default function NewPolicyPage() {
             {/* Section: Policy Details */}
             <div className="p-6 border-b">
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center text-blue-600 text-xs">2</span>
+                <span className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">2</span>
                 Policy Details
               </h3>
               
@@ -1152,7 +1152,7 @@ export default function NewPolicyPage() {
                     name="policySource"
                     value={formData.policySource}
                     onChange={handleChange}
-                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                     required
                   >
                     {POLICY_SOURCES.map((source) => (
@@ -1169,7 +1169,7 @@ export default function NewPolicyPage() {
                     name="policyType"
                     value={formData.policyType}
                     onChange={handleChange}
-                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                     required
                   >
                     <option value="">Select Type</option>
@@ -1188,7 +1188,7 @@ export default function NewPolicyPage() {
                       name="motorPolicyType"
                       value={formData.motorPolicyType}
                       onChange={handleChange}
-                      className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                       required
                     >
                       <option value="">Select</option>
@@ -1210,7 +1210,7 @@ export default function NewPolicyPage() {
                     name="companyId"
                     value={formData.companyId}
                     onChange={handleChange}
-                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                     required
                   >
                     <option value="">Select Company</option>
@@ -1266,7 +1266,7 @@ export default function NewPolicyPage() {
                     name="policyPeriod"
                     value={formData.policyPeriod}
                     onChange={handleChange}
-                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                     required
                   >
                     {POLICY_PERIODS.map((period) => (
@@ -1281,7 +1281,7 @@ export default function NewPolicyPage() {
                     name="paymentTerm"
                     value={formData.paymentTerm || ''}
                     onChange={handleChange}
-                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="">Same as Policy</option>
                     {POLICY_PERIODS.map((period) => (
@@ -1296,7 +1296,7 @@ export default function NewPolicyPage() {
                     name="paymentMode"
                     value={formData.paymentMode}
                     onChange={handleChange}
-                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                   >
                     {PAYMENT_MODES.map((mode) => (
                       <option key={mode} value={mode}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</option>
@@ -1309,7 +1309,7 @@ export default function NewPolicyPage() {
             {/* Section: Premium Details */}
             <div className="p-6 border-b bg-gradient-to-r from-amber-50 to-orange-50">
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-amber-600 text-xs">3</span>
+                <span className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">3</span>
                 Premium Details
               </h3>
               
@@ -1343,7 +1343,7 @@ export default function NewPolicyPage() {
             {/* Section: Broker & Sub-Agent */}
             <div className="p-6 border-b">
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-xs">4</span>
+                <span className="w-6 h-6 bg-gradient-to-br from-purple-500 to-violet-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">4</span>
                 Broker & Sub-Agent
               </h3>
               
@@ -1357,7 +1357,7 @@ export default function NewPolicyPage() {
                         name="brokerId"
                         value={formData.brokerId}
                         onChange={handleChange}
-                        className="flex-1 h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                       >
                         <option value="">Direct / No Broker</option>
                         {brokers.map((broker) => (
@@ -1391,7 +1391,7 @@ export default function NewPolicyPage() {
                       name="subAgentId"
                       value={formData.subAgentId}
                       onChange={handleChange}
-                      className="flex-1 h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                     >
                       <option value="">No Sub-Agent</option>
                       {subAgents.map((sa) => (
@@ -1424,7 +1424,7 @@ export default function NewPolicyPage() {
             {/* Section: Commission Rates */}
             <div className="p-6 border-b bg-gradient-to-r from-green-50 to-emerald-50">
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-green-100 rounded flex items-center justify-center text-green-600 text-xs">5</span>
+                <span className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">5</span>
                 Commission Rates
               </h3>
 
