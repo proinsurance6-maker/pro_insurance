@@ -152,12 +152,21 @@ export default function NewPolicyPage() {
     tpCommissionRate: '',
     netCommissionRate: '',
     renewalCommissionRate: '',
+    // Sub-Agent commission rates
+    subAgentOdRate: '',
+    subAgentTpRate: '',
+    subAgentNetRate: '',
+    subAgentCommissionRate: '', // For non-motor policies
     // Broker (PolicyBazaar, MitPro, Probus, etc.)
     brokerId: '',
     brokerCommissionAmount: '', // Manual commission input from broker
     agentSharePercent: '', // Agent keeps this %, rest to sub-agent
     // Sub-agent
     subAgentId: '',
+    // Motor-specific payment tracking
+    premiumPaidByAgent: false, // Agent paid premium for client
+    receivedAdvanceFromAgent: false, // Received advance from sub-agent
+    advanceAmount: '', // Advance amount received
     holderName: '',
     vehicleNumber: '',
     remarks: '',
@@ -362,8 +371,7 @@ export default function NewPolicyPage() {
     const isMotor = formData.policyType === 'Motor Insurance';
     
     if (isMotor) {
-      const formDataAny = formData as any;
-      const netRate = parseFloat(formDataAny.subAgentNetRate) || 0;
+      const netRate = parseFloat(formData.subAgentNetRate) || 0;
       
       if (netRate > 0) {
         // Use Net rate calculation
@@ -371,15 +379,18 @@ export default function NewPolicyPage() {
         return netPremium * netRate / 100;
       } else {
         // Use OD/TP separate calculations
-        const odRate = parseFloat(formDataAny.subAgentOdRate) || 0;
-        const tpRate = parseFloat(formDataAny.subAgentTpRate) || 0;
+        const odRate = parseFloat(formData.subAgentOdRate) || 0;
+        const tpRate = parseFloat(formData.subAgentTpRate) || 0;
         const odPayout = (parseFloat(formData.odPremium) || 0) * odRate / 100;
         const tpPayout = (parseFloat(formData.tpPremium) || 0) * tpRate / 100;
         return odPayout + tpPayout;
       }
+    } else {
+      // Non-motor: use subAgentCommissionRate
+      const subAgentRate = parseFloat(formData.subAgentCommissionRate) || 0;
+      const netPremium = parseFloat(formData.netPremium || formData.premiumAmount) || 0;
+      return netPremium * subAgentRate / 100;
     }
-    
-    return 0; // No sub-agent payout for non-motor yet
   };
 
   const getSubAgentShare = () => {
@@ -1422,7 +1433,7 @@ export default function NewPolicyPage() {
             </div>
 
             {/* Section: Commission Rates */}
-            <div className="p-6 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">5</span>
                 Commission Rates
@@ -1430,9 +1441,11 @@ export default function NewPolicyPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Received Commission Rates */}
-                <div className="bg-white rounded-lg p-4 border">
-                  <h4 className="text-xs font-semibold text-green-700 uppercase mb-3">📥 Received Payout (%)</h4>
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                  <h4 className="text-xs font-semibold text-green-700 uppercase mb-3 flex items-center gap-2">
+                    <span className="text-base">📥</span> Received Payout (%)
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
                     {formData.policyType === 'Motor Insurance' && (formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">OD Rate</label>
@@ -1458,47 +1471,151 @@ export default function NewPolicyPage() {
                   </div>
                 </div>
 
-                {/* Sub-Agent Payout Rates */}
-                {formData.subAgentId && formData.policyType === 'Motor Insurance' && (
-                  <div className="bg-white rounded-lg p-4 border border-orange-200">
-                    <h4 className="text-xs font-semibold text-orange-700 uppercase mb-3">📤 Paid to Sub-Agent (%)</h4>
-                    <div className="grid grid-cols-3 gap-3">
-                      {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                {/* Sub-Agent Payout Rates - Show for ALL policy types when sub-agent is selected */}
+                {formData.subAgentId && (
+                  <div className="bg-white rounded-xl p-4 border border-orange-200 shadow-sm">
+                    <h4 className="text-xs font-semibold text-orange-700 uppercase mb-3 flex items-center gap-2">
+                      <span className="text-base">📤</span> Paid to Sub-Agent (%)
+                    </h4>
+                    {formData.policyType === 'Motor Insurance' ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'OD_ONLY') && (
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">OD Rate</label>
+                            <Input type="text" inputMode="decimal" name="subAgentOdRate" value={formData.subAgentOdRate} onChange={handleChange} placeholder="10" className="h-9 text-sm" />
+                          </div>
+                        )}
+                        {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">TP Rate</label>
+                            <Input type="text" inputMode="decimal" name="subAgentTpRate" value={formData.subAgentTpRate} onChange={handleChange} placeholder="3" className="h-9 text-sm" />
+                          </div>
+                        )}
                         <div>
-                          <label className="block text-xs text-gray-500 mb-1">OD Rate</label>
-                          <Input type="text" inputMode="decimal" name="subAgentOdRate" value={(formData as any).subAgentOdRate || ''} onChange={handleChange} placeholder="10" className="h-9 text-sm" />
+                          <label className="block text-xs text-gray-500 mb-1">Net Rate</label>
+                          <Input type="text" inputMode="decimal" name="subAgentNetRate" value={formData.subAgentNetRate} onChange={handleChange} placeholder="8" className="h-9 text-sm" />
                         </div>
-                      )}
-                      {(formData.motorPolicyType === 'COMPREHENSIVE' || formData.motorPolicyType === 'TP_ONLY') && (
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">TP Rate</label>
-                          <Input type="text" inputMode="decimal" name="subAgentTpRate" value={(formData as any).subAgentTpRate || ''} onChange={handleChange} placeholder="3" className="h-9 text-sm" />
-                        </div>
-                      )}
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Net Rate</label>
-                        <Input type="text" inputMode="decimal" name="subAgentNetRate" value={(formData as any).subAgentNetRate || ''} onChange={handleChange} placeholder="8" className="h-9 text-sm" />
                       </div>
-                    </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Commission %</label>
+                          <Input type="text" inputMode="decimal" name="subAgentCommissionRate" value={formData.subAgentCommissionRate} onChange={handleChange} placeholder="5" className="h-9 text-sm" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
+              {/* Motor Insurance: Premium Payment & Advance Options */}
+              {formData.policyType === 'Motor Insurance' && formData.subAgentId && (
+                <div className="mt-4 bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
+                  <h4 className="text-xs font-semibold text-blue-700 uppercase mb-3 flex items-center gap-2">
+                    <span className="text-base">💰</span> Payment & Ledger Adjustment
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Premium Paid By Agent */}
+                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                      <div className="flex items-center gap-3 mb-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.premiumPaidByAgent}
+                            onChange={(e) => setFormData(prev => ({ ...prev, premiumPaidByAgent: e.target.checked }))}
+                            className="w-4 h-4 text-amber-600 rounded"
+                          />
+                          <span className="text-sm font-medium text-amber-800">Premium Paid By You?</span>
+                        </label>
+                      </div>
+                      {formData.premiumPaidByAgent && (
+                        <div className="text-xs text-amber-700 bg-amber-100 rounded p-2 mt-2">
+                          <p className="font-medium mb-1">💡 Ledger Adjustment:</p>
+                          <p>Gross Premium (₹{formData.premiumAmount || 0}) − Your Commission (₹{calculateTotalCommission().toFixed(0)}) = <span className="font-bold text-red-600">₹{(parseFloat(formData.premiumAmount || '0') - calculateTotalCommission()).toFixed(0)}</span></p>
+                          <p className="mt-1 text-amber-600">This amount will be added to Sub-Agent's <strong>DUE</strong> in ledger.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Received Advance */}
+                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                      <div className="flex items-center gap-3 mb-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.receivedAdvanceFromAgent}
+                            onChange={(e) => setFormData(prev => ({ ...prev, receivedAdvanceFromAgent: e.target.checked, advanceAmount: e.target.checked ? prev.advanceAmount : '' }))}
+                            className="w-4 h-4 text-green-600 rounded"
+                          />
+                          <span className="text-sm font-medium text-green-800">Received Advance?</span>
+                        </label>
+                      </div>
+                      {formData.receivedAdvanceFromAgent && (
+                        <div className="mt-2">
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-gray-600">Amount:</label>
+                            <Input
+                              type="number"
+                              name="advanceAmount"
+                              value={formData.advanceAmount}
+                              onChange={handleChange}
+                              placeholder="Enter advance amount"
+                              className="h-8 text-sm flex-1"
+                            />
+                          </div>
+                          <p className="text-xs text-green-600 mt-2">
+                            ✓ This advance (₹{formData.advanceAmount || 0}) will be <strong>deducted</strong> from Sub-Agent's pending dues.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ledger Summary Preview */}
+                  {(formData.premiumPaidByAgent || formData.receivedAdvanceFromAgent) && (
+                    <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <h5 className="text-xs font-semibold text-gray-700 uppercase mb-2">📊 Sub-Agent Ledger Preview</h5>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="text-center p-2 bg-red-50 rounded-lg">
+                          <p className="text-xs text-gray-500">Amount Due</p>
+                          <p className="font-bold text-red-600">
+                            ₹{formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateTotalCommission()).toFixed(0) : '0'}
+                          </p>
+                        </div>
+                        <div className="text-center p-2 bg-green-50 rounded-lg">
+                          <p className="text-xs text-gray-500">Advance Received</p>
+                          <p className="font-bold text-green-600">₹{formData.advanceAmount || '0'}</p>
+                        </div>
+                        <div className="text-center p-2 bg-blue-50 rounded-lg">
+                          <p className="text-xs text-gray-500">Net Balance</p>
+                          <p className="font-bold text-blue-600">
+                            ₹{(
+                              (formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateTotalCommission()) : 0) -
+                              parseFloat(formData.advanceAmount || '0')
+                            ).toFixed(0)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Commission Preview */}
               {(formData.odCommissionRate || formData.tpCommissionRate || formData.netCommissionRate || formData.commissionRate || formData.brokerCommissionAmount) && (
-                <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-xl p-4 shadow-sm">
                   <h4 className="text-xs font-semibold text-indigo-800 uppercase mb-2">Commission Preview</h4>
-                  <div className="flex items-center gap-6 text-sm">
-                    <div>
+                  <div className="flex flex-wrap items-center gap-6 text-sm">
+                    <div className="bg-white px-3 py-2 rounded-lg">
                       <span className="text-gray-600">Total:</span>
                       <span className="font-bold text-green-700 ml-1">₹{calculateTotalCommission().toFixed(0)}</span>
                     </div>
-                    <div>
+                    <div className="bg-white px-3 py-2 rounded-lg">
                       <span className="text-gray-600">Your Payout:</span>
                       <span className="font-bold text-indigo-700 ml-1">₹{calculateAgentPayout().toFixed(0)}</span>
                     </div>
                     {formData.subAgentId && calculateSubAgentPayout() > 0 && (
-                      <div>
+                      <div className="bg-white px-3 py-2 rounded-lg">
                         <span className="text-gray-600">Sub-Agent:</span>
                         <span className="font-bold text-orange-700 ml-1">₹{calculateSubAgentPayout().toFixed(0)}</span>
                       </div>
