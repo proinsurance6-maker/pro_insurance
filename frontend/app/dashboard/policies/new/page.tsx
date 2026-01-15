@@ -648,7 +648,7 @@ export default function NewPolicyPage() {
           ref={scanInputRef}
           onChange={(e) => {
             handleDocumentScan(e);
-            setShowScanModal(false);
+            // Keep modal open - it will close after processing completes
             setEntryMode('manual');
           }}
           accept="image/*,.pdf"
