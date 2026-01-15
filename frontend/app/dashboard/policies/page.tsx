@@ -678,17 +678,17 @@ export default function PoliciesPage() {
                       
                       {/* Sub-Agent OD Rate */}
                       <td className="whitespace-nowrap">
-                        {policy.odCommissionRate ? `${policy.odCommissionRate}%` : '-'}
+                        -
                       </td>
                       
                       {/* Sub-Agent TP Rate */}
                       <td className="whitespace-nowrap">
-                        {policy.tpCommissionRate ? `${policy.tpCommissionRate}%` : '-'}
+                        -
                       </td>
                       
                       {/* Sub-Agent Net Rate */}
                       <td className="whitespace-nowrap">
-                        {policy.netCommissionRate ? `${policy.netCommissionRate}%` : '-'}
+                        -
                       </td>
                       
                       {/* Paid Payout (Sub-Agent Commission) */}
