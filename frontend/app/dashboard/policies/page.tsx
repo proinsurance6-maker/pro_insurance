@@ -148,6 +148,26 @@ export default function PoliciesPage() {
     return `${day}/${month}/${year}`;
   };
 
+  // Convert DD/MM/YYYY to YYYY-MM-DD
+  const parseDateInput = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+    }
+    return dateStr;
+  };
+
+  // Format YYYY-MM-DD to DD/MM/YYYY for display
+  const formatDateForDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+    }
+    return dateStr;
+  };
+
   const downloadExcel = () => {
     const headers = ['Date', 'Client Name', 'Mobile', 'Email', 'Reg No', 'Policy No', 'Type', 'Premium', 'Company', 'Status'];
     const rows = filteredPolicies.map(p => [
@@ -235,58 +255,76 @@ export default function PoliciesPage() {
   return (
     <div className="space-y-4">
       {/* Filters Section - Probus Style */}
-      <div className="bg-white rounded-lg border border-gray-300">
-        <div className="px-4 py-3 border-b border-gray-300 flex items-center justify-between bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="bg-white rounded border border-gray-300">
+        <div className="px-3 py-2 border-b border-gray-300 flex items-center justify-between bg-gray-50">
+          <h2 className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
             Filters
           </h2>
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
           >
             {showFilters ? 'Hide' : 'Show'}
           </button>
         </div>
         
         {showFilters && (
-          <div className="p-4 bg-white">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+          <div className="p-2.5 bg-white">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2">
               {/* From Date */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">From Date</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">From Date</label>
                 <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
+                  type="text"
+                  value={formatDateForDisplay(fromDate)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow only numbers and /
+                    const cleaned = value.replace(/[^0-9/]/g, '');
+                    // Auto-format as user types
+                    if (cleaned.length === 10) {
+                      setFromDate(parseDateInput(cleaned));
+                    } else {
+                      setFromDate(parseDateInput(cleaned));
+                    }
+                  }}
                   placeholder="DD/MM/YYYY"
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                  maxLength={10}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 />
-                {fromDate && <div className="text-xs text-gray-500 mt-1">{formatDateInput(fromDate)}</div>}
               </div>
               
               {/* To Date */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">To Date</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">To Date</label>
                 <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
+                  type="text"
+                  value={formatDateForDisplay(toDate)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const cleaned = value.replace(/[^0-9/]/g, '');
+                    if (cleaned.length === 10) {
+                      setToDate(parseDateInput(cleaned));
+                    } else {
+                      setToDate(parseDateInput(cleaned));
+                    }
+                  }}
                   placeholder="DD/MM/YYYY"
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                  maxLength={10}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 />
-                {toDate && <div className="text-xs text-gray-500 mt-1">{formatDateInput(toDate)}</div>}
               </div>
               
               {/* Policy Type */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Product</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Product</label>
                 <select
                   value={policyType}
                   onChange={(e) => setPolicyType(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   {POLICY_TYPES.map(type => (
                     <option key={type} value={type}>{type === 'All' ? 'ALL' : type}</option>
@@ -296,11 +334,11 @@ export default function PoliciesPage() {
               
               {/* Company */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Company</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Company</label>
                 <select
                   value={companyId}
                   onChange={(e) => setCompanyId(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="">All</option>
                   {companies.map(company => (
@@ -311,11 +349,11 @@ export default function PoliciesPage() {
               
               {/* Broker */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Broker</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Broker</label>
                 <select
                   value={brokerId}
                   onChange={(e) => setBrokerId(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="">All</option>
                   {brokers.map(broker => (
@@ -326,11 +364,11 @@ export default function PoliciesPage() {
               
               {/* Sub-Agent */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Sub-Agent</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Sub-Agent</label>
                 <select
                   value={subAgentId}
                   onChange={(e) => setSubAgentId(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="">All</option>
                   {subAgents.map(sa => (
@@ -341,11 +379,11 @@ export default function PoliciesPage() {
               
               {/* Status */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Status</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Status</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as 'all' | 'active' | 'expired')}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="all">ALL</option>
                   <option value="active">Active</option>
@@ -355,59 +393,59 @@ export default function PoliciesPage() {
               
               {/* Search */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Search</label>
+                <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Search</label>
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Policy, Client, Vehicle..."
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
             
             {/* Filter Actions & Quick Add Buttons */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4 pt-3 border-t border-gray-200">
+            <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-gray-200">
               <button
                 onClick={resetFilters}
-                className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition"
+                className="px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded hover:bg-orange-600 transition"
               >
                 Reset
               </button>
-              <div className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg">
+              <div className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
                 📊 Total: {filteredPolicies.length}
               </div>
               <button
                 onClick={downloadExcel}
-                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+                className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition flex items-center gap-1"
               >
-                📥 Export Excel
+                📥 Export
               </button>
               
               {/* Quick Add Buttons */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 ml-auto">
                 <Link href="/dashboard/policies/new?type=motor">
-                  <button className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition">
+                  <button className="px-2.5 py-1 bg-blue-600 text-white text-[10px] font-medium rounded hover:bg-blue-700 transition">
                     + Motor
                   </button>
                 </Link>
                 <Link href="/dashboard/policies/new?type=travel">
-                  <button className="px-3 py-1.5 bg-teal-600 text-white text-xs font-medium rounded hover:bg-teal-700 transition">
+                  <button className="px-2.5 py-1 bg-teal-600 text-white text-[10px] font-medium rounded hover:bg-teal-700 transition">
                     + Travel
                   </button>
                 </Link>
                 <Link href="/dashboard/policies/new?type=health">
-                  <button className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition">
+                  <button className="px-2.5 py-1 bg-green-600 text-white text-[10px] font-medium rounded hover:bg-green-700 transition">
                     + Health
                   </button>
                 </Link>
                 <Link href="/dashboard/policies/new?type=life">
-                  <button className="px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded hover:bg-purple-700 transition">
+                  <button className="px-2.5 py-1 bg-purple-600 text-white text-[10px] font-medium rounded hover:bg-purple-700 transition">
                     + Life
                   </button>
                 </Link>
                 <Link href="/dashboard/policies/new">
-                  <button className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded hover:bg-gray-700 transition">
+                  <button className="px-2.5 py-1 bg-gray-600 text-white text-[10px] font-medium rounded hover:bg-gray-700 transition">
                     + Other
                   </button>
                 </Link>
