@@ -1183,11 +1183,10 @@ export default function NewPolicyPage() {
               {showSubAgentForm && (
                 <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-medium text-blue-800 text-sm mb-3">Add New Sub-Agent</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Input placeholder="Name *" value={newSubAgentData.name} onChange={(e) => setNewSubAgentData(prev => ({ ...prev, name: e.target.value }))} className="h-9 text-sm" />
                     <Input placeholder="Phone *" value={newSubAgentData.phone} onChange={(e) => setNewSubAgentData(prev => ({ ...prev, phone: e.target.value }))} className="h-9 text-sm" />
                     <Input placeholder="Email" value={newSubAgentData.email} onChange={(e) => setNewSubAgentData(prev => ({ ...prev, email: e.target.value }))} className="h-9 text-sm" />
-                    <Input type="number" placeholder="Commission %" value={newSubAgentData.commissionPercentage} onChange={(e) => setNewSubAgentData(prev => ({ ...prev, commissionPercentage: e.target.value }))} className="h-9 text-sm" />
                     <Button type="button" onClick={handleCreateSubAgent} disabled={creatingSubAgent || !newSubAgentData.name} className="h-9 text-xs">
                       {creatingSubAgent ? '...' : '✓ Create Sub-Agent'}
                     </Button>
