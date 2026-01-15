@@ -133,6 +133,7 @@ export default function NewPolicyPage() {
     policyType: '',
     policySource: 'NEW', // NEW, RENEWAL, PORT
     policyPeriod: '1 Year', // Policy duration
+    paymentTerm: '', // Payment term (if different from policy period)
     motorPolicyType: '', // COMPREHENSIVE, OD_ONLY, TP_ONLY
     planName: '',
     sumAssured: '',
@@ -142,6 +143,7 @@ export default function NewPolicyPage() {
     tpPremium: '',
     netPremium: '',
     paymentMode: 'yearly',
+    loginDate: '', // Date when policy was logged/processed
     startDate: new Date().toISOString().split('T')[0],
     endDate: '',
     // Commission fields
@@ -1140,33 +1142,26 @@ export default function NewPolicyPage() {
                 Policy Details
               </h3>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <div>
+              {/* Row 1: Proposal Type, Policy Type, Motor Type (if motor) */}
+              <div className="flex flex-wrap gap-4 mb-4">
+                <div className="w-40">
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                    Insurance Company <span className="text-red-500">*</span>
+                    Proposal Type <span className="text-red-500">*</span>
                   </label>
                   <select
-                    name="companyId"
-                    value={formData.companyId}
+                    name="policySource"
+                    value={formData.policySource}
                     onChange={handleChange}
                     className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     required
                   >
-                    <option value="">Select Company</option>
-                    {companies.map((company) => (
-                      <option key={company.id} value={company.id}>{company.name}</option>
+                    {POLICY_SOURCES.map((source) => (
+                      <option key={source.value} value={source.value}>{source.label}</option>
                     ))}
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                    Policy Number <span className="text-red-500">*</span>
-                  </label>
-                  <Input name="policyNumber" value={formData.policyNumber} onChange={handleChange} placeholder="POL123456" required className="h-10 text-sm" />
-                </div>
-
-                <div>
+                <div className="w-44">
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">
                     Policy Type <span className="text-red-500">*</span>
                   </label>
@@ -1185,7 +1180,7 @@ export default function NewPolicyPage() {
                 </div>
 
                 {formData.policyType === 'Motor Insurance' && (
-                  <div>
+                  <div className="w-40">
                     <label className="block text-xs font-medium text-gray-500 mb-1.5">
                       Motor Type <span className="text-red-500">*</span>
                     </label>
@@ -1203,46 +1198,69 @@ export default function NewPolicyPage() {
                     </select>
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                    Payment Mode
-                  </label>
-                  <select
-                    name="paymentMode"
-                    value={formData.paymentMode}
-                    onChange={handleChange}
-                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    {PAYMENT_MODES.map((mode) => (
-                      <option key={mode} value={mode}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
 
-              {/* Second Row: Policy Source, Policy Period */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <div>
+              {/* Row 2: Company, Policy Number, Sum Assured, Plan Name */}
+              <div className="flex flex-wrap gap-4 mb-4">
+                <div className="w-56">
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                    Proposal Type <span className="text-red-500">*</span>
+                    Insurance Company <span className="text-red-500">*</span>
                   </label>
                   <select
-                    name="policySource"
-                    value={formData.policySource}
+                    name="companyId"
+                    value={formData.companyId}
                     onChange={handleChange}
                     className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     required
                   >
-                    {POLICY_SOURCES.map((source) => (
-                      <option key={source.value} value={source.value}>{source.label}</option>
+                    <option value="">Select Company</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>{company.name}</option>
                     ))}
                   </select>
                 </div>
 
-                <div>
+                <div className="w-48">
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                    Policy Period <span className="text-red-500">*</span>
+                    Policy Number <span className="text-red-500">*</span>
+                  </label>
+                  <Input name="policyNumber" value={formData.policyNumber} onChange={handleChange} placeholder="POL123456" required className="h-10 text-sm" />
+                </div>
+
+                <div className="w-36">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Sum Assured (₹)</label>
+                  <Input type="text" name="sumAssured" value={formData.sumAssured} onChange={handleChange} placeholder="Unlimited" className="h-10 text-sm" />
+                </div>
+
+                <div className="w-44">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Plan Name</label>
+                  <Input name="planName" value={formData.planName} onChange={handleChange} placeholder="Plan name" className="h-10 text-sm" />
+                </div>
+              </div>
+
+              {/* Row 3: Login Date, Start Date, Renewal Date (End Date) */}
+              <div className="flex flex-wrap gap-4 mb-4">
+                <div className="w-40">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Login Date</label>
+                  <Input type="date" name="loginDate" value={formData.loginDate || ''} onChange={handleChange} className="h-10 text-sm" />
+                </div>
+
+                <div className="w-40">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Start Date <span className="text-red-500">*</span></label>
+                  <Input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required className="h-10 text-sm" />
+                </div>
+
+                <div className="w-40">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Renewal Date <span className="text-red-500">*</span></label>
+                  <Input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="h-10 text-sm" />
+                </div>
+              </div>
+
+              {/* Row 4: Policy Term, Policy Payment Term, Payment Mode */}
+              <div className="flex flex-wrap gap-4">
+                <div className="w-36">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Policy Term <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="policyPeriod"
@@ -1256,25 +1274,34 @@ export default function NewPolicyPage() {
                     ))}
                   </select>
                 </div>
-              </div>
 
-              {/* Dates Row */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Start Date <span className="text-red-500">*</span></label>
-                  <Input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required className="h-10 text-sm" />
+                <div className="w-40">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Payment Term</label>
+                  <select
+                    name="paymentTerm"
+                    value={formData.paymentTerm || ''}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">Same as Policy</option>
+                    {POLICY_PERIODS.map((period) => (
+                      <option key={period.value} value={period.value}>{period.label}</option>
+                    ))}
+                  </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">End Date <span className="text-red-500">*</span></label>
-                  <Input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="h-10 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Sum Assured (₹)</label>
-                  <Input type="text" name="sumAssured" value={formData.sumAssured} onChange={handleChange} placeholder="1000000 or Unlimited" className="h-10 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Plan Name</label>
-                  <Input name="planName" value={formData.planName} onChange={handleChange} placeholder="Plan name" className="h-10 text-sm" />
+
+                <div className="w-32">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Payment Mode</label>
+                  <select
+                    name="paymentMode"
+                    value={formData.paymentMode}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    {PAYMENT_MODES.map((mode) => (
+                      <option key={mode} value={mode}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
