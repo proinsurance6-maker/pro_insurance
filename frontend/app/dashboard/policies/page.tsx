@@ -56,6 +56,7 @@ interface Policy {
     id: string;
     documentType: string;
     documentUrl: string;
+    documentName: string;
   }>;
 }
 
