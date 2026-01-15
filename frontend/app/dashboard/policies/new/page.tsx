@@ -658,7 +658,7 @@ export default function NewPolicyPage() {
         {/* Scan Document Modal - Enhanced with proper backdrop */}
         {showScanModal && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-[100]" 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" 
             onClick={(e) => {
               // Only close if not scanning
               if (!scanning && e.target === e.currentTarget) {
@@ -666,11 +666,7 @@ export default function NewPolicyPage() {
               }
             }}
           >
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 animate-fadeIn" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-purple-50">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  📄 Upload Policy Document
-                </h3>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 relative z-[10000]" onClick={e => e.stopPropagation()}>\n              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">\n                <h3 className="text-base font-semibold text-gray-800">\n                  Upload Policy Document\n                </h3>
                 {!scanning && (
                   <button 
                     onClick={() => setShowScanModal(false)} 
@@ -681,42 +677,30 @@ export default function NewPolicyPage() {
                   </button>
                 )}
               </div>
-              <div className="p-8">
+              <div className="p-6">
                 {scanning ? (
                   <div className="text-center py-8">
-                    <div className="relative inline-block mb-4">
-                      <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                      <div className="absolute inset-0 flex items-center justify-center text-2xl">
-                        📄
-                      </div>
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Processing Document...</h4>
-                    <p className="text-sm text-gray-600 mb-1">AI is extracting policy details</p>
-                    <p className="text-xs text-gray-500">Please wait, this may take a few moments</p>
-                    
-                    {/* Progress bar animation */}
-                    <div className="mt-6 bg-gray-200 rounded-full h-2 overflow-hidden">
-                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full animate-progress"></div>
-                    </div>
+                    <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <h4 className="text-base font-semibold text-gray-900 mb-2">Processing Document...</h4>
+                    <p className="text-sm text-gray-600">AI is extracting policy details</p>
                   </div>
                 ) : success ? (
                   <div className="text-center py-8">
-                    <div className="text-6xl mb-4 animate-bounce">✅</div>
-                    <h4 className="text-lg font-semibold text-green-700 mb-2">Success!</h4>
+                    <div className="text-5xl mb-4">✅</div>
+                    <h4 className="text-base font-semibold text-green-700 mb-2">Success!</h4>
                     <p className="text-sm text-gray-600">{success}</p>
-                    <p className="text-xs text-gray-500 mt-3">Closing automatically...</p>
                   </div>
                 ) : error ? (
                   <div className="text-center py-8">
-                    <div className="text-6xl mb-4">❌</div>
-                    <h4 className="text-lg font-semibold text-red-700 mb-2">Error</h4>
+                    <div className="text-5xl mb-4">❌</div>
+                    <h4 className="text-base font-semibold text-red-700 mb-2">Error</h4>
                     <p className="text-sm text-gray-600">{error}</p>
                     <button
                       onClick={() => {
                         setError('');
                         setShowScanModal(false);
                       }}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                     >
                       Try Again
                     </button>
@@ -724,12 +708,9 @@ export default function NewPolicyPage() {
                 ) : (
                   <div 
                     onClick={() => scanInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group"
+                    className="border-2 border-dashed border-gray-300 rounded p-16 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
                   >
-                    <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">📸</div>
-                    <p className="text-gray-700 font-medium mb-1">Click to upload document</p>
-                    <p className="text-gray-500 text-sm">PDF or Image (JPG, PNG)</p>
-                    <p className="text-xs text-gray-400 mt-3">AI will automatically extract policy details</p>
+                    <p className="text-gray-600 font-medium">Click to upload pdf</p>
                   </div>
                 )}
               </div>
