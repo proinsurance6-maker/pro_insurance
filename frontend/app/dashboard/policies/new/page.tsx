@@ -58,6 +58,20 @@ const MOTOR_POLICY_TYPES = [
 
 const PAYMENT_MODES = ['yearly', 'half-yearly', 'quarterly', 'monthly', 'single'];
 
+const POLICY_SOURCES = [
+  { value: 'NEW', label: 'Fresh/New' },
+  { value: 'RENEWAL', label: 'Renewal' },
+  { value: 'PORT', label: 'Port' }
+];
+
+const POLICY_PERIODS = [
+  { value: '1 Year', label: '1 Year' },
+  { value: '2 Years', label: '2 Years' },
+  { value: '3 Years', label: '3 Years' },
+  { value: '5 Years', label: '5 Years' },
+  { value: '10 Years', label: '10 Years' }
+];
+
 export default function NewPolicyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -116,6 +130,8 @@ export default function NewPolicyPage() {
     companyId: '',
     policyNumber: '',
     policyType: '',
+    policySource: 'NEW', // NEW, RENEWAL, PORT
+    policyPeriod: '1 Year', // Policy duration
     motorPolicyType: '', // COMPREHENSIVE, OD_ONLY, TP_ONLY
     planName: '',
     sumAssured: '',
@@ -411,8 +427,10 @@ export default function NewPolicyPage() {
           ...prev,
           policyNumber: extractedData.policyNumber || prev.policyNumber,
           policyType: extractedData.policyType || prev.policyType,
+          policySource: extractedData.policySource || prev.policySource,
+          policyPeriod: extractedData.policyPeriod || prev.policyPeriod,
           planName: extractedData.planName || prev.planName,
-          sumAssured: extractedData.sumAssured?.toString() || prev.sumAssured,
+          sumAssured: extractedData.sumAssured || prev.sumAssured, // Can be "Unlimited" or number
           premiumAmount: extractedData.premiumAmount?.toString() || prev.premiumAmount,
           startDate: extractedData.startDate || prev.startDate,
           endDate: extractedData.endDate || prev.endDate,
@@ -456,6 +474,9 @@ export default function NewPolicyPage() {
         if (extractedData.companyName) extractedFields.push('Company');
         if (extractedData.holderName) extractedFields.push('Holder Name');
         if (extractedData.premiumAmount) extractedFields.push('Premium');
+        if (extractedData.policySource) extractedFields.push('Proposal Type');
+        if (extractedData.policyPeriod) extractedFields.push('Policy Period');
+        if (extractedData.sumAssured) extractedFields.push('Sum Assured');
         if (extractedData.motorPolicyType) extractedFields.push('Motor Type');
         if (extractedData.odPremium) extractedFields.push('OD Premium');
         if (extractedData.tpPremium) extractedFields.push('TP Premium');
@@ -1142,6 +1163,43 @@ export default function NewPolicyPage() {
                 </div>
               </div>
 
+              {/* Second Row: Policy Source, Policy Period */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Proposal Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="policySource"
+                    value={formData.policySource}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    required
+                  >
+                    {POLICY_SOURCES.map((source) => (
+                      <option key={source.value} value={source.value}>{source.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Policy Period <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="policyPeriod"
+                    value={formData.policyPeriod}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    required
+                  >
+                    {POLICY_PERIODS.map((period) => (
+                      <option key={period.value} value={period.value}>{period.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Dates Row */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <div>
@@ -1154,7 +1212,7 @@ export default function NewPolicyPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Sum Assured (₹)</label>
-                  <Input type="number" name="sumAssured" value={formData.sumAssured} onChange={handleChange} placeholder="1000000" className="h-10 text-sm" />
+                  <Input type="text" name="sumAssured" value={formData.sumAssured} onChange={handleChange} placeholder="1000000 or Unlimited" className="h-10 text-sm" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Plan Name</label>

@@ -14,13 +14,15 @@ interface ExtractedPolicyData {
   holderName: string | null;
   policyType: string | null;
   motorPolicyType: string | null; // COMPREHENSIVE, OD_ONLY, TP_ONLY
+  policySource: string | null; // FRESH, RENEWAL, PORT
+  policyPeriod: string | null; // e.g., "5 Years", "1 Year"
   companyName: string | null;
   premiumAmount: number | null;
   // Motor premium breakdown
   odPremium: number | null;
   tpPremium: number | null;
   netPremium: number | null;
-  sumAssured: number | null;
+  sumAssured: string | null; // Changed to string to support "Unlimited"
   startDate: string | null;
   endDate: string | null;
   vehicleNumber: string | null;
@@ -149,12 +151,14 @@ Be thorough - scan every table and section in the document.`;
       holderName: extracted.holderName || null,
       policyType: extracted.policyType || null,
       motorPolicyType: extracted.motorPolicyType || null,
+      policySource: extracted.policySource || null,
+      policyPeriod: extracted.policyPeriod || null,
       companyName: extracted.companyName || null,
       premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
       odPremium: extracted.odPremium ? Number(extracted.odPremium) : null,
       tpPremium: extracted.tpPremium ? Number(extracted.tpPremium) : null,
       netPremium: extracted.netPremium ? Number(extracted.netPremium) : null,
-      sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
+      sumAssured: extracted.sumAssured ? String(extracted.sumAssured) : null,
       startDate: extracted.startDate || null,
       endDate: extracted.endDate || null,
       vehicleNumber: extracted.vehicleNumber || null,
@@ -181,29 +185,31 @@ IMPORTANT: Scan the ENTIRE document thoroughly. Look for tables, schedules, and 
 Return ONLY a valid JSON object with these exact keys (use null if not found):
 {
   "policyNumber": "the policy number/ID (look for 'Policy No', 'Policy Number', 'Certificate No')",
-  "holderName": "name of the policy holder/insured person (look for 'Name', 'Insured Name', 'Proposer')",
-  "policyType": "type of insurance - return 'Motor Insurance' for any vehicle/car/bike policy",
-  "motorPolicyType": "MUST detect: 'OD_ONLY' for Standalone Own Damage, 'TP_ONLY' for Standalone Third Party/Liability Only, 'COMPREHENSIVE' for Package/Comprehensive with both OD and TP",
-  "companyName": "FULL insurance company name (e.g., 'TATA AIG General Insurance', 'ICICI Lombard', 'Bajaj Allianz')",
-  "premiumAmount": total premium amount payable (look for 'Total Premium', 'Total Amount Payable', 'Gross Premium'),
-  "odPremium": OD/Own Damage premium amount (look for 'Total Own Damage Premium', 'OD Premium', 'Section A' premium),
-  "tpPremium": TP/Third Party/Liability premium amount (look for 'TP Premium', 'Third Party Premium', 'Liability Premium'),
-  "netPremium": Net premium before GST (look for 'Net Premium', 'Premium before tax', usually OD+TP or basic premium),
-  "sumAssured": IDV or Sum Insured value (look for 'IDV', 'Insured Declared Value', 'Sum Insured', 'Sum Assured'),
-  "startDate": "policy start date in YYYY-MM-DD format (look for 'Valid From', 'Start Date', 'Period From')",
-  "endDate": "policy end date in YYYY-MM-DD format (look for 'Valid Till', 'Expiry Date', 'Valid Upto')",
-  "vehicleNumber": "vehicle registration number (look for 'Registration No', 'Reg No', 'Vehicle No' - format like 'UP 16 EC 5046' or 'MH01AB1234')",
-  "planName": "policy plan name if mentioned"
+  "holderName": "name of the policy holder/insured person (look for 'Name', 'Insured Name', 'Proposer', 'Policyholder Name')",
+  "policyType": "DETECT TYPE: 'Health Insurance' for health/medical/hospitalization policies, 'Motor Insurance' for vehicle/car/bike policies, 'Life Insurance' for life/term policies, 'Travel Insurance' for travel policies",
+  "motorPolicyType": "Only for Motor: 'OD_ONLY' for Standalone Own Damage, 'TP_ONLY' for Standalone Third Party, 'COMPREHENSIVE' for Package/Comprehensive",
+  "policySource": "DETECT: 'PORT' if document mentions 'ported' or 'portability', 'RENEWAL' if 'renewal' mentioned, 'NEW' for fresh/new policy",
+  "policyPeriod": "Policy duration (e.g., '1 Year', '5 Years', '2 Years') - look for 'Policy Period', 'Term'",
+  "companyName": "FULL insurance company name from header/logo (e.g., 'Niva Bupa Health Insurance', 'TATA AIG General Insurance')",
+  "premiumAmount": total premium amount payable (look for 'Total Premium', 'Gross Premium', 'Total Amount Payable'),
+  "odPremium": OD/Own Damage premium (for Motor only),
+  "tpPremium": TP/Third Party premium (for Motor only),
+  "netPremium": Net premium before GST/taxes,
+  "sumAssured": "Sum Insured value - if 'Unlimited' or 'Base Sum Insured: Unlimited', return 'Unlimited'. Otherwise return the number. Look for 'Sum Assured', 'Sum Insured', 'Base Sum Insured', 'IDV'",
+  "startDate": "policy start date in YYYY-MM-DD format (look for 'Policy Commencement Date', 'From', 'Valid From', 'Start Date')",
+  "endDate": "policy end date in YYYY-MM-DD format (look for 'Policy Expiry Date', 'To', 'Valid Till', 'End Date')",
+  "vehicleNumber": "vehicle registration number (for Motor only)",
+  "planName": "policy plan/product name (e.g., 'ReAssure 3.0', 'Optima Secure')"
 }
 
 CRITICAL EXTRACTION RULES:
-1. For VEHICLE NUMBER: Look in 'Vehicle Details' section. Format is usually STATE CODE + DISTRICT + LETTERS + NUMBERS (e.g., UP 16 EC 5046)
-2. For OD PREMIUM: In Schedule of Premium, find 'Total Own Damage Premium' or 'Section A' total
-3. For NET PREMIUM: Find 'Net Premium (A+B)' or 'Premium before GST/Tax'
-4. For COMPANY NAME: Look at header/logo area - extract FULL name like 'TATA AIG General Insurance Company'
-5. For DATES: Convert DD/MM/YYYY to YYYY-MM-DD format
-6. For motorPolicyType: If title says 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY, 'Comprehensive/Package' → COMPREHENSIVE
-7. Remove ALL currency symbols (₹, Rs, INR) - return ONLY numbers
+1. POLICY TYPE: Look at company name - 'Health Insurance' in name = Health Insurance, 'General Insurance' with vehicle = Motor Insurance
+2. DATES: Convert any date format (31-JAN-2026, 31/01/2026) to YYYY-MM-DD format. Be careful with year!
+3. SUM ASSURED: If document says 'Unlimited' or 'Base Sum Insured: Unlimited', return string "Unlimited"
+4. POLICY PERIOD: Look for duration like '5-Year', 'Policy Period: 5 Year'
+5. PORTABILITY: If document mentions policy was 'ported from' another company, policySource = 'PORT'
+6. Remove ALL currency symbols (₹, Rs, INR) from premium values - return ONLY numbers
+7. COMPANY NAME: Extract full name from header/logo area
 
 Be thorough - scan every table and section in the document.`;
 
@@ -237,12 +243,14 @@ Be thorough - scan every table and section in the document.`;
       holderName: extracted.holderName || null,
       policyType: extracted.policyType || null,
       motorPolicyType: extracted.motorPolicyType || null,
+      policySource: extracted.policySource || null,
+      policyPeriod: extracted.policyPeriod || null,
       companyName: extracted.companyName || null,
       premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
       odPremium: extracted.odPremium ? Number(extracted.odPremium) : null,
       tpPremium: extracted.tpPremium ? Number(extracted.tpPremium) : null,
       netPremium: extracted.netPremium ? Number(extracted.netPremium) : null,
-      sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
+      sumAssured: extracted.sumAssured ? String(extracted.sumAssured) : null,
       startDate: extracted.startDate || null,
       endDate: extracted.endDate || null,
       vehicleNumber: extracted.vehicleNumber || null,
@@ -366,12 +374,14 @@ EXTRACTION RULES:
       holderName: extracted.holderName || null,
       policyType: extracted.policyType || null,
       motorPolicyType: extracted.motorPolicyType || null,
+      policySource: extracted.policySource || null,
+      policyPeriod: extracted.policyPeriod || null,
       companyName: extracted.companyName || null,
       premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
       odPremium: extracted.odPremium ? Number(extracted.odPremium) : null,
       tpPremium: extracted.tpPremium ? Number(extracted.tpPremium) : null,
       netPremium: extracted.netPremium ? Number(extracted.netPremium) : null,
-      sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
+      sumAssured: extracted.sumAssured ? String(extracted.sumAssured) : null,
       startDate: extracted.startDate || null,
       endDate: extracted.endDate || null,
       vehicleNumber: extracted.vehicleNumber || null,
@@ -434,12 +444,14 @@ EXTRACTION RULES:
       holderName: extracted.holderName || null,
       policyType: extracted.policyType || null,
       motorPolicyType: extracted.motorPolicyType || null,
+      policySource: extracted.policySource || null,
+      policyPeriod: extracted.policyPeriod || null,
       companyName: extracted.companyName || null,
       premiumAmount: extracted.premiumAmount ? Number(extracted.premiumAmount) : null,
       odPremium: extracted.odPremium ? Number(extracted.odPremium) : null,
       tpPremium: extracted.tpPremium ? Number(extracted.tpPremium) : null,
       netPremium: extracted.netPremium ? Number(extracted.netPremium) : null,
-      sumAssured: extracted.sumAssured ? Number(extracted.sumAssured) : null,
+      sumAssured: extracted.sumAssured ? String(extracted.sumAssured) : null,
       startDate: extracted.startDate || null,
       endDate: extracted.endDate || null,
       vehicleNumber: extracted.vehicleNumber || null,

@@ -325,8 +325,10 @@ model Policy {
   motorPolicyType   String?      @map("motor_policy_type") // COMPREHENSIVE, OD_ONLY, TP_ONLY (for Motor only)
   planName          String?      @map("plan_name")
   policySource      PolicySource @default(NEW) @map("policy_source")
+  policyPeriod      String?      @map("policy_period") // e.g., "1 Year", "5 Years"
   previousPolicyId  String?      @map("previous_policy_id") @db.Uuid
   sumAssured        Decimal?     @map("sum_assured") @db.Decimal(15, 2)
+  sumAssuredText    String?      @map("sum_assured_text") // For "Unlimited" or other text values
   premiumAmount     Decimal      @map("premium_amount") @db.Decimal(12, 2)
   // Motor Premium Breakdown
   odPremium         Decimal?     @map("od_premium") @db.Decimal(12, 2)

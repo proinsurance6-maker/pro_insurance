@@ -64,7 +64,7 @@ export const getPolicies = async (req: Request, res: Response, next: NextFunctio
           odPremium: p.odPremium?.toString(),
           tpPremium: p.tpPremium?.toString(),
           netPremium: p.netPremium?.toString(),
-          sumAssured: p.sumAssured?.toString(),
+          sumAssured: (p as any).sumAssuredText || p.sumAssured?.toString(), // Prefer text if set (Unlimited)
           commissions: p.commissions.map(c => ({
             ...c,
             totalCommissionPercent: c.totalCommissionPercent.toString(),
@@ -134,7 +134,7 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
     const agentId = (req as any).user.userId;
     const {
       clientId, companyId, subAgentId, brokerId, familyMemberId,
-      policyNumber, policyType, motorPolicyType, planName, policySource,
+      policyNumber, policyType, motorPolicyType, planName, policySource, policyPeriod,
       vehicleNumber, startDate, endDate,
       premiumAmount, sumAssured, premiumFrequency,
       // Motor premium breakdown
@@ -232,6 +232,7 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
           motorPolicyType: isMotor ? motorPolicyType : null,
           planName,
           policySource: policySource || 'NEW',
+          policyPeriod: policyPeriod || null,
           vehicleNumber: isMotor ? vehicleNumber : null,
           startDate: new Date(startDate),
           endDate: new Date(endDate),
@@ -239,7 +240,9 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
           odPremium: isMotor ? odPremium : null,
           tpPremium: isMotor ? tpPremium : null,
           netPremium: netPremium || null,
-          sumAssured,
+          // Handle sumAssured - if "Unlimited" or text, store in sumAssuredText
+          sumAssured: sumAssured && !isNaN(parseFloat(sumAssured)) ? parseFloat(sumAssured) : null,
+          sumAssuredText: sumAssured && isNaN(parseFloat(sumAssured)) ? sumAssured : null,
           premiumFrequency: premiumFrequency || 'yearly',
           premiumPaidBy: premiumPaidBy || 'CLIENT'
         }
