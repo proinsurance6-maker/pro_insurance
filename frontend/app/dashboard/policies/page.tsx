@@ -234,57 +234,59 @@ export default function PoliciesPage() {
 
   return (
     <div className="space-y-4">
-      {/* Filters Section - Enhanced */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-            <FilterIcon className="w-4 h-4" />
+      {/* Filters Section - Probus Style */}
+      <div className="bg-white rounded-lg border border-gray-300">
+        <div className="px-4 py-3 border-b border-gray-300 flex items-center justify-between bg-gray-50">
+          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
             Filters
           </h2>
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             {showFilters ? 'Hide' : 'Show'}
           </button>
         </div>
         
         {showFilters && (
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          <div className="p-4 bg-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
               {/* From Date */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">From Date</label>
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
                   placeholder="DD/MM/YYYY"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 />
                 {fromDate && <div className="text-xs text-gray-500 mt-1">{formatDateInput(fromDate)}</div>}
               </div>
               
               {/* To Date */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">To Date</label>
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
                   placeholder="DD/MM/YYYY"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 />
                 {toDate && <div className="text-xs text-gray-500 mt-1">{formatDateInput(toDate)}</div>}
               </div>
               
               {/* Policy Type */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Product</label>
                 <select
                   value={policyType}
                   onChange={(e) => setPolicyType(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   {POLICY_TYPES.map(type => (
                     <option key={type} value={type}>{type === 'All' ? 'ALL' : type}</option>
@@ -294,11 +296,11 @@ export default function PoliciesPage() {
               
               {/* Company */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Company</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Company</label>
                 <select
                   value={companyId}
                   onChange={(e) => setCompanyId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="">All</option>
                   {companies.map(company => (
@@ -309,11 +311,11 @@ export default function PoliciesPage() {
               
               {/* Broker */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Broker</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Broker</label>
                 <select
                   value={brokerId}
                   onChange={(e) => setBrokerId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="">All</option>
                   {brokers.map(broker => (
@@ -324,11 +326,11 @@ export default function PoliciesPage() {
               
               {/* Sub-Agent */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Sub-Agent</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Sub-Agent</label>
                 <select
                   value={subAgentId}
                   onChange={(e) => setSubAgentId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="">All</option>
                   {subAgents.map(sa => (
@@ -339,11 +341,11 @@ export default function PoliciesPage() {
               
               {/* Status */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Status</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as 'all' | 'active' | 'expired')}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="all">ALL</option>
                   <option value="active">Active</option>
@@ -353,19 +355,19 @@ export default function PoliciesPage() {
               
               {/* Search */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Search</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Search</label>
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Policy, Client, Vehicle..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
             
             {/* Filter Actions & Quick Add Buttons */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4 pt-3 border-t border-gray-200">
               <button
                 onClick={resetFilters}
                 className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition"
