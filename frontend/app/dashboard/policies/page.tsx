@@ -323,47 +323,47 @@ export default function PoliciesPage() {
         )}
       </div>
 
-      {/* Table Section - Probus Style */}
+      {/* Table Section - Excel Style with Aptos Narrow Font */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-xs">
+          <table className="policy-table min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">Date</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Client Name</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Mobile No.</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Registration No</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Policy No</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Fresh/Renewal</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Port</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Policy Type</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Net/Case Type</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Plan Name</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Policy Type</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">PPT</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">PT</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Insurer Name</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">PREMIUM</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Net Premium</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Payable Premium</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Our Annual</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">TDS</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Net our Amount</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Net Rate</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">TP RATE</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">OD RATE</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Paid Amount</th>
-                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Our Margin Amount</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Broker Name</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Percent</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Stnd Paid</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Docs to Agent</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Remarks</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">Action</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">Date</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Client Name</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Mobile No.</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Registration No</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Policy No</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Fresh/Renewal</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Port</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Policy Type</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Net/Case Type</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Plan Name</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Policy Type</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">PPT</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">PT</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Insurer Name</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">PREMIUM</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Net Premium</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Payable Premium</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Our Annual</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">TDS</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Net our Amount</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Net Rate</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">TP RATE</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">OD RATE</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Paid Amount</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Our Margin Amount</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Broker Name</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Percent</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Stnd Paid</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Docs to Agent</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Remarks</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">

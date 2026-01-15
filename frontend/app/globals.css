@@ -25,6 +25,23 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Policy table compact styling - Excel-like */
+.policy-table {
+  font-family: 'Aptos Narrow', 'Arial Narrow', Arial, sans-serif;
+  font-size: 10px;
+}
+
+.policy-table th {
+  font-family: 'Aptos Narrow', 'Arial Narrow', Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.policy-table td {
+  font-family: 'Aptos Narrow', 'Arial Narrow', Arial, sans-serif;
+  font-size: 10px;
+}
+
 /* Custom animations for modal and processing */
 @keyframes fadeIn {
   from {
