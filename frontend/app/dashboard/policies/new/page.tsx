@@ -955,7 +955,10 @@ export default function NewPolicyPage() {
                     <Input
                       name="vehicleNumber"
                       value={formData.vehicleNumber}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        const upperValue = e.target.value.toUpperCase();
+                        handleChange({ target: { name: 'vehicleNumber', value: upperValue } } as any);
+                      }}
                       placeholder="e.g., MH01AB1234"
                       required
                       className="h-10 text-sm uppercase"

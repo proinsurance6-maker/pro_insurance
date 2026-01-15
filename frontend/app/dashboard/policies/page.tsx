@@ -456,46 +456,45 @@ export default function PoliciesPage() {
       </div>
 
       {/* Table Section - Probus Style Professional Grid */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="bg-white rounded border border-gray-300 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="policy-table min-w-full">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10">Date</th>
+                <th>Action</th>
+                <th>Date</th>
                 <th>Client Name</th>
-                <th>Mobile No.</th>
+                <th>Mobile</th>
                 <th>Email</th>
                 <th>Registration No</th>
                 <th>Policy No</th>
-                <th>Fresh/Renewal</th>
-                <th>Port</th>
-                <th>Policy Type</th>
-                <th className="text-right">Premium</th>
-                <th>Net/Case Type</th>
+                <th>Fresh/Renewal/Port</th>
+                <th>Policy Segment</th>
+                <th>Case Type</th>
+                <th>Insurer Name</th>
                 <th>Plan Name</th>
-                <th>Policy Type</th>
                 <th>PPT</th>
                 <th>PT</th>
-                <th>Insurer Name</th>
-                <th className="text-right">Premium</th>
+                <th className="text-right">Gross Premium</th>
                 <th className="text-right">OD Premium</th>
                 <th className="text-right">TP Premium</th>
                 <th className="text-right">Net Premium</th>
                 <th className="text-right">Payable Premium</th>
-                <th className="text-right">Our Commission</th>
-                <th className="text-right">TDS</th>
-                <th className="text-right">Net Amount</th>
-                <th>Net Rate</th>
-                <th>TP Rate</th>
-                <th>OD Rate</th>
-                <th className="text-right">Paid Amount</th>
-                <th className="text-right">Margin</th>
                 <th>Broker Name</th>
-                <th>Percent</th>
+                <th>OD Rate</th>
+                <th>TP Rate</th>
+                <th>Net Rate</th>
+                <th className="text-right">Received Payout</th>
+                <th className="text-right">TDS</th>
+                <th className="text-right">Net Payout</th>
+                <th>Sub-Agent</th>
+                <th>OD Rate</th>
+                <th>TP Rate</th>
+                <th>Net Rate</th>
+                <th className="text-right">Paid Payout</th>
                 <th>Status</th>
                 <th>Documents</th>
-                <th>Remarks</th>
-                <th className="sticky right-0 z-10">Action</th>
+                <th>Remark</th>
               </tr>
             </thead>
             <tbody>
@@ -527,8 +526,24 @@ export default function PoliciesPage() {
                   
                   return (
                     <tr key={policy.id}>
-                      {/* Date (Created At) */}
-                      <td className="whitespace-nowrap sticky left-0 z-10">
+                      {/* Action */}
+                      <td className="whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <Link href={`/dashboard/policies/${policy.id}`}>
+                            <button className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition" title="View">
+                              <EyeIcon className="w-3 h-3" />
+                            </button>
+                          </Link>
+                          <Link href={`/dashboard/policies/${policy.id}/edit`}>
+                            <button className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition" title="Edit">
+                              <EditIcon className="w-3 h-3" />
+                            </button>
+                          </Link>
+                        </div>
+                      </td>
+                      
+                      {/* Date */}
+                      <td className="whitespace-nowrap">
                         {formatDate(policy.createdAt)}
                       </td>
                       
@@ -537,7 +552,7 @@ export default function PoliciesPage() {
                         {policy.client.name}
                       </td>
                       
-                      {/* Mobile No */}
+                      {/* Mobile */}
                       <td className="whitespace-nowrap">
                         {policy.client.phone}
                       </td>
@@ -547,7 +562,7 @@ export default function PoliciesPage() {
                         {policy.client.email || '-'}
                       </td>
                       
-                      {/* Registration No (Vehicle) */}
+                      {/* Registration No */}
                       <td className="whitespace-nowrap font-medium">
                         {policy.vehicleNumber || '-'}
                       </td>
@@ -557,32 +572,26 @@ export default function PoliciesPage() {
                         <span className="text-blue-600 font-semibold">{policy.policyNumber}</span>
                       </td>
                       
-                      {/* Fresh/Renewal */}
+                      {/* Fresh/Renewal/Port */}
                       <td className="whitespace-nowrap">
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px]">
                           {policy.policySource || 'Fresh'}
                         </span>
                       </td>
                       
-                      {/* Port */}
-                      <td className="whitespace-nowrap">-</td>
-                      
-                      {/* Policy Type (Product) */}
+                      {/* Policy Segment */}
                       <td className="whitespace-nowrap">
                         {policy.policyType.replace(' Insurance', '')}
-                        {policy.motorPolicyType && (
-                          <div className="text-[9px] text-gray-500">{policy.motorPolicyType}</div>
-                        )}
                       </td>
                       
-                      {/* Premium */}
-                      <td className="whitespace-nowrap text-right font-semibold">
-                        {formatCurrency(policy.premiumAmount)}
-                      </td>
-                      
-                      {/* Net/Case Type */}
+                      {/* Case Type */}
                       <td className="whitespace-nowrap">
                         {policy.policyType === 'Motor Insurance' ? policy.motorPolicyType : 'Net'}
+                      </td>
+                      
+                      {/* Insurer Name */}
+                      <td className="whitespace-nowrap font-medium">
+                        {policy.company.name}
                       </td>
                       
                       {/* Plan Name */}
@@ -590,35 +599,25 @@ export default function PoliciesPage() {
                         {policy.planName || '-'}
                       </td>
                       
-                      {/* Policy Type (Duplicate - Motor specific) */}
-                      <td className="whitespace-nowrap">
-                        {policy.motorPolicyType || policy.policyType.split(' ')[0]}
-                      </td>
-                      
-                      {/* PPT (Premium Payment Term) */}
+                      {/* PPT */}
                       <td className="whitespace-nowrap capitalize">
                         {policy.premiumFrequency === 'yearly' ? '1' : '-'}
                       </td>
                       
-                      {/* PT (Policy Term) */}
+                      {/* PT */}
                       <td className="whitespace-nowrap">1</td>
                       
-                      {/* Insurer Name */}
-                      <td className="whitespace-nowrap font-medium">
-                        {policy.company.name}
-                      </td>
-                      
-                      {/* Premium (Gross) */}
-                      <td className="whitespace-nowrap text-right">
+                      {/* Gross Premium */}
+                      <td className="whitespace-nowrap text-right font-semibold">
                         {formatCurrency(policy.premiumAmount)}
                       </td>
                       
-                      {/* PREMIUM (OD) */}
+                      {/* OD Premium */}
                       <td className="whitespace-nowrap text-right">
                         {policy.odPremium ? formatCurrency(policy.odPremium) : '-'}
                       </td>
                       
-                      {/* Premium (TP) */}
+                      {/* TP Premium */}
                       <td className="whitespace-nowrap text-right">
                         {policy.tpPremium ? formatCurrency(policy.tpPremium) : '-'}
                       </td>
@@ -633,19 +632,23 @@ export default function PoliciesPage() {
                         {formatCurrency(policy.premiumAmount)}
                       </td>
                       
-                      {/* Our Annual (Agent Commission) */}
-                      <td className="whitespace-nowrap text-right font-semibold text-green-600">
-                        {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
+                      {/* Broker Name */}
+                      <td className="whitespace-nowrap">
+                        {policy.broker?.name || '-'}
                       </td>
                       
-                      {/* TDS (5%) */}
-                      <td className="whitespace-nowrap text-right text-red-600">
-                        {commission ? formatCurrency(tdsAmount) : '-'}
+                      {/* OD Rate */}
+                      <td className="whitespace-nowrap">
+                        {policy.odPremium && policy.premiumAmount 
+                          ? ((Number(policy.odPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
+                          : '-'}
                       </td>
                       
-                      {/* Net our Amount (After TDS) */}
-                      <td className="whitespace-nowrap text-right font-semibold text-green-700">
-                        {commission ? formatCurrency(netAmount) : '-'}
+                      {/* TP Rate */}
+                      <td className="whitespace-nowrap">
+                        {policy.tpPremium && policy.premiumAmount 
+                          ? ((Number(policy.tpPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
+                          : '-'}
                       </td>
                       
                       {/* Net Rate */}
@@ -653,38 +656,44 @@ export default function PoliciesPage() {
                         {commissionPercent}%
                       </td>
                       
-                      {/* TP RATE */}
-                      <td className="whitespace-nowrap">
-                        {policy.tpPremium && policy.premiumAmount 
-                          ? ((Number(policy.tpPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
-                          : '-'}
-                      </td>
-                      
-                      {/* OD RATE */}
-                      <td className="whitespace-nowrap">
-                        {policy.odPremium && policy.premiumAmount 
-                          ? ((Number(policy.odPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
-                          : '-'}
-                      </td>
-                      
-                      {/* Paid Amount */}
-                      <td className="whitespace-nowrap text-right text-blue-600">
+                      {/* Received Payout (Agent Commission) */}
+                      <td className="whitespace-nowrap text-right font-semibold text-green-600">
                         {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
                       </td>
                       
-                      {/* Our Margin Amount */}
-                      <td className="whitespace-nowrap text-right font-semibold text-purple-600">
+                      {/* TDS */}
+                      <td className="whitespace-nowrap text-right text-red-600">
+                        {commission ? formatCurrency(tdsAmount) : '-'}
+                      </td>
+                      
+                      {/* Net Payout (After TDS) */}
+                      <td className="whitespace-nowrap text-right font-semibold text-green-700">
                         {commission ? formatCurrency(netAmount) : '-'}
                       </td>
                       
-                      {/* Broker Name */}
+                      {/* Sub-Agent */}
                       <td className="whitespace-nowrap">
-                        {policy.broker?.name || '-'}
+                        {policy.subAgent?.name || '-'}
                       </td>
                       
-                      {/* Percent (Commission %) */}
-                      <td className="whitespace-nowrap font-medium">
-                        {commissionPercent}%
+                      {/* Sub-Agent OD Rate */}
+                      <td className="whitespace-nowrap">
+                        {policy.odCommissionRate ? `${policy.odCommissionRate}%` : '-'}
+                      </td>
+                      
+                      {/* Sub-Agent TP Rate */}
+                      <td className="whitespace-nowrap">
+                        {policy.tpCommissionRate ? `${policy.tpCommissionRate}%` : '-'}
+                      </td>
+                      
+                      {/* Sub-Agent Net Rate */}
+                      <td className="whitespace-nowrap">
+                        {policy.netCommissionRate ? `${policy.netCommissionRate}%` : '-'}
+                      </td>
+                      
+                      {/* Paid Payout (Sub-Agent Commission) */}
+                      <td className="whitespace-nowrap text-right text-blue-600">
+                        {commission?.subAgentCommissionAmount ? formatCurrency(commission.subAgentCommissionAmount) : '-'}
                       </td>
                       
                       {/* Status */}
@@ -705,25 +714,9 @@ export default function PoliciesPage() {
                         </span>
                       </td>
                       
-                      {/* Remarks */}
+                      {/* Remark */}
                       <td className="max-w-[120px] truncate" title={policy.remarks || '-'}>
                         {policy.remarks || '-'}
-                      </td>
-                      
-                      {/* Actions */}
-                      <td className="whitespace-nowrap sticky right-0 z-10">
-                        <div className="flex items-center gap-1">
-                          <Link href={`/dashboard/policies/${policy.id}`}>
-                            <button className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition" title="View">
-                              <EyeIcon className="w-3 h-3" />
-                            </button>
-                          </Link>
-                          <Link href={`/dashboard/policies/${policy.id}/edit`}>
-                            <button className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition" title="Edit">
-                              <EditIcon className="w-3 h-3" />
-                            </button>
-                          </Link>
-                        </div>
                       </td>
                     </tr>
                   );
