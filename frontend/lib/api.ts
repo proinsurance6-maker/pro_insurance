@@ -199,6 +199,10 @@ export const policyAPI = {
   getCompanies: () =>
     api.get('/policies/companies'),
   
+  // Create insurance company
+  createCompany: (data: { name: string; code?: string }) =>
+    api.post('/policies/companies', data),
+  
   // Scan document for OCR extraction
   scanDocument: (formData: FormData) =>
     api.post('/policies/scan-document', formData, {

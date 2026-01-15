@@ -456,6 +456,56 @@ export const getCompanies = async (req: Request, res: Response, next: NextFuncti
 };
 
 // ==========================================
+// CREATE INSURANCE COMPANY
+// ==========================================
+export const createCompany = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, code } = req.body;
+
+    if (!name) {
+      throw new AppError('Company name is required', 400, 'VALIDATION_ERROR');
+    }
+
+    // Generate code from name if not provided
+    const companyCode = code || name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+
+    // Check if company already exists
+    const existingCompany = await prisma.insuranceCompany.findFirst({
+      where: {
+        OR: [
+          { name: { equals: name, mode: 'insensitive' } },
+          { code: { equals: companyCode, mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    if (existingCompany) {
+      // Return existing company instead of error
+      res.json({
+        success: true,
+        data: existingCompany,
+        message: 'Company already exists'
+      });
+      return;
+    }
+
+    const company = await prisma.insuranceCompany.create({
+      data: {
+        name,
+        code: companyCode
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: company
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
 // RENEW POLICY
 // ==========================================
 export const renewPolicy = async (req: Request, res: Response, next: NextFunction) => {

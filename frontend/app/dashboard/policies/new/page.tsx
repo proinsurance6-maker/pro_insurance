@@ -425,7 +425,7 @@ export default function NewPolicyPage() {
           netPremium: extractedData.netPremium?.toString() || prev.netPremium,
         }));
 
-        // Try to match company
+        // Try to match company or create new one
         if (extractedData.companyName) {
           const matchedCompany = companies.find(c => 
             c.name.toLowerCase().includes(extractedData.companyName.toLowerCase()) ||
@@ -433,6 +433,20 @@ export default function NewPolicyPage() {
           );
           if (matchedCompany) {
             setFormData(prev => ({ ...prev, companyId: matchedCompany.id }));
+          } else {
+            // Company not found - auto-create it
+            try {
+              const createResponse = await policyAPI.createCompany({ name: extractedData.companyName });
+              const newCompany = createResponse.data.data;
+              if (newCompany) {
+                // Add to companies list and select it
+                setCompanies(prev => [...prev, newCompany].sort((a, b) => a.name.localeCompare(b.name)));
+                setFormData(prev => ({ ...prev, companyId: newCompany.id }));
+              }
+            } catch (companyErr) {
+              console.error('Failed to create company:', companyErr);
+              // Continue without setting company - user can select manually
+            }
           }
         }
 

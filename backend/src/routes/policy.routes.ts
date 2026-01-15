@@ -7,6 +7,7 @@ import {
   updatePolicy,
   deletePolicy,
   getCompanies,
+  createCompany,
   renewPolicy,
   scanDocument,
   parseExcel,
@@ -39,6 +40,9 @@ router.use(authenticate, requireAgent);
 
 // Get insurance companies (for dropdown)
 router.get('/companies', getCompanies);
+
+// Create insurance company
+router.post('/companies', createCompany);
 
 // Document scanning / OCR
 router.post('/scan-document', upload.single('document'), scanDocument);
