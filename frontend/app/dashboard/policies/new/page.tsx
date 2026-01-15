@@ -666,7 +666,11 @@ export default function NewPolicyPage() {
               }
             }}
           >
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 relative z-[10000]" onClick={e => e.stopPropagation()}>\n              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">\n                <h3 className="text-base font-semibold text-gray-800">\n                  Upload Policy Document\n                </h3>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 relative z-[10000]" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h3 className="text-base font-semibold text-gray-800">
+                  Upload Policy Document
+                </h3>
                 {!scanning && (
                   <button 
                     onClick={() => setShowScanModal(false)} 
