@@ -105,6 +105,8 @@ model Agent {
   aadhaarNumber   String?            @map("aadhaar_number")
   bankDetails     Json?              @map("bank_details")
   teamMode        TeamMode           @default(SOLO) @map("team_mode")
+  otp             String?            // Temporary OTP for forgot PIN flow
+  otpExpiry       DateTime?          @map("otp_expiry") // OTP expiration timestamp
   isActive        Boolean            @default(true) @map("is_active")
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")

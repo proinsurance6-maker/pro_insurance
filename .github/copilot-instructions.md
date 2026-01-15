@@ -3,6 +3,12 @@
 ## Architecture Overview
 Multi-tenant SaaS for insurance agents (India-focused). **PostgreSQL + Express 5 backend (port 5000), Next.js 16 + React 19 frontend (port 3000).**
 
+### Key Components
+- **Backend:** Express 5 + TypeScript, Prisma ORM, node-cron for scheduled jobs
+- **Frontend:** Next.js 16 App Router (all pages `'use client'`), React 19, Tailwind CSS
+- **External Services:** Cloudinary (document storage), Twilio (SMS/OTP), OpenAI/Gemini (OCR), Nodemailer (email)
+- **Database:** PostgreSQL with UUID primary keys, snake_case columns mapped to camelCase in Prisma
+
 ## Role Hierarchy & Data Access
 
 ```
@@ -11,7 +17,7 @@ ADMIN (Platform Supervisor)
   
 AGENT (Master Agent / Business Owner)
   ├── Owns ALL downstream data (policies, clients, commissions)
-  ├── Can create/manage Sub-Agents
+  ├── Can create/manage Sub-Agents & Brokers
   ├── Can create/manage Clients
   └── Sets Sub-Agent commission split percentage
 
@@ -29,17 +35,18 @@ CLIENT (End Customer)
 
 **Data Visibility Rules:**
 - **Admin:** All agents, all platform data
-- **Agent:** Only own `agentId` filtered data (clients, policies, sub-agents, commissions)
+- **Agent:** Only own `agentId` filtered data (clients, policies, sub-agents, brokers, commissions)
 - **Sub-Agent:** Only policies where `subAgentId` matches
 - **Client:** Only policies where `clientId` matches
 
 **Entity Hierarchy** - data isolation enforced at every query:
 - `Agent` → Business owner, **owns all downstream data** (enforced via `agentId` filter)
-- `SubAgent` → Works under Agent with configurable `commissionPercentage` split
-- `Client` → Has optional `FamilyMember` records
-- `Policy` → Links Agent, SubAgent?, Client, InsuranceCompany → **auto-creates** `Commission` + `Renewal` records
-- `Commission` → Auto-calculated on policy creation, split between Agent/SubAgent
-- `Renewal` → Auto-generated with `renewalDate = policy.endDate`
+- `SubAgent` → Works under Agent with configurable `commissionPercentage` split (stored in SubAgent model)
+- `Broker` → Optional intermediary (PolicyBazaar, MitPro, Probus) - provides `brokerCommissionAmount` to Agent
+- `Client` → Has optional `FamilyMember` records, policies can be issued to family members
+- `Policy` → Links Agent, SubAgent?, Client, InsuranceCompany, Broker? → **auto-creates** `Commission` + `Renewal` records
+- `Commission` → Auto-calculated on policy creation, split between Agent/SubAgent based on `commissionPercentage`
+- `Renewal` → Auto-generated with `renewalDate = policy.endDate`, tracked via cron job for reminders
 
 ## Development Workflow
 
@@ -47,9 +54,9 @@ CLIENT (End Customer)
 ```bash
 # Backend - MUST run Prisma commands before starting
 cd backend && npm install
-npx prisma generate              # Generate Prisma client
+npx prisma generate              # Generate Prisma client (REQUIRED before first run)
 npx prisma migrate dev           # Run migrations
-npm run dev                      # Start on localhost:5000
+npm run dev                      # Start on localhost:5000 (uses ts-node-dev)
 
 # Frontend
 cd frontend && npm install
@@ -60,18 +67,21 @@ npm run dev                      # Start on localhost:3000
 ```bash
 # Edit backend/prisma/schema.prisma, then:
 cd backend
-npx prisma migrate dev --name descriptive_name  # Creates migration
-npx prisma generate                             # Regenerates client types
+npx prisma migrate dev --name descriptive_name  # Creates migration + regenerates client
+npx prisma generate                             # Manual regeneration if needed
 ```
 
 ### Production Build
 ```bash
-# Backend: Generates Prisma client + pushes schema + compiles TypeScript
+# Backend: Composite script handles all steps
 npm run build  # Runs: npx prisma generate && npx prisma db push && tsc
 
 # Frontend
 npm run build && npm start
 ```
+
+### Critical: Prisma Client Generation
+**The Prisma client MUST be generated before the TypeScript compiler runs.** If you see import errors for `@prisma/client`, run `npx prisma generate` in the backend directory. The build script handles this automatically, but during development after schema changes, you may need to restart the dev server.
 
 ## Critical Security Pattern: Multi-Tenancy
 
@@ -251,12 +261,40 @@ router.post('/upload', upload.single('file'), handler);
 ```
 
 ### Environment Variables
-**Backend:** `DATABASE_URL`, `JWT_SECRET`, `PORT`, email config  
-**Frontend:** `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:5000/api`)
+**Backend:** 
+- `DATABASE_URL` - PostgreSQL connection string (required)
+- `JWT_SECRET` - For token signing (required)
+- `PORT` - Server port (default: 5000)
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` - Document uploads
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` - OTP/SMS
+- `OPENAI_API_KEY` - OCR with OpenAI Vision (optional - falls back to Gemini)
+- `GEMINI_API_KEY` - OCR with Google Gemini (optional - fallback if OpenAI fails/quota exceeded)
+- `EMAIL_*` - Nodemailer config for renewal reminders
+
+**Frontend:** 
+- `NEXT_PUBLIC_API_URL` - Backend API URL (defaults to `http://localhost:5000/api`)
+
+### OCR Service Fallback Pattern
+The OCR service tries OpenAI first, then falls back to Gemini if:
+- OpenAI quota exceeded
+- API key invalid/missing
+- Request fails
+
+See [ocr.service.ts:40-50](backend/src/services/ocr.service.ts) for implementation.
+
+### Cron Jobs & Renewal Reminders
+`node-cron` runs daily at 9 AM via [jobs/index.ts:7-17](backend/src/jobs/index.ts):
+- Checks renewals due in 30/15/7/1 days
+- Sends email notifications to clients
+- Updates `reminder*DaysSent` flags to prevent duplicates
+- Auto-started on server boot via `startCronJobs()` in [index.ts:70](backend/src/index.ts)
 
 ## Reference Files
 - **Multi-tenancy examples:** [policy.controller.ts](backend/src/controllers/policy.controller.ts), [client.controller.ts](backend/src/controllers/client.controller.ts)
 - **Auth implementation:** [middleware/auth.ts](backend/src/middleware/auth.ts), [auth.controller.ts](backend/src/controllers/auth.controller.ts)
 - **Commission logic:** [services/commission.service.ts](backend/src/services/commission.service.ts)
+- **OCR with fallback:** [services/ocr.service.ts](backend/src/services/ocr.service.ts)
+- **Cloudinary uploads:** [services/cloudinary.service.ts](backend/src/services/cloudinary.service.ts)
+- **Renewal cron jobs:** [jobs/renewalReminder.job.ts](backend/src/jobs/renewalReminder.job.ts)
 - **Frontend API client:** [lib/api.ts](frontend/lib/api.ts), [lib/auth-context.tsx](frontend/lib/auth-context.tsx)
 - **Database schema:** [prisma/schema.prisma](backend/prisma/schema.prisma)
