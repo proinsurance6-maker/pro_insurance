@@ -41,9 +41,10 @@ export const getPolicies = async (req: Request, res: Response, next: NextFunctio
       prisma.policy.findMany({
         where,
         include: {
-          client: { select: { id: true, name: true, phone: true, clientCode: true } },
+          client: { select: { id: true, name: true, phone: true, clientCode: true, email: true } },
           company: { select: { id: true, name: true, code: true } },
           subAgent: { select: { id: true, name: true, subAgentCode: true } },
+          broker: { select: { id: true, name: true } },
           commissions: true
         },
         orderBy: { createdAt: 'desc' },
@@ -59,13 +60,19 @@ export const getPolicies = async (req: Request, res: Response, next: NextFunctio
         policies: policies.map(p => ({
           ...p,
           premiumAmount: p.premiumAmount.toString(),
+          odPremium: p.odPremium?.toString(),
+          tpPremium: p.tpPremium?.toString(),
+          netPremium: p.netPremium?.toString(),
           sumAssured: p.sumAssured?.toString(),
           commissions: p.commissions.map(c => ({
             ...c,
             totalCommissionPercent: c.totalCommissionPercent.toString(),
             totalCommissionAmount: c.totalCommissionAmount.toString(),
             agentCommissionAmount: c.agentCommissionAmount.toString(),
-            subAgentCommissionAmount: c.subAgentCommissionAmount?.toString()
+            subAgentCommissionAmount: c.subAgentCommissionAmount?.toString(),
+            odCommissionPercent: c.odCommissionPercent?.toString(),
+            tpCommissionPercent: c.tpCommissionPercent?.toString(),
+            netCommissionPercent: c.netCommissionPercent?.toString()
           }))
         })),
         pagination: {

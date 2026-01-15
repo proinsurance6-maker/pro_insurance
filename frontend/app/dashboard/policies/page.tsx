@@ -48,6 +48,9 @@ interface Policy {
     totalCommissionAmount: string;
     agentCommissionAmount: string;
     subAgentCommissionAmount?: string;
+    odCommissionPercent?: string;
+    tpCommissionPercent?: string;
+    netCommissionPercent?: string;
   }>;
   documents?: Array<{
     id: string;
@@ -639,21 +642,17 @@ export default function PoliciesPage() {
                       
                       {/* OD Rate */}
                       <td className="whitespace-nowrap">
-                        {policy.odPremium && policy.premiumAmount 
-                          ? ((Number(policy.odPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
-                          : '-'}
+                        {commission?.odCommissionPercent ? `${commission.odCommissionPercent}%` : '-'}
                       </td>
                       
                       {/* TP Rate */}
                       <td className="whitespace-nowrap">
-                        {policy.tpPremium && policy.premiumAmount 
-                          ? ((Number(policy.tpPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
-                          : '-'}
+                        {commission?.tpCommissionPercent ? `${commission.tpCommissionPercent}%` : '-'}
                       </td>
                       
                       {/* Net Rate */}
                       <td className="whitespace-nowrap">
-                        {commissionPercent}%
+                        {commission?.netCommissionPercent ? `${commission.netCommissionPercent}%` : commissionPercent ? `${commissionPercent}%` : '-'}
                       </td>
                       
                       {/* Received Payout (Agent Commission) */}
