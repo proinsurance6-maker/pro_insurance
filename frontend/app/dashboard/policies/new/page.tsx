@@ -93,6 +93,7 @@ export default function NewPolicyPage() {
   const [clientSearch, setClientSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [clientType, setClientType] = useState<'existing' | 'new'>('existing');
   const [showNewBrokerForm, setShowNewBrokerForm] = useState(false);
   const [showSubAgentForm, setShowSubAgentForm] = useState(false);
   const [excelData, setExcelData] = useState<any[]>([]);
@@ -947,130 +948,187 @@ export default function NewPolicyPage() {
                 Client Details
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Client Search */}
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                    Select Client <span className="text-red-500">*</span>
+              {/* Policy Holder Name - First */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                  Policy Holder Name
+                </label>
+                <Input
+                  name="holderName"
+                  value={formData.holderName}
+                  onChange={handleChange}
+                  placeholder="Enter policy holder name"
+                  className="h-10 text-sm max-w-md"
+                />
+              </div>
+
+              {/* Client Type Toggle */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-500 mb-2">
+                  Client Type <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="clientType"
+                      value="existing"
+                      checked={clientType === 'existing'}
+                      onChange={() => {
+                        setClientType('existing');
+                        setShowNewClientForm(false);
+                        setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
+                        setNewClientData({ name: '', phone: '', email: '', address: '' });
+                      }}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Existing Client</span>
                   </label>
-                  <Input
-                    type="text"
-                    value={clientSearch}
-                    onChange={(e) => {
-                      setClientSearch(e.target.value);
-                      setShowClientDropdown(true);
-                      setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
-                    }}
-                    onFocus={() => setShowClientDropdown(true)}
-                    placeholder="Search client by name or phone..."
-                    required
-                    className="h-10 text-sm"
-                  />
-                  {showClientDropdown && clientSearch && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      {filteredClients.length === 0 ? (
-                        <div className="p-3">
-                          <p className="text-gray-500 text-xs mb-2">No clients found</p>
-                          <Button 
-                            type="button" 
-                            size="sm" 
-                            onClick={() => {
-                              setShowNewClientForm(true);
-                              setShowClientDropdown(false);
-                              setNewClientData(prev => ({ ...prev, name: clientSearch }));
-                            }}
-                            className="w-full text-xs"
-                          >
-                            + Add New Client
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          {filteredClients.slice(0, 5).map((client) => (
-                            <button
-                              key={client.id}
-                              type="button"
-                              onClick={() => handleClientSelect(client)}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b last:border-b-0 text-sm"
-                            >
-                              <p className="font-medium text-gray-800">{client.name}</p>
-                              <p className="text-xs text-gray-500">{client.phone}</p>
-                            </button>
-                          ))}
-                          <div className="p-2 border-t bg-gray-50">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="clientType"
+                      value="new"
+                      checked={clientType === 'new'}
+                      onChange={() => {
+                        setClientType('new');
+                        setShowNewClientForm(true);
+                        setShowClientDropdown(false);
+                        setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
+                        setClientSearch('');
+                        // Pre-fill name from holder name if available
+                        if (formData.holderName) {
+                          setNewClientData(prev => ({ ...prev, name: formData.holderName }));
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">New Client</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Existing Client Selection */}
+              {clientType === 'existing' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                      Select Client <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      value={clientSearch}
+                      onChange={(e) => {
+                        setClientSearch(e.target.value);
+                        setShowClientDropdown(true);
+                        setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
+                      }}
+                      onFocus={() => setShowClientDropdown(true)}
+                      placeholder="Search client by name or phone..."
+                      required={clientType === 'existing'}
+                      className="h-10 text-sm"
+                    />
+                    {showClientDropdown && clientSearch && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {filteredClients.length === 0 ? (
+                          <div className="p-3">
+                            <p className="text-gray-500 text-xs mb-2">No clients found</p>
                             <Button 
                               type="button" 
                               size="sm" 
-                              variant="outline"
                               onClick={() => {
+                                setClientType('new');
                                 setShowNewClientForm(true);
                                 setShowClientDropdown(false);
+                                setNewClientData(prev => ({ ...prev, name: clientSearch }));
                               }}
                               className="w-full text-xs"
                             >
                               + Add New Client
                             </Button>
                           </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  
-                  {formData.clientId && (
-                    <p className="text-xs text-green-600 mt-1">✓ {formData.clientName}</p>
-                  )}
-                </div>
-
-                {/* Policy Holder Name */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                    Policy Holder Name
-                  </label>
-                  <Input
-                    name="holderName"
-                    value={formData.holderName}
-                    onChange={handleChange}
-                    placeholder="If different from client"
-                    className="h-10 text-sm"
-                  />
-                </div>
-
-                {/* Vehicle Number (show for motor) */}
-                {formData.policyType === 'Motor Insurance' && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                      Vehicle Number <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      name="vehicleNumber"
-                      value={formData.vehicleNumber}
-                      onChange={(e) => {
-                        const upperValue = e.target.value.toUpperCase();
-                        handleChange({ target: { name: 'vehicleNumber', value: upperValue } } as any);
-                      }}
-                      placeholder="e.g., MH01AB1234"
-                      required
-                      className="h-10 text-sm uppercase"
-                    />
+                        ) : (
+                          <>
+                            {filteredClients.slice(0, 5).map((client) => (
+                              <button
+                                key={client.id}
+                                type="button"
+                                onClick={() => handleClientSelect(client)}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b last:border-b-0 text-sm"
+                              >
+                                <p className="font-medium text-gray-800">{client.name}</p>
+                                <p className="text-xs text-gray-500">{client.phone}</p>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    
+                    {formData.clientId && (
+                      <p className="text-xs text-green-600 mt-1">✓ {formData.clientName} selected</p>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Inline New Client Form */}
-              {showNewClientForm && (
-                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              {/* New Client Form */}
+              {clientType === 'new' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-medium text-blue-800 text-sm">Add New Client</h4>
-                    <button type="button" onClick={() => setShowNewClientForm(false)} className="text-gray-500 hover:text-gray-700 text-lg">×</button>
+                    <h4 className="font-medium text-blue-800 text-sm">Create New Client</h4>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <Input placeholder="Client Name *" value={newClientData.name} onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))} className="h-10 text-sm" />
-                    <Input placeholder="Phone Number *" value={newClientData.phone} onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))} className="h-10 text-sm" />
-                    <Input placeholder="Email" value={newClientData.email} onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))} className="h-10 text-sm" />
-                    <Button type="button" onClick={handleCreateClient} disabled={creatingClient || !newClientData.name || !newClientData.phone} className="h-10 text-sm">
+                    <Input 
+                      placeholder="Client Name *" 
+                      value={newClientData.name} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))} 
+                      className="h-10 text-sm" 
+                    />
+                    <Input 
+                      placeholder="Phone Number *" 
+                      value={newClientData.phone} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))} 
+                      className="h-10 text-sm" 
+                    />
+                    <Input 
+                      placeholder="Email" 
+                      value={newClientData.email} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))} 
+                      className="h-10 text-sm" 
+                    />
+                    <Button 
+                      type="button" 
+                      onClick={handleCreateClient} 
+                      disabled={creatingClient || !newClientData.name || !newClientData.phone} 
+                      className="h-10 text-sm"
+                    >
                       {creatingClient ? 'Creating...' : '✓ Create Client'}
                     </Button>
                   </div>
+                  {formData.clientId && clientType === 'new' && (
+                    <p className="text-xs text-green-600 mt-2">✓ Client created: {formData.clientName}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Vehicle Number (show for motor) */}
+              {formData.policyType === 'Motor Insurance' && (
+                <div className="mt-4">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Vehicle Number <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    name="vehicleNumber"
+                    value={formData.vehicleNumber}
+                    onChange={(e) => {
+                      const upperValue = e.target.value.toUpperCase();
+                      handleChange({ target: { name: 'vehicleNumber', value: upperValue } } as any);
+                    }}
+                    placeholder="e.g., MH01AB1234"
+                    required
+                    className="h-10 text-sm uppercase max-w-xs"
+                  />
                 </div>
               )}
             </div>
