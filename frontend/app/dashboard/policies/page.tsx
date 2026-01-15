@@ -9,6 +9,7 @@ interface Policy {
   id: string;
   policyNumber: string;
   policyType: string;
+  policySource?: string;
   motorPolicyType?: string;
   premiumAmount: string;
   odPremium?: string;
@@ -27,6 +28,7 @@ interface Policy {
     id: string;
     name: string;
     phone: string;
+    email?: string;
   };
   company: {
     id: string;
@@ -327,32 +329,47 @@ export default function PoliciesPage() {
           <table className="min-w-full divide-y divide-gray-200 text-xs">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Action</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Policy No</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Client</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Holder Name</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Company</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Product</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Plan</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Vehicle No</th>
-                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
-                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">OD/TP/Net</th>
-                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Sum Assured</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Frequency</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Broker</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Sub-Agent</th>
-                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Commission</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Documents</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Start Date</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">End Date</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Remarks</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">Date</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Client Name</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Mobile No.</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Registration No</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Policy No</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Fresh/Renewal</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Port</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Policy Type</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Net/Case Type</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Plan Name</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Policy Type</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">PPT</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">PT</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Insurer Name</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">PREMIUM</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Premium</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Net Premium</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Payable Premium</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Our Annual</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">TDS</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Net our Amount</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Net Rate</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">TP RATE</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">OD RATE</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Paid Amount</th>
+                <th className="px-2 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Our Margin Amount</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Broker Name</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Percent</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Stnd Paid</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Docs to Agent</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Remarks</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredPolicies.length === 0 ? (
                 <tr>
-                  <td colSpan={20} className="px-4 py-12 text-center">
+                  <td colSpan={35} className="px-4 py-12 text-center">
                     <DocumentIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No policies found</h3>
                     <p className="text-gray-500 mb-4">
@@ -368,10 +385,233 @@ export default function PoliciesPage() {
                   const expired = isExpired(policy.endDate);
                   const commission = policy.commissions?.[0];
                   const docsCount = policy.documents?.length || 0;
+                  const totalCommission = commission ? Number(commission.totalCommissionAmount || 0) : 0;
+                  const agentCommission = commission ? Number(commission.agentCommissionAmount || 0) : 0;
+                  const tdsAmount = agentCommission * 0.05; // 5% TDS
+                  const netAmount = agentCommission - tdsAmount;
+                  const commissionPercent = Number(policy.premiumAmount) > 0 
+                    ? ((totalCommission / Number(policy.premiumAmount)) * 100).toFixed(2)
+                    : '0';
+                  
                   return (
                     <tr key={policy.id} className="hover:bg-gray-50 transition">
+                      {/* Date (Created At) */}
+                      <td className="px-2 py-2 whitespace-nowrap sticky left-0 bg-white z-10">
+                        <div className="text-xs text-gray-900">{formatDate(policy.createdAt)}</div>
+                      </td>
+                      
+                      {/* Client Name */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs font-medium text-gray-900">{policy.client.name}</div>
+                      </td>
+                      
+                      {/* Mobile No */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-700">{policy.client.phone}</div>
+                      </td>
+                      
+                      {/* Email */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600">{policy.client.email || '-'}</div>
+                      </td>
+                      
+                      {/* Registration No (Vehicle) */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs font-medium text-gray-900">{policy.vehicleNumber || '-'}</div>
+                      </td>
+                      
+                      {/* Policy No */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs font-semibold text-blue-600">{policy.policyNumber}</div>
+                      </td>
+                      
+                      {/* Fresh/Renewal */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                          {policy.policySource || 'Fresh'}
+                        </span>
+                      </td>
+                      
+                      {/* Port */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600">-</div>
+                      </td>
+                      
+                      {/* Policy Type (Product) */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-900">{policy.policyType.replace(' Insurance', '')}</div>
+                        {policy.motorPolicyType && (
+                          <div className="text-[10px] text-gray-500">{policy.motorPolicyType}</div>
+                        )}
+                      </td>
+                      
+                      {/* Premium */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs font-semibold text-gray-900">{formatCurrency(policy.premiumAmount)}</div>
+                      </td>
+                      
+                      {/* Net/Case Type */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600">
+                          {policy.policyType === 'Motor Insurance' ? policy.motorPolicyType : 'Net'}
+                        </div>
+                      </td>
+                      
+                      {/* Plan Name */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-700 max-w-[120px] truncate" title={policy.planName || '-'}>
+                          {policy.planName || '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Policy Type (Duplicate - Motor specific) */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600">{policy.motorPolicyType || policy.policyType.split(' ')[0]}</div>
+                      </td>
+                      
+                      {/* PPT (Premium Payment Term) */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600 capitalize">{policy.premiumFrequency === 'yearly' ? '1' : '-'}</div>
+                      </td>
+                      
+                      {/* PT (Policy Term) */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600">1</div>
+                      </td>
+                      
+                      {/* Insurer Name */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs font-medium text-gray-900">{policy.company.name}</div>
+                      </td>
+                      
+                      {/* Premium (Gross) */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs text-gray-900">{formatCurrency(policy.premiumAmount)}</div>
+                      </td>
+                      
+                      {/* PREMIUM (OD) */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs text-gray-700">
+                          {policy.odPremium ? formatCurrency(policy.odPremium) : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Premium (TP) */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs text-gray-700">
+                          {policy.tpPremium ? formatCurrency(policy.tpPremium) : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Net Premium */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs font-medium text-gray-900">
+                          {policy.netPremium ? formatCurrency(policy.netPremium) : formatCurrency(policy.premiumAmount)}
+                        </div>
+                      </td>
+                      
+                      {/* Payable Premium */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs text-gray-900">{formatCurrency(policy.premiumAmount)}</div>
+                      </td>
+                      
+                      {/* Our Annual (Agent Commission) */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs font-semibold text-green-600">
+                          {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* TDS (5%) */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs text-red-600">
+                          {commission ? formatCurrency(tdsAmount) : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Net our Amount (After TDS) */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs font-semibold text-green-700">
+                          {commission ? formatCurrency(netAmount) : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Net Rate */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600">{commissionPercent}%</div>
+                      </td>
+                      
+                      {/* TP RATE */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600">
+                          {policy.tpPremium && policy.premiumAmount 
+                            ? ((Number(policy.tpPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
+                            : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* OD RATE */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-600">
+                          {policy.odPremium && policy.premiumAmount 
+                            ? ((Number(policy.odPremium) / Number(policy.premiumAmount)) * 100).toFixed(2) + '%'
+                            : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Paid Amount */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs text-blue-600">
+                          {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Our Margin Amount */}
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        <div className="text-xs font-semibold text-purple-600">
+                          {commission ? formatCurrency(netAmount) : '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Broker Name */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-700">{policy.broker?.name || '-'}</div>
+                      </td>
+                      
+                      {/* Percent (Commission %) */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="text-xs font-medium text-gray-900">{commissionPercent}%</div>
+                      </td>
+                      
+                      {/* Stnd Paid */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          commission ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {commission ? 'Paid' : 'Pending'}
+                        </span>
+                      </td>
+                      
+                      {/* Docs to Agent */}
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            docsCount > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                          }`}>
+                            {docsCount > 0 ? `✓ ${docsCount}` : '✗'}
+                          </span>
+                        </div>
+                      </td>
+                      
+                      {/* Remarks */}
+                      <td className="px-2 py-2">
+                        <div className="text-xs text-gray-600 max-w-[120px] truncate" title={policy.remarks || '-'}>
+                          {policy.remarks || '-'}
+                        </div>
+                      </td>
+                      
                       {/* Actions */}
-                      <td className="px-3 py-2 whitespace-nowrap">
+                      <td className="px-2 py-2 whitespace-nowrap sticky right-0 bg-white z-10">
                         <div className="flex items-center gap-1">
                           <Link href={`/dashboard/policies/${policy.id}`}>
                             <button className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition" title="View">
@@ -383,155 +623,6 @@ export default function PoliciesPage() {
                               <EditIcon className="w-3 h-3" />
                             </button>
                           </Link>
-                        </div>
-                      </td>
-                      
-                      {/* Policy Number */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs font-medium text-gray-900">{policy.policyNumber}</div>
-                      </td>
-                      
-                      {/* Client */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-900">{policy.client.name}</div>
-                        <div className="text-[10px] text-gray-500">{policy.client.phone}</div>
-                      </td>
-                      
-                      {/* Holder Name */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-700">{policy.holderName || '-'}</div>
-                      </td>
-                      
-                      {/* Company */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-900">{policy.company.code || policy.company.name.slice(0, 10)}</div>
-                      </td>
-                      
-                      {/* Product */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-900">{policy.policyType.replace(' Insurance', '')}</div>
-                        {policy.motorPolicyType && (
-                          <div className="text-[10px] text-gray-500">{policy.motorPolicyType}</div>
-                        )}
-                      </td>
-                      
-                      {/* Plan Name */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-700 max-w-[120px] truncate" title={policy.planName || '-'}>
-                          {policy.planName || '-'}
-                        </div>
-                      </td>
-                      
-                      {/* Vehicle Number */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs font-medium text-gray-900">{policy.vehicleNumber || '-'}</div>
-                      </td>
-                      
-                      {/* Premium */}
-                      <td className="px-3 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs font-semibold text-gray-900">{formatCurrency(policy.premiumAmount)}</div>
-                      </td>
-                      
-                      {/* OD/TP/Net Premium */}
-                      <td className="px-3 py-2 whitespace-nowrap text-right">
-                        {policy.policyType === 'Motor Insurance' ? (
-                          <div className="text-[10px] text-gray-600">
-                            {policy.odPremium && <div>OD: {formatCurrency(policy.odPremium)}</div>}
-                            {policy.tpPremium && <div>TP: {formatCurrency(policy.tpPremium)}</div>}
-                            {policy.netPremium && <div>Net: {formatCurrency(policy.netPremium)}</div>}
-                          </div>
-                        ) : (
-                          <div className="text-[10px] text-gray-600">
-                            {policy.netPremium ? formatCurrency(policy.netPremium) : '-'}
-                          </div>
-                        )}
-                      </td>
-                      
-                      {/* Sum Assured */}
-                      <td className="px-3 py-2 whitespace-nowrap text-right">
-                        <div className="text-xs text-gray-900">
-                          {policy.sumAssured && Number(policy.sumAssured) > 0 ? formatCurrency(policy.sumAssured) : '-'}
-                        </div>
-                      </td>
-                      
-                      {/* Frequency */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-700 capitalize">{policy.premiumFrequency || 'yearly'}</div>
-                      </td>
-                      
-                      {/* Broker */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-700">{policy.broker?.name || '-'}</div>
-                      </td>
-                      
-                      {/* Sub-Agent */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        {policy.subAgent ? (
-                          <div>
-                            <div className="text-xs text-gray-900">{policy.subAgent.name}</div>
-                            <div className="text-[10px] text-gray-500">{policy.subAgent.subAgentCode}</div>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-500">-</div>
-                        )}
-                      </td>
-                      
-                      {/* Commission */}
-                      <td className="px-3 py-2 whitespace-nowrap text-right">
-                        {commission ? (
-                          <div>
-                            <div className="text-xs font-semibold text-green-600">
-                              {formatCurrency(commission.agentCommissionAmount)}
-                            </div>
-                            {commission.subAgentCommissionAmount && (
-                              <div className="text-[10px] text-orange-600">
-                                Sub: {formatCurrency(commission.subAgentCommissionAmount)}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-500">-</div>
-                        )}
-                      </td>
-                      
-                      {/* Documents */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            docsCount > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                          }`}>
-                            📄 {docsCount}
-                          </span>
-                        </div>
-                      </td>
-                      
-                      {/* Status */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                          expired 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {expired ? 'Expired' : 'Active'}
-                        </span>
-                      </td>
-                      
-                      {/* Start Date */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-900">{formatDate(policy.startDate)}</div>
-                      </td>
-                      
-                      {/* End Date */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className={`text-xs ${expired ? 'text-red-600 font-medium' : 'text-gray-900'}`}>
-                          {formatDate(policy.endDate)}
-                        </div>
-                      </td>
-                      
-                      {/* Remarks */}
-                      <td className="px-3 py-2">
-                        <div className="text-xs text-gray-600 max-w-[150px] truncate" title={policy.remarks || '-'}>
-                          {policy.remarks || '-'}
                         </div>
                       </td>
                     </tr>
