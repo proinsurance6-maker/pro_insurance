@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { agentAPI, policyAPI, commissionAPI } from '@/lib/api';
+import { agentAPI } from '@/lib/api';
 
 interface SubAgent {
   id: string;
@@ -27,7 +27,6 @@ export default function SubAgentsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingAgent, setEditingAgent] = useState<SubAgent | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState<SubAgent | null>(null);
   const [showKycModal, setShowKycModal] = useState(false);
   const [selectedAgentForKyc, setSelectedAgentForKyc] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -248,12 +247,12 @@ export default function SubAgentsPage() {
                             </span>
                           </div>
                           <div>
-                            <button
-                              onClick={() => setShowDetailModal(agent)}
-                              className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
+                            <Link
+                              href={`/dashboard/sub-agents/${agent.id}`}
+                              className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                             >
                               {agent.name}
-                            </button>
+                            </Link>
                             <p className="text-sm text-gray-500">{agent.subAgentCode || 'N/A'}</p>
                           </div>
                         </div>
@@ -517,203 +516,6 @@ export default function SubAgentsPage() {
         </div>
       )}
 
-      {/* Sub-Agent Detail Modal */}
-      {showDetailModal && (
-        <SubAgentDetailModal
-          agent={showDetailModal}
-          onClose={() => setShowDetailModal(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-// Sub-Agent Detail Modal Component
-function SubAgentDetailModal({ agent, onClose }: { agent: SubAgent; onClose: () => void }) {
-  const [policies, setPolicies] = useState<any[]>([]);
-  const [commissions, setCommissions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'policies' | 'commissions'>('policies');
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [policiesRes, commissionsRes] = await Promise.all([
-        policyAPI.getAll({ subAgentId: agent.id, limit: 100 }),
-        commissionAPI.getSubAgentCommissions(agent.id)
-      ]);
-      setPolicies(policiesRes.data.data.policies || []);
-      setCommissions(commissionsRes.data.data || []);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatCurrency = (amount: string | number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(Number(amount));
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date.getMonth()];
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-xl flex justify-between items-center z-10">
-          <div>
-            <h3 className="text-lg font-bold">{agent.name}</h3>
-            <p className="text-blue-100 text-sm">{agent.subAgentCode} • {agent.phone}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-blue-800 rounded-full p-2 transition"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 sticky top-[72px] bg-white z-10">
-          <button
-            onClick={() => setActiveTab('policies')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition ${
-              activeTab === 'policies'
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-            }`}
-          >
-            📋 Policies ({policies.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('commissions')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition ${
-              activeTab === 'commissions'
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-            }`}
-          >
-            💰 Commission Ledger ({commissions.length})
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          ) : activeTab === 'policies' ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="text-left p-2 font-medium text-gray-700">Date</th>
-                    <th className="text-left p-2 font-medium text-gray-700">Policy No</th>
-                    <th className="text-left p-2 font-medium text-gray-700">Client</th>
-                    <th className="text-left p-2 font-medium text-gray-700">Type</th>
-                    <th className="text-right p-2 font-medium text-gray-700">Premium</th>
-                    <th className="text-right p-2 font-medium text-gray-700">Commission</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {policies.map((policy) => (
-                    <tr key={policy.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{formatDate(policy.createdAt)}</td>
-                      <td className="p-2 font-medium">{policy.policyNumber}</td>
-                      <td className="p-2">{policy.client.name}</td>
-                      <td className="p-2">{policy.policyType}</td>
-                      <td className="p-2 text-right">{formatCurrency(policy.premiumAmount)}</td>
-                      <td className="p-2 text-right font-semibold text-green-600">
-                        {policy.commissions?.[0]?.subAgentCommissionAmount 
-                          ? formatCurrency(policy.commissions[0].subAgentCommissionAmount)
-                          : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                  {policies.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="p-8 text-center text-gray-500">
-                        No policies found for this sub-agent
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="text-left p-2 font-medium text-gray-700">Date</th>
-                    <th className="text-left p-2 font-medium text-gray-700">Policy No</th>
-                    <th className="text-left p-2 font-medium text-gray-700">Client</th>
-                    <th className="text-left p-2 font-medium text-gray-700">Company</th>
-                    <th className="text-right p-2 font-medium text-gray-700">Commission</th>
-                    <th className="text-center p-2 font-medium text-gray-700">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {commissions.map((comm) => (
-                    <tr key={comm.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{formatDate(comm.createdAt)}</td>
-                      <td className="p-2 font-medium">{comm.policy?.policyNumber || '-'}</td>
-                      <td className="p-2">{comm.policy?.client?.name || '-'}</td>
-                      <td className="p-2">{comm.company?.name || '-'}</td>
-                      <td className="p-2 text-right font-semibold text-green-600">
-                        {formatCurrency(comm.subAgentCommissionAmount || 0)}
-                      </td>
-                      <td className="p-2 text-center">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          comm.paidToSubAgent
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {comm.paidToSubAgent ? 'Paid' : 'Pending'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {commissions.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="p-8 text-center text-gray-500">
-                        No commission records found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition"
-          >
-            Close
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
