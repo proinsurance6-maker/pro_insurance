@@ -72,6 +72,20 @@ const POLICY_PERIODS = [
   { value: '10 Years', label: '10 Years' }
 ];
 
+const RELATIONSHIPS = [
+  'Self',
+  'Spouse',
+  'Father',
+  'Mother',
+  'Son',
+  'Daughter',
+  'Brother',
+  'Sister',
+  'Father-in-Law',
+  'Mother-in-Law',
+  'Other'
+];
+
 export default function NewPolicyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -104,9 +118,16 @@ export default function NewPolicyPage() {
     name: '',
     phone: '',
     email: '',
-    address: ''
+    address: '',
+    // Family member linking
+    isFamilyMember: false,
+    linkedClientId: '',
+    linkedClientName: '',
+    relationship: ''
   });
   const [creatingClient, setCreatingClient] = useState(false);
+  const [familyClientSearch, setFamilyClientSearch] = useState('');
+  const [showFamilyClientDropdown, setShowFamilyClientDropdown] = useState(false);
   
   // New broker form data
   const [newBrokerData, setNewBrokerData] = useState({
@@ -236,6 +257,51 @@ export default function NewPolicyPage() {
       setError('Client name and phone are required');
       return;
     }
+    
+    // If this is a family member of existing client
+    if (newClientData.isFamilyMember && newClientData.linkedClientId) {
+      if (!newClientData.relationship) {
+        setError('Please select relationship for family member');
+        return;
+      }
+      setCreatingClient(true);
+      try {
+        // Create family member under the linked client
+        const familyMemberData = {
+          name: newClientData.name,
+          relationship: newClientData.relationship,
+          phone: newClientData.phone,
+          email: newClientData.email
+        };
+        const response = await clientAPI.addFamilyMember(newClientData.linkedClientId, familyMemberData);
+        const newFamilyMember = response.data.data;
+        
+        // Select the linked client and set holder name to family member's name
+        const linkedClient = clients.find(c => c.id === newClientData.linkedClientId);
+        if (linkedClient) {
+          setFormData(prev => ({ 
+            ...prev, 
+            clientId: linkedClient.id, 
+            clientName: linkedClient.name,
+            holderName: newClientData.name // Family member is the policy holder
+          }));
+          setClientSearch(linkedClient.name);
+        }
+        
+        setShowNewClientForm(false);
+        setShowClientDropdown(false);
+        setNewClientData({ name: '', phone: '', email: '', address: '', isFamilyMember: false, linkedClientId: '', linkedClientName: '', relationship: '' });
+        setFamilyClientSearch('');
+        setSuccess(`✅ ${newClientData.name} added as ${newClientData.relationship} of ${newClientData.linkedClientName}`);
+      } catch (err: any) {
+        setError(err.response?.data?.error?.message || 'Failed to add family member');
+      } finally {
+        setCreatingClient(false);
+      }
+      return;
+    }
+    
+    // Regular new client creation
     setCreatingClient(true);
     try {
       const response = await clientAPI.create(newClientData);
@@ -246,7 +312,7 @@ export default function NewPolicyPage() {
       setClientSearch(newClient.name);
       setShowNewClientForm(false);
       setShowClientDropdown(false);
-      setNewClientData({ name: '', phone: '', email: '', address: '' });
+      setNewClientData({ name: '', phone: '', email: '', address: '', isFamilyMember: false, linkedClientId: '', linkedClientName: '', relationship: '' });
       setSuccess('✅ New client created and selected');
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to create client');
@@ -1087,11 +1153,13 @@ export default function NewPolicyPage() {
 
               {/* New Client Form */}
               {clientType === 'new' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="font-medium text-blue-800 text-sm">Create New Client</h4>
                   </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  
+                  {/* Basic Info Row */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                     <Input 
                       placeholder="Client Name *" 
                       value={newClientData.name} 
@@ -1110,15 +1178,111 @@ export default function NewPolicyPage() {
                       onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))} 
                       className="h-10 text-sm" 
                     />
+                  </div>
+
+                  {/* Family Member Toggle */}
+                  <div className="bg-white rounded-lg p-3 border border-blue-100 mb-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newClientData.isFamilyMember}
+                        onChange={(e) => setNewClientData(prev => ({ 
+                          ...prev, 
+                          isFamilyMember: e.target.checked,
+                          linkedClientId: '',
+                          linkedClientName: '',
+                          relationship: ''
+                        }))}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-sm text-gray-700">This is a family member of an existing client</span>
+                    </label>
+
+                    {/* Family Member Details */}
+                    {newClientData.isFamilyMember && (
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Select Existing Client */}
+                        <div className="relative">
+                          <label className="block text-xs text-gray-500 mb-1">Family Member of <span className="text-red-500">*</span></label>
+                          <Input
+                            type="text"
+                            value={familyClientSearch}
+                            onChange={(e) => {
+                              setFamilyClientSearch(e.target.value);
+                              setShowFamilyClientDropdown(true);
+                              setNewClientData(prev => ({ ...prev, linkedClientId: '', linkedClientName: '' }));
+                            }}
+                            onFocus={() => setShowFamilyClientDropdown(true)}
+                            placeholder="Search existing client..."
+                            className="h-9 text-sm"
+                          />
+                          {showFamilyClientDropdown && familyClientSearch && (
+                            <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                              {clients.filter(c => 
+                                c.name.toLowerCase().includes(familyClientSearch.toLowerCase()) ||
+                                c.phone.includes(familyClientSearch)
+                              ).slice(0, 5).map((client) => (
+                                <button
+                                  key={client.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setNewClientData(prev => ({ 
+                                      ...prev, 
+                                      linkedClientId: client.id, 
+                                      linkedClientName: client.name 
+                                    }));
+                                    setFamilyClientSearch(client.name);
+                                    setShowFamilyClientDropdown(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b last:border-b-0 text-sm"
+                                >
+                                  <p className="font-medium text-gray-800">{client.name}</p>
+                                  <p className="text-xs text-gray-500">{client.phone}</p>
+                                </button>
+                              ))}
+                              {clients.filter(c => 
+                                c.name.toLowerCase().includes(familyClientSearch.toLowerCase()) ||
+                                c.phone.includes(familyClientSearch)
+                              ).length === 0 && (
+                                <p className="p-3 text-gray-500 text-xs">No clients found</p>
+                              )}
+                            </div>
+                          )}
+                          {newClientData.linkedClientId && (
+                            <p className="text-xs text-green-600 mt-1">✓ {newClientData.linkedClientName}</p>
+                          )}
+                        </div>
+
+                        {/* Relationship Dropdown */}
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Relationship <span className="text-red-500">*</span></label>
+                          <select
+                            value={newClientData.relationship}
+                            onChange={(e) => setNewClientData(prev => ({ ...prev, relationship: e.target.value }))}
+                            className="w-full h-9 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          >
+                            <option value="">Select Relationship</option>
+                            {RELATIONSHIPS.map((rel) => (
+                              <option key={rel} value={rel}>{rel}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Create Button */}
+                  <div className="flex justify-end">
                     <Button 
                       type="button" 
                       onClick={handleCreateClient} 
-                      disabled={creatingClient || !newClientData.name || !newClientData.phone} 
-                      className="h-10 text-sm"
+                      disabled={creatingClient || !newClientData.name || !newClientData.phone || (newClientData.isFamilyMember && (!newClientData.linkedClientId || !newClientData.relationship))} 
+                      className="h-10 text-sm px-6"
                     >
-                      {creatingClient ? 'Creating...' : '✓ Create Client'}
+                      {creatingClient ? 'Creating...' : newClientData.isFamilyMember ? '✓ Add as Family Member' : '✓ Create Client'}
                     </Button>
                   </div>
+
                   {formData.clientId && clientType === 'new' && (
                     <p className="text-xs text-green-600 mt-2">✓ Client created: {formData.clientName}</p>
                   )}
