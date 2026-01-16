@@ -40,7 +40,8 @@ enum LedgerType {
 
 enum PolicySource {
   RENEWAL  // Existing policy renewed
-  SWITCH   // Switched from another company
+  SWITCH   // Switched from another company  
+  PORT     // Ported from another company (portability)
   NEW      // New policy
 }
 
