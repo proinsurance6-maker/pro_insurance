@@ -594,12 +594,12 @@ export default function PoliciesPage() {
                       
                       {/* Policy No */}
                       <td className="whitespace-nowrap">
-                        <span className="text-blue-600 font-semibold">{policy.policyNumber}</span>
+                        <span className="font-medium text-gray-800">{policy.policyNumber}</span>
                       </td>
                       
                       {/* Fresh/Renewal/Port */}
                       <td className="whitespace-nowrap">
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px]">
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-[10px]">
                           {policy.policySource || 'Fresh'}
                         </span>
                       </td>
