@@ -661,6 +661,9 @@ export default function NewPolicyPage() {
         policyNumber: formData.policyNumber,
         policyType: formData.policyType,
         motorPolicyType: isMotor ? formData.motorPolicyType : undefined,
+        policySource: formData.policySource || 'NEW',
+        policyPeriod: formData.policyPeriod || undefined,
+        planName: formData.planName || undefined,
         sumAssured: parseFloat(formData.sumAssured) || 0,
         premiumAmount: parseFloat(formData.premiumAmount),
         // Motor premium breakdown
@@ -680,6 +683,7 @@ export default function NewPolicyPage() {
         subAgentOdRate: isMotor ? parseFloat(formDataObj.subAgentOdRate) || undefined : undefined,
         subAgentTpRate: isMotor ? parseFloat(formDataObj.subAgentTpRate) || undefined : undefined,
         subAgentNetRate: parseFloat(formDataObj.subAgentNetRate) || undefined,
+        subAgentCommissionRate: parseFloat(formData.subAgentCommissionRate) || undefined,
         // Broker
         brokerId: formData.brokerId || undefined,
         brokerCommissionAmount: parseFloat(formData.brokerCommissionAmount) || undefined,

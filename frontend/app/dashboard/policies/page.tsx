@@ -508,6 +508,7 @@ export default function PoliciesPage() {
                 <th>TP Rate</th>
                 <th>Net Rate</th>
                 <th className="text-right">Paid Payout</th>
+                <th className="text-right">Our Profit</th>
                 <th>Status</th>
                 <th>Documents</th>
                 <th>Remark</th>
@@ -516,7 +517,7 @@ export default function PoliciesPage() {
             <tbody>
               {filteredPolicies.length === 0 ? (
                 <tr>
-                  <td colSpan={35} className="px-4 py-12 text-center">
+                  <td colSpan={36} className="px-4 py-12 text-center">
                     <DocumentIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No policies found</h3>
                     <p className="text-gray-500 mb-4">
@@ -719,6 +720,11 @@ export default function PoliciesPage() {
                       {/* Paid Payout (Sub-Agent Commission) */}
                       <td className="whitespace-nowrap text-right text-blue-600">
                         {commission?.subAgentCommissionAmount ? formatCurrency(commission.subAgentCommissionAmount) : '-'}
+                      </td>
+                      
+                      {/* Our Profit (Agent keeps after paying sub-agent) */}
+                      <td className="whitespace-nowrap text-right font-semibold text-emerald-600">
+                        {commission ? formatCurrency(agentCommission - (commission.subAgentCommissionAmount ? Number(commission.subAgentCommissionAmount) : 0)) : '-'}
                       </td>
                       
                       {/* Status */}
