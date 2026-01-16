@@ -233,15 +233,16 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
           // Non-motor: Use subAgentCommissionRate/subAgentNetRate
           const baseForNet = netPremium || premiumAmount;
           subAgentCommission = (baseForNet * subAgentNetPercentValue) / 100;
-        } else if (agentSharePercent !== undefined) {
+        } else if (agentSharePercent !== undefined && agentSharePercent > 0) {
           // Fallback: Use agent share percent
           const agentKeeps = parseFloat(agentSharePercent);
           subAgentSharePercentValue = 100 - agentKeeps;
           subAgentCommission = (totalCommissionAmount * subAgentSharePercentValue) / 100;
         } else {
-          // Default: Use sub-agent's default commission percentage from profile
-          subAgentSharePercentValue = Number(subAgent.commissionPercentage) || 0;
-          subAgentCommission = (totalCommissionAmount * subAgentSharePercentValue) / 100;
+          // No explicit sub-agent commission rate provided → Agent keeps 100%, sub-agent gets 0%
+          // Sub-agent is selected only for tracking/reference, not for commission split
+          subAgentCommission = 0;
+          subAgentSharePercentValue = 0;
         }
         
         agentCommission = totalCommissionAmount - subAgentCommission;
