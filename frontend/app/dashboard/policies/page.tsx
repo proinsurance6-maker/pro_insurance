@@ -535,11 +535,13 @@ export default function PoliciesPage() {
                           >
                             <DocumentIcon className="w-3 h-3" />
                           </button>
-                          <Link href={`/dashboard/policies/${policy.id}/edit`}>
-                            <button className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition" title="Edit">
-                              <EditIcon className="w-3 h-3" />
-                            </button>
-                          </Link>
+                          <button 
+                            className="p-1 bg-gray-200 text-gray-400 rounded cursor-not-allowed" 
+                            title="Edit (Coming Soon)"
+                            disabled
+                          >
+                            <EditIcon className="w-3 h-3" />
+                          </button>
                           <button 
                             onClick={() => setDeleteConfirm(policy.id)}
                             className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition" 
