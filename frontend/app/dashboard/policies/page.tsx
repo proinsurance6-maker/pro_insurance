@@ -99,6 +99,8 @@ export default function PoliciesPage() {
   const [toDate, setToDate] = useState('');
   const [showFilters, setShowFilters] = useState(true);
   const [viewDocsModal, setViewDocsModal] = useState<Policy | null>(null);
+  const [editModal, setEditModal] = useState<Policy | null>(null);
+  const [editFormData, setEditFormData] = useState<any>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
@@ -536,9 +538,20 @@ export default function PoliciesPage() {
                             <DocumentIcon className="w-3 h-3" />
                           </button>
                           <button 
-                            className="p-1 bg-gray-200 text-gray-400 rounded cursor-not-allowed" 
-                            title="Edit (Coming Soon)"
-                            disabled
+                            onClick={() => {
+                              setEditModal(policy);
+                              setEditFormData({
+                                policyNumber: policy.policyNumber,
+                                premiumAmount: policy.premiumAmount,
+                                startDate: policy.startDate,
+                                endDate: policy.endDate,
+                                planName: policy.planName || '',
+                                sumAssured: policy.sumAssured || '',
+                                remarks: policy.remarks || ''
+                              });
+                            }}
+                            className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition" 
+                            title="Edit"
                           >
                             <EditIcon className="w-3 h-3" />
                           </button>
@@ -884,6 +897,145 @@ export default function PoliciesPage() {
                   Delete
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Policy Modal */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold">Edit Policy</h3>
+                <p className="text-green-100 text-sm">{editModal.policyNumber}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditModal(null);
+                  setEditFormData({});
+                }}
+                className="text-white hover:bg-green-800 rounded-full p-2 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Form Content */}
+            <div className="p-6 space-y-4">
+              {/* Policy Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Policy Number</label>
+                <input
+                  type="text"
+                  value={editFormData.policyNumber || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, policyNumber: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Premium Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Premium Amount (₹)</label>
+                <input
+                  type="number"
+                  value={editFormData.premiumAmount || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, premiumAmount: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Start Date & End Date */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <DatePicker
+                    value={editFormData.startDate || ''}
+                    onChange={(date) => setEditFormData({ ...editFormData, startDate: date })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <DatePicker
+                    value={editFormData.endDate || ''}
+                    onChange={(date) => setEditFormData({ ...editFormData, endDate: date })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Plan Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
+                <input
+                  type="text"
+                  value={editFormData.planName || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, planName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  placeholder="Optional"
+                />
+              </div>
+
+              {/* Sum Assured */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sum Assured (₹)</label>
+                <input
+                  type="text"
+                  value={editFormData.sumAssured || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, sumAssured: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  placeholder="e.g., Unlimited or 500000"
+                />
+              </div>
+
+              {/* Remarks */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                <textarea
+                  value={editFormData.remarks || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, remarks: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  rows={3}
+                  placeholder="Optional notes"
+                />
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setEditModal(null);
+                  setEditFormData({});
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await policyAPI.update(editModal.id, editFormData);
+                    // Refresh policies
+                    const response = await policyAPI.getAll({ limit: 100 });
+                    setPolicies(response.data.data.policies);
+                    setEditModal(null);
+                    setEditFormData({});
+                    alert('✅ Policy updated successfully!');
+                  } catch (error) {
+                    console.error('Update failed:', error);
+                    alert('❌ Failed to update policy');
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         </div>
