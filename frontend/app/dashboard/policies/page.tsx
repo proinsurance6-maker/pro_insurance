@@ -774,48 +774,96 @@ export default function PoliciesPage() {
 
       {/* View Documents Modal */}
       {viewDocsModal && (
-        <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden relative z-[10000]">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">View Uploaded documents</h2>
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Policy Documents</h2>
+                <p className="text-blue-100 text-sm">{viewDocsModal.policyNumber}</p>
+              </div>
               <button
                 onClick={() => setViewDocsModal(null)}
-                className="text-gray-400 hover:text-gray-600 transition"
+                className="text-white/80 hover:text-white transition p-1 hover:bg-white/10 rounded-lg"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
-              <div className="space-y-4">
+            
+            {/* Documents List */}
+            <div className="p-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid gap-2">
                 {[
-                  { label: 'Policy Pdf', type: 'POLICY_PDF' },
-                  { label: 'Client Pdf', type: 'POLICYCOPY' },
-                  { label: 'Mandate Pdf', type: 'AADHARFRONT' },
-                  { label: 'Proposer Form Pdf', type: 'AADHARBACK' },
-                  { label: 'Illustration Form Pdf', type: 'PANCARD' },
-                  { label: 'Payout Proof Pdf', type: 'CANCELCHEQUE' }
+                  { label: 'Policy Copy', type: 'POLICYCOPY', icon: '📄', color: 'blue' },
+                  { label: 'RC Document', type: 'RCDOCUMENT', icon: '🚗', color: 'green' },
+                  { label: 'Aadhar Front', type: 'AADHARFRONT', icon: '🪪', color: 'orange' },
+                  { label: 'Aadhar Back', type: 'AADHARBACK', icon: '🪪', color: 'orange' },
+                  { label: 'PAN Card', type: 'PANCARD', icon: '🆔', color: 'purple' },
+                  { label: 'Photo', type: 'PHOTO', icon: '📸', color: 'pink' },
+                  { label: 'Cancel Cheque', type: 'CANCELCHEQUE', icon: '🏦', color: 'teal' }
                 ].map((doc) => {
                   const document = viewDocsModal.documents?.find(d => d.documentType === doc.type);
+                  const bgColors: { [key: string]: string } = {
+                    blue: 'bg-blue-50 border-blue-200',
+                    green: 'bg-green-50 border-green-200',
+                    orange: 'bg-orange-50 border-orange-200',
+                    purple: 'bg-purple-50 border-purple-200',
+                    pink: 'bg-pink-50 border-pink-200',
+                    teal: 'bg-teal-50 border-teal-200'
+                  };
+                  
                   return (
-                    <div key={doc.type} className="flex items-center justify-between py-2 border-b">
-                      <span className="text-sm font-medium text-gray-700">{doc.label}</span>
+                    <div 
+                      key={doc.type} 
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        document ? bgColors[doc.color] : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{doc.icon}</span>
+                        <div>
+                          <span className="text-sm font-medium text-gray-800">{doc.label}</span>
+                          {document && (
+                            <p className="text-xs text-gray-500 truncate max-w-[200px]">{document.documentName}</p>
+                          )}
+                        </div>
+                      </div>
                       {document ? (
                         <a
                           href={document.documentUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm underline"
+                          className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
                         >
-                          {document.documentName}
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          View
                         </a>
                       ) : (
-                        <span className="text-gray-400 text-sm">-</span>
+                        <span className="px-3 py-1.5 bg-gray-200 text-gray-500 text-xs rounded-lg">
+                          Not Uploaded
+                        </span>
                       )}
                     </div>
                   );
                 })}
+              </div>
+              
+              {/* Summary */}
+              <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+                <span className="text-sm text-gray-600">
+                  Total Documents: <span className="font-semibold text-gray-800">{viewDocsModal.documents?.length || 0}/7</span>
+                </span>
+                <button
+                  onClick={() => setViewDocsModal(null)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
