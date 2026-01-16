@@ -4,7 +4,8 @@ import {
   getCommissionByCompany,
   markCommissionPaid,
   bulkMarkPaid,
-  getSubAgentCommissions
+  getSubAgentCommissions,
+  getSingleSubAgentCommissions
 } from '../controllers/commission.controller';
 import { authenticate, requireAgent } from '../middleware/auth';
 
@@ -17,6 +18,7 @@ router.use(authenticate, requireAgent);
 router.get('/', getCommissions);
 router.get('/by-company', getCommissionByCompany);
 router.get('/sub-agents', getSubAgentCommissions);
+router.get('/sub-agent/:subAgentId', getSingleSubAgentCommissions);
 
 // Mark as paid
 router.put('/:id/paid', markCommissionPaid);

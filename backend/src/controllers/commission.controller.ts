@@ -296,3 +296,59 @@ export const getSubAgentCommissions = async (req: Request, res: Response, next: 
     next(error);
   }
 };
+
+// ==========================================
+// GET SINGLE SUB-AGENT COMMISSION DETAILS
+// ==========================================
+export const getSingleSubAgentCommissions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const { subAgentId } = req.params;
+
+    // Verify sub-agent belongs to this agent
+    const subAgent = await prisma.subAgent.findFirst({
+      where: { id: subAgentId, agentId }
+    });
+
+    if (!subAgent) {
+      throw new AppError('Sub-agent not found', 404, 'NOT_FOUND');
+    }
+
+    // Get all commissions for this sub-agent
+    const commissions = await prisma.commission.findMany({
+      where: { 
+        agentId,
+        subAgentId 
+      },
+      include: {
+        policy: {
+          include: {
+            client: { select: { id: true, name: true } },
+            company: { select: { id: true, name: true } }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: commissions.map(c => ({
+        id: c.id,
+        commissionAmount: c.totalCommissionAmount.toString(),
+        subAgentAmount: c.subAgentCommissionAmount?.toString() || '0',
+        status: c.paidToSubAgent ? 'paid' : 'pending',
+        paidDate: c.paidToSubAgentDate,
+        createdAt: c.createdAt,
+        policy: {
+          policyNumber: c.policy.policyNumber,
+          startDate: c.policy.startDate,
+          client: c.policy.client,
+          company: c.policy.company
+        }
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
+};
