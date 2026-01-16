@@ -51,6 +51,9 @@ interface Policy {
     odCommissionPercent?: string;
     tpCommissionPercent?: string;
     netCommissionPercent?: string;
+    subAgentOdPercent?: string;
+    subAgentTpPercent?: string;
+    subAgentNetPercent?: string;
   }>;
   documents?: Array<{
     id: string;
@@ -705,17 +708,17 @@ export default function PoliciesPage() {
                       
                       {/* Sub-Agent OD Rate */}
                       <td className="whitespace-nowrap">
-                        -
+                        {commission?.subAgentOdPercent ? `${commission.subAgentOdPercent}%` : '-'}
                       </td>
                       
                       {/* Sub-Agent TP Rate */}
                       <td className="whitespace-nowrap">
-                        -
+                        {commission?.subAgentTpPercent ? `${commission.subAgentTpPercent}%` : '-'}
                       </td>
                       
                       {/* Sub-Agent Net Rate */}
                       <td className="whitespace-nowrap">
-                        -
+                        {commission?.subAgentNetPercent ? `${commission.subAgentNetPercent}%` : '-'}
                       </td>
                       
                       {/* Paid Payout (Sub-Agent Commission) */}

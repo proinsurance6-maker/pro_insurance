@@ -73,7 +73,10 @@ export const getPolicies = async (req: Request, res: Response, next: NextFunctio
             subAgentCommissionAmount: c.subAgentCommissionAmount?.toString(),
             odCommissionPercent: c.odCommissionPercent?.toString(),
             tpCommissionPercent: c.tpCommissionPercent?.toString(),
-            netCommissionPercent: c.netCommissionPercent?.toString()
+            netCommissionPercent: c.netCommissionPercent?.toString(),
+            subAgentOdPercent: (c as any).subAgentOdPercent?.toString(),
+            subAgentTpPercent: (c as any).subAgentTpPercent?.toString(),
+            subAgentNetPercent: (c as any).subAgentNetPercent?.toString()
           }))
         })),
         pagination: {
@@ -145,6 +148,8 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
       commissionPercent, 
       odCommissionRate, tpCommissionRate, netCommissionRate, renewalCommissionRate,
       agentSharePercent, // Agent's share % of broker commission (rest goes to sub-agent)
+      // Sub-agent commission rates (separate input)
+      subAgentOdRate, subAgentTpRate, subAgentNetRate, subAgentCommissionRate,
       remarks
     } = req.body;
 
@@ -199,22 +204,51 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
       netCommissionAmount = totalCommissionAmount;
     }
 
-    // Get sub-agent split if specified
-    // Commission flow: Broker → Agent keeps X% → Sub-Agent gets rest
+    // Get sub-agent commission based on explicit rates or share percentage
     let subAgentCommission = 0;
     let agentCommission = totalCommissionAmount;
-    let subAgentSharePercent = 0;
+    let subAgentSharePercentValue = 0;
+    let subAgentOdPercentValue = subAgentOdRate ? parseFloat(subAgentOdRate) : null;
+    let subAgentTpPercentValue = subAgentTpRate ? parseFloat(subAgentTpRate) : null;
+    let subAgentNetPercentValue = subAgentNetRate ? parseFloat(subAgentNetRate) : (subAgentCommissionRate ? parseFloat(subAgentCommissionRate) : null);
     
     if (subAgentId) {
       const subAgent = await prisma.subAgent.findFirst({
         where: { id: subAgentId, agentId }
       });
       if (subAgent) {
-        // If agent share is specified, use that. Otherwise use subAgent's default split
-        const agentKeeps = agentSharePercent !== undefined ? parseFloat(agentSharePercent) : (100 - Number(subAgent.commissionPercentage));
-        subAgentSharePercent = 100 - agentKeeps;
-        agentCommission = (totalCommissionAmount * agentKeeps) / 100;
-        subAgentCommission = totalCommissionAmount - agentCommission;
+        // Calculate sub-agent commission based on explicit rates if provided
+        if (isMotor && (subAgentOdPercentValue || subAgentTpPercentValue || subAgentNetPercentValue)) {
+          // Motor: Calculate based on OD/TP/Net rates
+          if (subAgentNetPercentValue && subAgentNetPercentValue > 0) {
+            const baseForNet = netPremium || premiumAmount;
+            subAgentCommission = (baseForNet * subAgentNetPercentValue) / 100;
+          } else {
+            const subAgentOdComm = subAgentOdPercentValue ? ((odPremium || 0) * subAgentOdPercentValue) / 100 : 0;
+            const subAgentTpComm = subAgentTpPercentValue ? ((tpPremium || 0) * subAgentTpPercentValue) / 100 : 0;
+            subAgentCommission = subAgentOdComm + subAgentTpComm;
+          }
+        } else if (!isMotor && subAgentNetPercentValue && subAgentNetPercentValue > 0) {
+          // Non-motor: Use subAgentCommissionRate/subAgentNetRate
+          const baseForNet = netPremium || premiumAmount;
+          subAgentCommission = (baseForNet * subAgentNetPercentValue) / 100;
+        } else if (agentSharePercent !== undefined) {
+          // Fallback: Use agent share percent
+          const agentKeeps = parseFloat(agentSharePercent);
+          subAgentSharePercentValue = 100 - agentKeeps;
+          subAgentCommission = (totalCommissionAmount * subAgentSharePercentValue) / 100;
+        } else {
+          // Default: Use sub-agent's default commission percentage from profile
+          subAgentSharePercentValue = Number(subAgent.commissionPercentage) || 0;
+          subAgentCommission = (totalCommissionAmount * subAgentSharePercentValue) / 100;
+        }
+        
+        agentCommission = totalCommissionAmount - subAgentCommission;
+        
+        // Calculate share percent for display
+        if (totalCommissionAmount > 0) {
+          subAgentSharePercentValue = (subAgentCommission / totalCommissionAmount) * 100;
+        }
       }
     }
 
@@ -270,7 +304,11 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
           // Agent/SubAgent split
           agentCommissionAmount: agentCommission,
           subAgentCommissionAmount: subAgentCommission || null,
-          subAgentSharePercent: subAgentSharePercent || null
+          subAgentSharePercent: subAgentSharePercentValue || null,
+          // Sub-Agent specific rates
+          subAgentOdPercent: subAgentOdPercentValue || null,
+          subAgentTpPercent: subAgentTpPercentValue || null,
+          subAgentNetPercent: subAgentNetPercentValue || null
         }
       });
 

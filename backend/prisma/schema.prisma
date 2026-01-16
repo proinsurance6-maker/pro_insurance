@@ -394,6 +394,10 @@ model Commission {
   agentCommissionAmount    Decimal   @map("agent_commission_amount") @db.Decimal(12, 2)
   subAgentCommissionAmount Decimal?  @map("sub_agent_commission_amount") @db.Decimal(12, 2)
   subAgentSharePercent     Decimal?  @map("sub_agent_share_percent") @db.Decimal(5, 2) // % of total given to sub-agent
+  // Sub-Agent specific rates (for Motor)
+  subAgentOdPercent        Decimal?  @map("sub_agent_od_percent") @db.Decimal(5, 2)
+  subAgentTpPercent        Decimal?  @map("sub_agent_tp_percent") @db.Decimal(5, 2)
+  subAgentNetPercent       Decimal?  @map("sub_agent_net_percent") @db.Decimal(5, 2)
   paymentStatus            String    @default("pending") @map("payment_status")
   receivedFromCompany      Boolean   @default(false) @map("received_from_company")
   receivedDate             DateTime? @map("received_date") @db.Date
