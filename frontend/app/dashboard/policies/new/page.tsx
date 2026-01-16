@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 import { policyAPI, clientAPI, agentAPI, brokerAPI } from '@/lib/api';
 
 interface Company {
@@ -1353,26 +1354,6 @@ export default function NewPolicyPage() {
                   )}
                 </div>
               )}
-
-              {/* Vehicle Number (show for motor) */}
-              {formData.policyType === 'Motor Insurance' && (
-                <div className="mt-4">
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                    Vehicle Number <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    name="vehicleNumber"
-                    value={formData.vehicleNumber}
-                    onChange={(e) => {
-                      const upperValue = e.target.value.toUpperCase();
-                      handleChange({ target: { name: 'vehicleNumber', value: upperValue } } as any);
-                    }}
-                    placeholder="e.g., MH01AB1234"
-                    required
-                    className="h-10 text-sm uppercase max-w-xs"
-                  />
-                </div>
-              )}
             </div>
 
             {/* Section: Policy Details */}
@@ -1420,23 +1401,41 @@ export default function NewPolicyPage() {
                 </div>
 
                 {formData.policyType === 'Motor Insurance' && (
-                  <div className="w-40">
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                      Motor Type <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="motorPolicyType"
-                      value={formData.motorPolicyType}
-                      onChange={handleChange}
-                      className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      required
-                    >
-                      <option value="">Select</option>
-                      {MOTOR_POLICY_TYPES.map((type) => (
-                        <option key={type.value} value={type.value}>{type.label}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <>
+                    <div className="w-40">
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                        Motor Type <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="motorPolicyType"
+                        value={formData.motorPolicyType}
+                        onChange={handleChange}
+                        className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50/50 transition-all duration-200 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        required
+                      >
+                        <option value="">Select</option>
+                        {MOTOR_POLICY_TYPES.map((type) => (
+                          <option key={type.value} value={type.value}>{type.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-44">
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                        Vehicle Number <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        name="vehicleNumber"
+                        value={formData.vehicleNumber}
+                        onChange={(e) => {
+                          const upperValue = e.target.value.toUpperCase();
+                          handleChange({ target: { name: 'vehicleNumber', value: upperValue } } as any);
+                        }}
+                        placeholder="e.g., MH01AB1234"
+                        required
+                        className="h-10 text-sm uppercase"
+                      />
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -1482,17 +1481,34 @@ export default function NewPolicyPage() {
               <div className="flex flex-wrap gap-4 mb-4">
                 <div className="w-40">
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Login Date</label>
-                  <Input type="date" name="loginDate" value={formData.loginDate || ''} onChange={handleChange} className="h-10 text-sm" />
+                  <DatePicker
+                    name="loginDate"
+                    value={formData.loginDate || ''}
+                    onChange={(date) => handleChange({ target: { name: 'loginDate', value: date } } as any)}
+                    className="h-10 text-sm"
+                  />
                 </div>
 
                 <div className="w-40">
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Start Date <span className="text-red-500">*</span></label>
-                  <Input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required className="h-10 text-sm" />
+                  <DatePicker
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={(date) => handleChange({ target: { name: 'startDate', value: date } } as any)}
+                    required
+                    className="h-10 text-sm"
+                  />
                 </div>
 
                 <div className="w-40">
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Renewal Date <span className="text-red-500">*</span></label>
-                  <Input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required className="h-10 text-sm" />
+                  <DatePicker
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={(date) => handleChange({ target: { name: 'endDate', value: date } } as any)}
+                    required
+                    className="h-10 text-sm"
+                  />
                 </div>
               </div>
 

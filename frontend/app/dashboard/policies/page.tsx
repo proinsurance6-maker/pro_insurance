@@ -141,11 +141,11 @@ export default function PoliciesPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date.getMonth()];
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   const formatDateInput = (dateString: string) => {
