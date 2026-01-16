@@ -1760,7 +1760,7 @@ export default function NewPolicyPage() {
                       {formData.premiumPaidByAgent && (
                         <div className="text-xs text-amber-700 bg-amber-100 rounded p-2 mt-2">
                           <p className="font-medium mb-1">💡 Ledger Adjustment:</p>
-                          <p>Gross Premium (₹{formData.premiumAmount || 0}) − Your Commission (₹{calculateTotalCommission().toFixed(0)}) = <span className="font-bold text-red-600">₹{(parseFloat(formData.premiumAmount || '0') - calculateTotalCommission()).toFixed(0)}</span></p>
+                          <p>Gross Premium (₹{formData.premiumAmount || 0}) − Sub-Agent Payout (₹{calculateSubAgentPayout().toFixed(0)}) = <span className="font-bold text-red-600">₹{(parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()).toFixed(0)}</span></p>
                           <p className="mt-1 text-amber-600">This amount will be added to Sub-Agent's <strong>DUE</strong> in ledger.</p>
                         </div>
                       )}
@@ -1808,7 +1808,7 @@ export default function NewPolicyPage() {
                         <div className="text-center p-2 bg-red-50 rounded-lg">
                           <p className="text-xs text-gray-500">Amount Due</p>
                           <p className="font-bold text-red-600">
-                            ₹{formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateTotalCommission()).toFixed(0) : '0'}
+                            ₹{formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()).toFixed(0) : '0'}
                           </p>
                         </div>
                         <div className="text-center p-2 bg-green-50 rounded-lg">
@@ -1819,7 +1819,7 @@ export default function NewPolicyPage() {
                           <p className="text-xs text-gray-500">Net Balance</p>
                           <p className="font-bold text-blue-600">
                             ₹{(
-                              (formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateTotalCommission()) : 0) -
+                              (formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()) : 0) -
                               parseFloat(formData.advanceAmount || '0')
                             ).toFixed(0)}
                           </p>
