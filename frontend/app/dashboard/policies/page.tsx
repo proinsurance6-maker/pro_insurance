@@ -236,9 +236,25 @@ export default function PoliciesPage() {
       (status === 'expired' && expired);
     
     // Date filter (based on entry date - createdAt)
+    // Set time to start/end of day for accurate date-only comparison
     const entryDate = new Date(policy.createdAt);
-    const matchesFromDate = !fromDate || entryDate >= new Date(fromDate);
-    const matchesToDate = !toDate || entryDate <= new Date(toDate);
+    entryDate.setHours(0, 0, 0, 0);
+    
+    let matchesFromDate = true;
+    let matchesToDate = true;
+    
+    if (fromDate) {
+      const from = new Date(fromDate);
+      from.setHours(0, 0, 0, 0);
+      matchesFromDate = entryDate >= from;
+    }
+    
+    if (toDate) {
+      const to = new Date(toDate);
+      to.setHours(23, 59, 59, 999); // End of day
+      const policyDate = new Date(policy.createdAt);
+      matchesToDate = policyDate <= to;
+    }
     
     return matchesSearch && matchesType && matchesCompany && matchesBroker && matchesSubAgent && matchesStatus && matchesFromDate && matchesToDate;
   });

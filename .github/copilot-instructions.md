@@ -148,6 +148,7 @@ const { user, token, login, logout, isAgent } = useAuth();
 // Controllers throw AppError → caught by global errorHandler
 throw new AppError('Client not found', 404, 'NOT_FOUND');
 
+// AppError constructor: (message: string, statusCode: number = 500, code: string = 'APP_ERROR')
 // errorHandler in middleware/errorHandler.ts converts to standard format
 ```
 
