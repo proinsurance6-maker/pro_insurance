@@ -671,7 +671,7 @@ export default function NewPolicyPage() {
         startDate: new Date(formData.startDate),
         endDate: new Date(formData.endDate),
         // Commission rates
-        commissionRate: parseFloat(formData.commissionRate) || 0,
+        commissionPercent: parseFloat(formData.commissionRate) || 0,
         odCommissionRate: isMotor ? parseFloat(formData.odCommissionRate) || undefined : undefined,
         tpCommissionRate: isMotor ? parseFloat(formData.tpCommissionRate) || undefined : undefined,
         netCommissionRate: parseFloat(formData.netCommissionRate) || undefined,

@@ -202,6 +202,7 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
       const rate = netCommissionRate || commissionPercent || 15;
       totalCommissionAmount = (commissionBase * rate) / 100;
       netCommissionAmount = totalCommissionAmount;
+      totalRate = rate; // Update total rate to reflect actual commission rate used
     }
 
     // Get sub-agent commission based on explicit rates or share percentage
