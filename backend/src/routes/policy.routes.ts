@@ -11,7 +11,8 @@ import {
   renewPolicy,
   scanDocument,
   parseExcel,
-  bulkCreatePolicies
+  bulkCreatePolicies,
+  searchClientsForPolicy
 } from '../controllers/policy.controller';
 import { authenticate, requireAgent } from '../middleware/auth';
 
@@ -46,6 +47,9 @@ router.post('/companies', createCompany);
 
 // Document scanning / OCR
 router.post('/scan-document', upload.single('document'), scanDocument);
+
+// Search clients by name, policy number, or vehicle number
+router.get('/search-clients', searchClientsForPolicy);
 
 // Policy creation with multiple document uploads
 router.post('/', upload.fields([

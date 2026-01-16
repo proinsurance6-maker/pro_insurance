@@ -128,6 +128,8 @@ export default function NewPolicyPage() {
   const [creatingClient, setCreatingClient] = useState(false);
   const [familyClientSearch, setFamilyClientSearch] = useState('');
   const [showFamilyClientDropdown, setShowFamilyClientDropdown] = useState(false);
+  const [holderNameSuggestions, setHolderNameSuggestions] = useState<any[]>([]);
+  const [showHolderSuggestions, setShowHolderSuggestions] = useState(false);
   
   // New broker form data
   const [newBrokerData, setNewBrokerData] = useState({
@@ -563,7 +565,7 @@ export default function NewPolicyPage() {
         if (extractedData.netPremium) extractedFields.push('Net Premium');
         if (extractedData.startDate) extractedFields.push('Dates');
         
-        setSuccess(`✅ Extracted: ${extractedFields.join(', ')}. Please verify details.`);
+        setSuccess('⚠️ AI can make a mistake. Please recheck all details before submitting.');
         
         // Auto-close modal after 1.5 seconds with success message
         setTimeout(() => {
@@ -1028,17 +1030,80 @@ export default function NewPolicyPage() {
               </h3>
               
               {/* Policy Holder Name - First */}
-              <div className="mb-4">
+              <div className="mb-4 relative">
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">
                   Policy Holder Name
                 </label>
                 <Input
                   name="holderName"
                   value={formData.holderName}
-                  onChange={handleChange}
+                  onChange={async (e) => {
+                    handleChange(e);
+                    const value = e.target.value;
+                    if (value.length >= 2) {
+                      try {
+                        const response = await policyAPI.searchClients(value);
+                        if (response.data.data && response.data.data.length > 0) {
+                          setHolderNameSuggestions(response.data.data);
+                          setShowHolderSuggestions(true);
+                        } else {
+                          setHolderNameSuggestions([]);
+                          setShowHolderSuggestions(false);
+                        }
+                      } catch (err) {
+                        console.error('Error searching clients:', err);
+                      }
+                    } else {
+                      setHolderNameSuggestions([]);
+                      setShowHolderSuggestions(false);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (holderNameSuggestions.length > 0) {
+                      setShowHolderSuggestions(true);
+                    }
+                  }}
                   placeholder="Enter policy holder name"
                   className="h-10 text-sm max-w-md"
                 />
+                {showHolderSuggestions && holderNameSuggestions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full max-w-md bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                    {holderNameSuggestions.map((client: any) => (
+                      <div
+                        key={client.id}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, holderName: client.name }));
+                          setClientType('existing');
+                          setShowNewClientForm(false);
+                          setFormData(prev => ({ ...prev, clientId: client.id, clientName: client.name }));
+                          setClientSearch(client.name);
+                          setShowHolderSuggestions(false);
+                        }}
+                        className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-sm text-gray-800">{client.name}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{client.phone}</p>
+                            {client.policies && client.policies.length > 0 && (
+                              <p className="text-xs text-blue-600 mt-1">
+                                {client.policies.length} {client.policies.length === 1 ? 'Policy' : 'Policies'}: {client.policies.slice(0, 2).map((p: any) => p.policyNumber).join(', ')}
+                                {client.policies.length > 2 && '...'}
+                              </p>
+                            )}
+                            {client.vehicles && client.vehicles.length > 0 && (
+                              <p className="text-xs text-green-600 mt-0.5">
+                                Vehicles: {client.vehicles.slice(0, 2).join(', ')}
+                                {client.vehicles.length > 2 && '...'}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">Select</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Client Type Toggle */}

@@ -962,3 +962,63 @@ export const bulkCreatePolicies = async (req: Request, res: Response, next: Next
     next(error);
   }
 };
+
+// ==========================================
+// SEARCH CLIENTS BY NAME, POLICY NUMBER, OR VEHICLE NUMBER
+// ==========================================
+export const searchClientsForPolicy = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const { query } = req.query;
+
+    if (!query || (query as string).length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const searchTerm = query as string;
+
+    // Search clients with their policies and extract vehicle numbers
+    const clients = await prisma.client.findMany({
+      where: {
+        agentId,
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { phone: { contains: searchTerm } },
+          { policies: { some: { policyNumber: { contains: searchTerm, mode: 'insensitive' } } } },
+          { policies: { some: { vehicleNumber: { contains: searchTerm, mode: 'insensitive' } } } }
+        ]
+      },
+      include: {
+        policies: {
+          select: {
+            id: true,
+            policyNumber: true,
+            vehicleNumber: true,
+            policyType: true
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5 // Limit to recent 5 policies
+        }
+      },
+      take: 10 // Limit results
+    });
+
+    // Transform data to include unique vehicle numbers
+    const transformedClients = clients.map(client => ({
+      id: client.id,
+      name: client.name,
+      phone: client.phone,
+      email: client.email,
+      policies: client.policies,
+      vehicles: [...new Set(client.policies.map(p => p.vehicleNumber).filter(Boolean))] // Unique vehicles
+    }));
+
+    res.json({
+      success: true,
+      data: transformedClients
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

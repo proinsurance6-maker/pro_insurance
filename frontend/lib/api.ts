@@ -218,6 +218,10 @@ export const policyAPI = {
   // Bulk create policies from Excel
   bulkCreate: (policies: any[]) =>
     api.post('/policies/bulk', { policies }),
+  
+  // Search clients by name, policy number, or vehicle number
+  searchClients: (query: string) =>
+    api.get('/policies/search-clients', { params: { query } }),
 };
 
 // ==========================================
