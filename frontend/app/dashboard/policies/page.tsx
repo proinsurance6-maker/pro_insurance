@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { policyAPI } from '@/lib/api';
 
 interface Policy {
@@ -297,22 +298,10 @@ export default function PoliciesPage() {
               {/* Entry From Date */}
               <div>
                 <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Entry From Date</label>
-                <input
-                  type="text"
-                  value={formatDateForDisplay(fromDate)}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Allow only numbers and /
-                    const cleaned = value.replace(/[^0-9/]/g, '');
-                    // Auto-format as user types
-                    if (cleaned.length === 10) {
-                      setFromDate(parseDateInput(cleaned));
-                    } else {
-                      setFromDate(parseDateInput(cleaned));
-                    }
-                  }}
-                  placeholder="DD/MM/YYYY"
-                  maxLength={10}
+                <DatePicker
+                  value={fromDate}
+                  onChange={(date) => setFromDate(date)}
+                  placeholder="DD-MMM-YYYY"
                   className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -320,20 +309,10 @@ export default function PoliciesPage() {
               {/* Entry To Date */}
               <div>
                 <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">Entry To Date</label>
-                <input
-                  type="text"
-                  value={formatDateForDisplay(toDate)}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const cleaned = value.replace(/[^0-9/]/g, '');
-                    if (cleaned.length === 10) {
-                      setToDate(parseDateInput(cleaned));
-                    } else {
-                      setToDate(parseDateInput(cleaned));
-                    }
-                  }}
-                  placeholder="DD/MM/YYYY"
-                  maxLength={10}
+                <DatePicker
+                  value={toDate}
+                  onChange={(date) => setToDate(date)}
+                  placeholder="DD-MMM-YYYY"
                   className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -432,14 +411,14 @@ export default function PoliciesPage() {
               >
                 Reset
               </button>
-              <div className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
-                📊 Total: {filteredPolicies.length}
-              </div>
               <button
                 onClick={downloadExcel}
-                className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition flex items-center gap-1"
+                className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded hover:bg-gray-200 transition cursor-pointer flex items-center gap-1.5"
               >
-                📥 Export
+                📊 Total: {filteredPolicies.length}
+                <svg className="w-3.5 h-3.5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" />
+                </svg>
               </button>
               
               {/* Quick Add Buttons */}
@@ -549,16 +528,6 @@ export default function PoliciesPage() {
                       {/* Action */}
                       <td className="whitespace-nowrap">
                         <div className="flex items-center gap-1">
-                          <Link href={`/dashboard/policies/${policy.id}`}>
-                            <button className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition" title="View">
-                              <EyeIcon className="w-3 h-3" />
-                            </button>
-                          </Link>
-                          <Link href={`/dashboard/policies/${policy.id}/edit`}>
-                            <button className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition" title="Edit">
-                              <EditIcon className="w-3 h-3" />
-                            </button>
-                          </Link>
                           <button 
                             onClick={() => setViewDocsModal(policy)}
                             className="p-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition" 
@@ -566,6 +535,11 @@ export default function PoliciesPage() {
                           >
                             <DocumentIcon className="w-3 h-3" />
                           </button>
+                          <Link href={`/dashboard/policies/${policy.id}/edit`}>
+                            <button className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition" title="Edit">
+                              <EditIcon className="w-3 h-3" />
+                            </button>
+                          </Link>
                           <button 
                             onClick={() => setDeleteConfirm(policy.id)}
                             className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition" 
@@ -583,7 +557,9 @@ export default function PoliciesPage() {
                       
                       {/* Client Name */}
                       <td className="whitespace-nowrap font-medium">
-                        {policy.client.name}
+                        <Link href={`/dashboard/clients/${policy.client.id}`} className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+                          {policy.client.name}
+                        </Link>
                       </td>
                       
                       {/* Mobile */}
