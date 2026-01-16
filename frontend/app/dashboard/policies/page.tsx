@@ -844,7 +844,7 @@ export default function PoliciesPage() {
                           </a>
                           <a
                             href={document.documentUrl.replace('/upload/', '/upload/fl_attachment/')}
-                            download={document.documentName.endsWith('.pdf') ? document.documentName : `${document.documentName}.pdf`}
+                            download={document.documentName}
                             className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition flex items-center gap-1"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

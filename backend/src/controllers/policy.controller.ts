@@ -363,16 +363,23 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
         // Save document URLs to database
         if (Object.keys(uploadedDocuments).length > 0) {
           await prisma.document.createMany({
-            data: Object.entries(uploadedDocuments).map(([type, doc]: [string, any]) => ({
-              policyId: policy.id,
-              agentId,
-              documentType: type.toUpperCase() as any,
-              documentName: doc.original_filename,
-              documentUrl: doc.secure_url,
-              mimeType: doc.resource_type === 'raw' ? 'application/pdf' : `image/${doc.format}`,
-              fileSize: doc.bytes,
-              uploadedAt: new Date()
-            }))
+            data: Object.entries(uploadedDocuments).map(([type, doc]: [string, any]) => {
+              // Ensure filename has proper extension
+              const extension = doc.format || (doc.resource_type === 'raw' ? 'pdf' : 'jpg');
+              const baseFilename = doc.original_filename || type;
+              const documentName = baseFilename.includes('.') ? baseFilename : `${baseFilename}.${extension}`;
+              
+              return {
+                policyId: policy.id,
+                agentId,
+                documentType: type.toUpperCase() as any,
+                documentName,
+                documentUrl: doc.secure_url,
+                mimeType: doc.resource_type === 'raw' ? 'application/pdf' : `image/${doc.format}`,
+                fileSize: doc.bytes,
+                uploadedAt: new Date()
+              };
+            })
           });
         }
       } catch (uploadError) {
