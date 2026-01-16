@@ -1057,7 +1057,7 @@ export default function NewPolicyPage() {
                         setClientType('existing');
                         setShowNewClientForm(false);
                         setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
-                        setNewClientData({ name: '', phone: '', email: '', address: '' });
+                        setNewClientData({ name: '', phone: '', email: '', address: '', isFamilyMember: false, linkedClientId: '', linkedClientName: '', relationship: '' });
                       }}
                       className="w-4 h-4 text-blue-600"
                     />
