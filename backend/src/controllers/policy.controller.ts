@@ -13,7 +13,7 @@ import pdfParse from 'pdf-parse';
 export const getPolicies = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const agentId = (req as any).user.userId;
-    const { search, clientId, companyId, policyType, status, page = '1', limit = '20' } = req.query;
+    const { search, clientId, companyId, subAgentId, policyType, status, page = '1', limit = '20' } = req.query;
 
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
     const take = parseInt(limit as string);
@@ -22,6 +22,7 @@ export const getPolicies = async (req: Request, res: Response, next: NextFunctio
 
     if (clientId) where.clientId = clientId;
     if (companyId) where.companyId = companyId;
+    if (subAgentId) where.subAgentId = subAgentId;
     if (policyType) where.policyType = policyType;
 
     if (status === 'active') {
