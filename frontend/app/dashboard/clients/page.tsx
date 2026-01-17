@@ -13,9 +13,8 @@ interface Client {
   email?: string;
   address?: string;
   createdAt: string;
-  _count?: {
-    policies: number;
-  };
+  policyCount?: number;
+  agentName?: string;
 }
 
 export default function ClientsPage() {
@@ -45,8 +44,8 @@ export default function ClientsPage() {
   );
 
   // Stats
-  const totalPolicies = clients.reduce((acc, c) => acc + (c._count?.policies || 0), 0);
-  const activeClients = clients.filter(c => (c._count?.policies || 0) > 0).length;
+  const totalPolicies = clients.reduce((acc, c) => acc + (c.policyCount || 0), 0);
+  const activeClients = clients.filter(c => (c.policyCount || 0) > 0).length;
 
   if (loading) {
     return (
@@ -219,17 +218,20 @@ export default function ClientsPage() {
                       {client.name.charAt(0).toUpperCase()}
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      (client._count?.policies || 0) > 0 
+                      (client.policyCount || 0) > 0 
                         ? 'bg-emerald-100 text-emerald-700' 
                         : 'bg-gray-100 text-gray-500'
                     }`}>
-                      {client._count?.policies || 0} {(client._count?.policies || 0) === 1 ? 'policy' : 'policies'}
+                      {client.policyCount || 0} {(client.policyCount || 0) === 1 ? 'policy' : 'policies'}
                     </span>
                   </div>
                   
                   <h3 className="font-semibold text-gray-800 text-lg mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">
                     {client.name}
                   </h3>
+                  {client.agentName && (
+                    <p className="text-xs text-gray-400">Agent: {client.agentName}</p>
+                  )}
                   
                   <div className="space-y-2 mt-3">
                     <div className="flex items-center gap-2 text-gray-500 text-sm">
@@ -263,6 +265,7 @@ export default function ClientsPage() {
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
                   <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
+                  <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Agent</th>
                   <th className="text-center py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Policies</th>
                   <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Added</th>
                   <th className="text-right py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
@@ -285,13 +288,16 @@ export default function ClientsPage() {
                         <div className="text-gray-400 text-xs">{client.email || '-'}</div>
                       </div>
                     </td>
+                    <td className="py-4 px-6">
+                      <span className="text-sm text-gray-600">{client.agentName || '-'}</span>
+                    </td>
                     <td className="py-4 px-6 text-center">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        (client._count?.policies || 0) > 0 
+                        (client.policyCount || 0) > 0 
                           ? 'bg-emerald-100 text-emerald-700' 
                           : 'bg-gray-100 text-gray-500'
                       }`}>
-                        {client._count?.policies || 0}
+                        {client.policyCount || 0}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-500">

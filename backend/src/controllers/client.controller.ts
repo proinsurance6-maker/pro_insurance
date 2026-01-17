@@ -28,6 +28,7 @@ export const getClients = async (req: Request, res: Response, next: NextFunction
         where,
         include: {
           familyMembers: true,
+          agent: { select: { agencyName: true, name: true } },
           _count: { select: { policies: true } }
         },
         orderBy: { createdAt: 'desc' },
@@ -48,6 +49,7 @@ export const getClients = async (req: Request, res: Response, next: NextFunction
           email: c.email,
           pendingAmount: c.pendingAmount.toString(),
           policyCount: c._count.policies,
+          agentName: c.agent?.agencyName || c.agent?.name,
           familyMembers: c.familyMembers,
           isActive: c.isActive,
           createdAt: c.createdAt
