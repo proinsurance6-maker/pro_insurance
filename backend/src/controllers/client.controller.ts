@@ -29,6 +29,11 @@ export const getClients = async (req: Request, res: Response, next: NextFunction
         include: {
           familyMembers: true,
           agent: { select: { name: true } },
+          policies: {
+            select: { subAgent: { select: { name: true } } },
+            take: 1,
+            orderBy: { createdAt: 'desc' }
+          },
           _count: { select: { policies: true } }
         },
         orderBy: { createdAt: 'desc' },
@@ -41,19 +46,23 @@ export const getClients = async (req: Request, res: Response, next: NextFunction
     res.json({
       success: true,
       data: {
-        clients: clients.map(c => ({
-          id: c.id,
-          clientCode: c.clientCode,
-          name: c.name,
-          phone: c.phone,
-          email: c.email,
-          pendingAmount: c.pendingAmount.toString(),
-          policyCount: c._count.policies,
-          agentName: c.agent?.name,
-          familyMembers: c.familyMembers,
-          isActive: c.isActive,
-          createdAt: c.createdAt
-        })),
+        clients: clients.map(c => {
+          // If client has a policy with sub-agent, show sub-agent name, else show agent name
+          const subAgentName = c.policies[0]?.subAgent?.name;
+          return {
+            id: c.id,
+            clientCode: c.clientCode,
+            name: c.name,
+            phone: c.phone,
+            email: c.email,
+            pendingAmount: c.pendingAmount.toString(),
+            policyCount: c._count.policies,
+            agentName: subAgentName || c.agent?.name,
+            familyMembers: c.familyMembers,
+            isActive: c.isActive,
+            createdAt: c.createdAt
+          };
+        }),
         pagination: {
           page: parseInt(page as string),
           limit: take,
