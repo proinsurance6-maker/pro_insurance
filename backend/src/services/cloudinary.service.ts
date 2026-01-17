@@ -23,6 +23,27 @@ export interface UploadResult {
   bytes: number;
 }
 
+// Helper function to get file extension
+const getFileExtension = (filename: string, mimetype: string): string => {
+  // Try to get from filename first
+  const extFromName = filename.split('.').pop()?.toLowerCase();
+  if (extFromName && extFromName.length <= 4 && extFromName !== filename.toLowerCase()) {
+    return extFromName;
+  }
+  
+  // Fallback to mimetype mapping
+  const mimeToExt: { [key: string]: string } = {
+    'application/pdf': 'pdf',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+  };
+  
+  return mimeToExt[mimetype] || '';
+};
+
 // ==========================================
 // UPLOAD DOCUMENT TO CLOUDINARY
 // ==========================================
@@ -30,16 +51,22 @@ export const uploadDocument = async (
   buffer: Buffer, 
   filename: string, 
   folder: string = 'insurance-docs',
-  resourceType: 'image' | 'raw' | 'video' | 'auto' = 'auto'
+  resourceType: 'image' | 'raw' | 'video' | 'auto' = 'auto',
+  originalExtension?: string
 ): Promise<UploadResult> => {
   return new Promise((resolve, reject) => {
+    // For PDFs and raw files, include extension in public_id for proper download
+    const publicId = originalExtension ? `${filename}.${originalExtension}` : filename;
+    
     cloudinary.uploader.upload_stream(
       {
         folder: `${folder}`,
-        public_id: filename,
+        public_id: publicId,
         resource_type: resourceType,
         use_filename: true,
-        unique_filename: true,
+        unique_filename: false, // Keep our filename as-is
+        // For raw files (PDFs), set format explicitly
+        ...(resourceType === 'raw' && originalExtension ? { format: originalExtension } : {}),
       },
       (error, result) => {
         if (error) {
@@ -50,7 +77,7 @@ export const uploadDocument = async (
             public_id: result.public_id,
             secure_url: result.secure_url,
             original_filename: result.original_filename || filename,
-            format: result.format,
+            format: result.format || originalExtension || '',
             resource_type: result.resource_type,
             bytes: result.bytes,
           });
@@ -90,6 +117,10 @@ export const uploadPolicyDocuments = async (files: {
     const file = files[docType.key as keyof typeof files];
     if (file) {
       try {
+        // Extract extension from original filename or mimetype
+        const originalName = file.originalname || '';
+        const extension = getFileExtension(originalName, file.mimetype);
+        
         const filename = `${docType.prefix}_${policyNumber}_${Date.now()}`;
         const resourceType = file.mimetype === 'application/pdf' ? 'raw' : 'image';
         
@@ -97,7 +128,8 @@ export const uploadPolicyDocuments = async (files: {
           file.buffer,
           filename,
           docType.folder,
-          resourceType
+          resourceType,
+          extension
         );
         
         uploadedDocuments[docType.key] = result;
@@ -118,6 +150,7 @@ export const uploadSubAgentKyc = async (
   subAgentCode: string
 ): Promise<UploadResult[]> => {
   const uploadPromises = files.map(async (file, index) => {
+    const extension = getFileExtension(file.originalname || '', file.mimetype);
     const filename = `${subAgentCode}_kyc_${Date.now()}_${index}`;
     const resourceType = file.mimetype === 'application/pdf' ? 'raw' : 'image';
     
@@ -125,7 +158,8 @@ export const uploadSubAgentKyc = async (
       file.buffer,
       filename,
       'sub-agents/kyc',
-      resourceType
+      resourceType,
+      extension
     );
   });
 

@@ -88,20 +88,27 @@ Return ONLY a valid JSON object with these exact keys (use null if not found):
   "tpPremium": TP/Third Party/Liability premium amount (look for 'TP Premium', 'Third Party Premium', 'Liability Premium'),
   "netPremium": Net premium before GST (look for 'Net Premium', 'Premium before tax', usually OD+TP or basic premium),
   "sumAssured": IDV or Sum Insured value (look for 'IDV', 'Insured Declared Value', 'Sum Insured', 'Sum Assured'),
-  "startDate": "policy start date in YYYY-MM-DD format (look for 'Valid From', 'Start Date', 'Period From')",
-  "endDate": "policy end date in YYYY-MM-DD format (look for 'Valid Till', 'Expiry Date', 'Valid Upto')",
+  "startDate": "policy START/COMMENCEMENT date in YYYY-MM-DD format",
+  "endDate": "policy END/EXPIRY date in YYYY-MM-DD format",
   "vehicleNumber": "vehicle registration number (look for 'Registration No', 'Reg No', 'Vehicle No' - format like 'UP 16 EC 5046' or 'MH01AB1234')",
   "planName": "policy plan name if mentioned"
 }
 
-CRITICAL EXTRACTION RULES:
+CRITICAL DATE EXTRACTION RULES:
+1. startDate = Policy START date (look for: 'Policy Start Date', 'Valid From', 'Period From', 'Risk Commencement Date', 'Policy Period From', 'Commencement Date', 'Inception Date')
+2. endDate = Policy END/EXPIRY date (look for: 'Policy End Date', 'Valid Till', 'Valid Upto', 'Expiry Date', 'Period To', 'Policy Period To', 'Valid To')
+3. IGNORE 'Login Date', 'Issue Date', 'Date of Issue', 'Transaction Date' - these are NOT start/end dates
+4. If policy shows "From: 05-Feb-2026 To: 04-Feb-2027", then startDate=2026-02-05, endDate=2027-02-04
+5. Convert ALL dates to YYYY-MM-DD format (e.g., 05/02/2026 or 05-Feb-2026 → 2026-02-05)
+6. endDate is typically 1 year after startDate for annual policies
+
+OTHER EXTRACTION RULES:
 1. For VEHICLE NUMBER: Look in 'Vehicle Details' section. Format is usually STATE CODE + DISTRICT + LETTERS + NUMBERS (e.g., UP 16 EC 5046)
 2. For OD PREMIUM: In Schedule of Premium, find 'Total Own Damage Premium' or 'Section A' total
 3. For NET PREMIUM: Find 'Net Premium (A+B)' or 'Premium before GST/Tax'
 4. For COMPANY NAME: Look at header/logo area - extract FULL name like 'TATA AIG General Insurance Company'
-5. For DATES: Convert DD/MM/YYYY to YYYY-MM-DD format
-6. For motorPolicyType: If title says 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY, 'Comprehensive/Package' → COMPREHENSIVE
-7. Remove ALL currency symbols (₹, Rs, INR) - return ONLY numbers
+5. For motorPolicyType: If title says 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY, 'Comprehensive/Package' → COMPREHENSIVE
+6. Remove ALL currency symbols (₹, Rs, INR) - return ONLY numbers
 
 Be thorough - scan every table and section in the document.`;
 
@@ -196,20 +203,27 @@ Return ONLY a valid JSON object with these exact keys (use null if not found):
   "tpPremium": TP/Third Party premium (for Motor only),
   "netPremium": Net premium before GST/taxes,
   "sumAssured": "Sum Insured value - if 'Unlimited' or 'Base Sum Insured: Unlimited', return 'Unlimited'. Otherwise return the number. Look for 'Sum Assured', 'Sum Insured', 'Base Sum Insured', 'IDV'",
-  "startDate": "policy start date in YYYY-MM-DD format (look for 'Policy Commencement Date', 'From', 'Valid From', 'Start Date')",
-  "endDate": "policy end date in YYYY-MM-DD format (look for 'Policy Expiry Date', 'To', 'Valid Till', 'End Date')",
+  "startDate": "policy START/COMMENCEMENT date in YYYY-MM-DD format",
+  "endDate": "policy END/EXPIRY date in YYYY-MM-DD format",
   "vehicleNumber": "vehicle registration number (for Motor only)",
   "planName": "policy plan/product name (e.g., 'ReAssure 3.0', 'Optima Secure')"
 }
 
-CRITICAL EXTRACTION RULES:
+CRITICAL DATE EXTRACTION RULES:
+1. startDate = Policy START date (look for: 'Policy Start Date', 'Valid From', 'Period From', 'Risk Commencement Date', 'Policy Period From', 'Commencement Date', 'Inception Date', 'From')
+2. endDate = Policy END/EXPIRY date (look for: 'Policy End Date', 'Valid Till', 'Valid Upto', 'Expiry Date', 'Period To', 'Policy Period To', 'Valid To', 'To')
+3. IGNORE 'Login Date', 'Issue Date', 'Date of Issue', 'Transaction Date' - these are NOT start/end dates
+4. If policy shows "From: 05-Feb-2026 To: 04-Feb-2027", then startDate=2026-02-05, endDate=2027-02-04
+5. Convert ALL dates to YYYY-MM-DD format (e.g., 05/02/2026 or 05-Feb-2026 → 2026-02-05)
+6. endDate is typically 1 year after startDate for annual policies
+
+OTHER EXTRACTION RULES:
 1. POLICY TYPE: Look at company name - 'Health Insurance' in name = Health Insurance, 'General Insurance' with vehicle = Motor Insurance
-2. DATES: Convert any date format (31-JAN-2026, 31/01/2026) to YYYY-MM-DD format. Be careful with year!
-3. SUM ASSURED: If document says 'Unlimited' or 'Base Sum Insured: Unlimited', return string "Unlimited"
-4. POLICY PERIOD: Look for duration like '5-Year', 'Policy Period: 5 Year'
-5. PORTABILITY: If document mentions policy was 'ported from' another company, policySource = 'PORT'
-6. Remove ALL currency symbols (₹, Rs, INR) from premium values - return ONLY numbers
-7. COMPANY NAME: Extract full name from header/logo area
+2. SUM ASSURED: If document says 'Unlimited' or 'Base Sum Insured: Unlimited', return string "Unlimited"
+3. POLICY PERIOD: Look for duration like '5-Year', 'Policy Period: 5 Year'
+4. PORTABILITY: If document mentions policy was 'ported from' another company, policySource = 'PORT'
+5. Remove ALL currency symbols (₹, Rs, INR) from premium values - return ONLY numbers
+6. COMPANY NAME: Extract full name from header/logo area
 
 Be thorough - scan every table and section in the document.`;
 
@@ -328,19 +342,24 @@ Return ONLY a valid JSON object with these exact keys (use null if not found):
   "tpPremium": TP/Third Party premium (TP Premium, Liability Premium),
   "netPremium": Net premium before GST (Net Premium A+B, Premium before tax),
   "sumAssured": IDV or Sum Insured value,
-  "startDate": "start date in YYYY-MM-DD format",
-  "endDate": "end date in YYYY-MM-DD format",
+  "startDate": "policy START date in YYYY-MM-DD format",
+  "endDate": "policy END/EXPIRY date in YYYY-MM-DD format",
   "vehicleNumber": "Registration No like 'UP 16 EC 5046'",
   "planName": "plan name if mentioned"
 }
 
-EXTRACTION RULES:
+CRITICAL DATE EXTRACTION RULES:
+1. startDate = Policy START date (look for: 'Policy Start Date', 'Valid From', 'Period From', 'Risk Commencement Date', 'From')
+2. endDate = Policy END/EXPIRY date (look for: 'Policy End Date', 'Valid Till', 'Valid Upto', 'Expiry Date', 'Period To', 'To')
+3. IGNORE 'Login Date', 'Issue Date', 'Date of Issue', 'Transaction Date' - these are NOT start/end dates
+4. Convert DD/MM/YYYY or DD-MMM-YYYY to YYYY-MM-DD format
+
+OTHER RULES:
 1. VEHICLE NUMBER: Find 'Registration No' - format STATE+DISTRICT+LETTERS+NUMBERS (UP 16 EC 5046)
 2. OD PREMIUM: Find 'Total Own Damage Premium' amount in Schedule of Premium
 3. NET PREMIUM: Find 'Net Premium (A+B)' or total before GST
-4. Convert DD/MM/YYYY dates to YYYY-MM-DD
-5. Remove ₹, Rs, INR from amounts
-6. 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY`;
+4. Remove ₹, Rs, INR from amounts
+5. 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY`;
 
   if (!openai) {
     throw new Error('OpenAI client not initialized');
@@ -411,19 +430,24 @@ Return ONLY a valid JSON object with these exact keys (use null if not found):
   "tpPremium": TP/Third Party premium (TP Premium, Liability Premium),
   "netPremium": Net premium before GST (Net Premium A+B, Premium before tax),
   "sumAssured": IDV or Sum Insured value,
-  "startDate": "start date in YYYY-MM-DD format",
-  "endDate": "end date in YYYY-MM-DD format",
+  "startDate": "policy START date in YYYY-MM-DD format",
+  "endDate": "policy END/EXPIRY date in YYYY-MM-DD format",
   "vehicleNumber": "Registration No like 'UP 16 EC 5046'",
   "planName": "plan name if mentioned"
 }
 
-EXTRACTION RULES:
+CRITICAL DATE EXTRACTION RULES:
+1. startDate = Policy START date (look for: 'Policy Start Date', 'Valid From', 'Period From', 'Risk Commencement Date', 'From')
+2. endDate = Policy END/EXPIRY date (look for: 'Policy End Date', 'Valid Till', 'Valid Upto', 'Expiry Date', 'Period To', 'To')
+3. IGNORE 'Login Date', 'Issue Date', 'Date of Issue', 'Transaction Date' - these are NOT start/end dates
+4. Convert DD/MM/YYYY or DD-MMM-YYYY to YYYY-MM-DD format
+
+OTHER RULES:
 1. VEHICLE NUMBER: Find 'Registration No' - format STATE+DISTRICT+LETTERS+NUMBERS (UP 16 EC 5046)
 2. OD PREMIUM: Find 'Total Own Damage Premium' amount in Schedule of Premium
 3. NET PREMIUM: Find 'Net Premium (A+B)' or total before GST
-4. Convert DD/MM/YYYY dates to YYYY-MM-DD
-5. Remove ₹, Rs, INR from amounts
-6. 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY`;
+4. Remove ₹, Rs, INR from amounts
+5. 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY`;
 
   try {
     const model = gemini!.getGenerativeModel({ model: 'gemini-1.5-flash' });
