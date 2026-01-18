@@ -21,6 +21,12 @@ interface Policy {
   company: { id: string; name: string; };
   subAgent?: { id: string; name: string; };
   broker?: { id: string; name: string; };
+  documents?: Array<{
+    id: string;
+    documentType: string;
+    documentUrl: string;
+    documentName: string;
+  }>;
   commissions?: Array<{
     id: string;
     totalCommissionAmount: string;
@@ -140,6 +146,17 @@ export default function PayoutPage() {
         });
       }
 
+      // If agent paid premium and sub-agent owes (agent-subagent option)
+      if (premiumPaidBy === 'agent-subagent' && policy.subAgent) {
+        // Create sub-agent payout entry (negative - meaning sub-agent owes agent)
+        await ledgerAPI.createSubAgentPayout({
+          subAgentId: policy.subAgent.id,
+          amount: -Number(policy.premiumAmount), // Negative because sub-agent owes
+          description: `Premium due - Agent paid for policy ${policy.policyNumber}, Sub-Agent to reimburse`,
+          entryDate: new Date().toISOString().split('T')[0]
+        });
+      }
+
       alert('✅ Payout updated successfully!');
       router.push('/dashboard/policies');
     } catch (error) {
@@ -191,8 +208,23 @@ export default function PayoutPage() {
       {/* Policy Info Card */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            📋 Policy Details
+          <CardTitle className="text-lg flex items-center justify-between">
+            <span className="flex items-center gap-2">📋 Policy Details</span>
+            {/* View Policy Document Button */}
+            {policy.documents && policy.documents.length > 0 && (
+              <a
+                href={policy.documents.find(d => d.documentType === 'POLICYCOPY')?.documentUrl || policy.documents[0]?.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Policy Doc
+              </a>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -216,28 +248,53 @@ export default function PayoutPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+          {/* Premium Details Row */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 pt-4 border-t">
             <div>
-              <p className="text-xs text-gray-500">Premium Amount</p>
-              <p className="text-xl font-bold text-gray-800">{formatCurrency(policy.premiumAmount)}</p>
+              <p className="text-xs text-gray-500">Gross Premium</p>
+              <p className="text-lg font-bold text-gray-800">{formatCurrency(policy.premiumAmount)}</p>
             </div>
+            {policy.odPremium && Number(policy.odPremium) > 0 && (
+              <div>
+                <p className="text-xs text-gray-500">OD Premium</p>
+                <p className="text-lg font-bold text-blue-600">{formatCurrency(policy.odPremium)}</p>
+              </div>
+            )}
+            {policy.tpPremium && Number(policy.tpPremium) > 0 && (
+              <div>
+                <p className="text-xs text-gray-500">TP Premium</p>
+                <p className="text-lg font-bold text-orange-600">{formatCurrency(policy.tpPremium)}</p>
+              </div>
+            )}
+            {policy.netPremium && Number(policy.netPremium) > 0 && (
+              <div>
+                <p className="text-xs text-gray-500">Net Premium</p>
+                <p className="text-lg font-bold text-purple-600">{formatCurrency(policy.netPremium)}</p>
+              </div>
+            )}
             <div>
               <p className="text-xs text-gray-500">Total Commission</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(totalCommission)}</p>
+              <p className="text-lg font-bold text-green-600">{formatCurrency(totalCommission)}</p>
             </div>
-            {policy.subAgent && (
-              <>
-                <div>
-                  <p className="text-xs text-gray-500">Sub-Agent</p>
-                  <p className="font-semibold text-purple-600">{policy.subAgent.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Sub-Agent Commission</p>
-                  <p className="text-xl font-bold text-purple-600">{formatCurrency(subAgentCommission)}</p>
-                </div>
-              </>
-            )}
           </div>
+
+          {/* Sub-Agent Details */}
+          {policy.subAgent && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+              <div>
+                <p className="text-xs text-gray-500">Sub-Agent</p>
+                <p className="font-semibold text-purple-600">{policy.subAgent.name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Sub-Agent Commission</p>
+                <p className="text-lg font-bold text-purple-600">{formatCurrency(subAgentCommission)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Your Commission</p>
+                <p className="text-lg font-bold text-emerald-600">{formatCurrency(agentCommission)}</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -308,10 +365,11 @@ export default function PayoutPage() {
             {/* Premium kisne pay kiya */}
             <div>
               <label className="block font-medium mb-2">Premium किसने Pay किया?</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
                   { value: 'client', label: '👤 Client ने', desc: 'Client ने directly pay किया' },
-                  { value: 'agent', label: '🧑‍💼 Agent ने', desc: 'आपने pay किया, client से लेना है' },
+                  { value: 'agent', label: '🧑‍💼 Agent ने', desc: 'आपने pay किया, Client से लेना है' },
+                  { value: 'agent-subagent', label: '🧑‍💼➡️👥 Agent ने', desc: 'आपने pay किया, Sub-Agent से लेना है' },
                   { value: 'subagent', label: '👥 Sub-Agent ने', desc: 'Sub-Agent ने pay किया' },
                   { value: 'partial', label: '📊 Partial', desc: 'कुछ amount pay हुआ है' }
                 ].map((option) => (
@@ -420,7 +478,13 @@ export default function PayoutPage() {
               {premiumPaidBy === 'agent' && (
                 <p className="flex items-center gap-2">
                   <span className="text-orange-600">✓</span>
-                  Ledger entry will be created: Client owes {formatCurrency(policy.premiumAmount)}
+                  Ledger entry: Client owes {formatCurrency(policy.premiumAmount)}
+                </p>
+              )}
+              {premiumPaidBy === 'agent-subagent' && policy.subAgent && (
+                <p className="flex items-center gap-2">
+                  <span className="text-purple-600">✓</span>
+                  Ledger entry: {policy.subAgent.name} owes {formatCurrency(policy.premiumAmount)}
                 </p>
               )}
               {clientPaidAmount && Number(clientPaidAmount) > 0 && (
@@ -435,7 +499,7 @@ export default function PayoutPage() {
                   Advance of {formatCurrency(advanceAmount)} will be recorded
                 </p>
               )}
-              {!markReceived && !markPaidToSub && !advanceAmount && premiumPaidBy === 'client' && (
+              {!markReceived && !markPaidToSub && !advanceAmount && premiumPaidBy === 'client' && !clientPaidAmount && (
                 <p className="text-gray-500">No changes to make</p>
               )}
             </div>
