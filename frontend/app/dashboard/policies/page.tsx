@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
-import { policyAPI } from '@/lib/api';
+import { policyAPI, commissionAPI } from '@/lib/api';
 
 interface Policy {
   id: string;
@@ -46,6 +46,7 @@ interface Policy {
     name: string;
   };
   commissions?: Array<{
+    id: string;
     totalCommissionAmount: string;
     agentCommissionAmount: string;
     subAgentCommissionAmount?: string;
@@ -55,6 +56,10 @@ interface Policy {
     subAgentOdPercent?: string;
     subAgentTpPercent?: string;
     subAgentNetPercent?: string;
+    receivedFromCompany?: boolean;
+    receivedDate?: string;
+    paidToSubAgent?: boolean;
+    paidToSubAgentDate?: string;
   }>;
   documents?: Array<{
     id: string;
@@ -280,6 +285,40 @@ export default function PoliciesPage() {
       alert('Failed to delete policy');
     }
   };
+
+  // Mark commission as received from company
+  const handleMarkReceived = async (commissionId: string) => {
+    try {
+      await commissionAPI.markPaid(commissionId);
+      fetchData(); // Refresh all data
+    } catch (error) {
+      console.error('Failed to mark received:', error);
+      alert('Failed to update status');
+    }
+  };
+
+  // Mark commission as paid to sub-agent
+  const handleMarkPaidToSubAgent = async (commissionId: string) => {
+    try {
+      await commissionAPI.markPaidToSubAgent(commissionId);
+      fetchData(); // Refresh all data
+    } catch (error) {
+      console.error('Failed to mark paid to sub-agent:', error);
+      alert('Failed to update status');
+    }
+  };
+
+  // Action dropdown state
+  const [openActionId, setOpenActionId] = useState<string | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenActionId(null);
+    if (openActionId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openActionId]);
 
   if (loading) {
     return (
@@ -509,7 +548,8 @@ export default function PoliciesPage() {
                 <th>Net Rate</th>
                 <th className="text-right">Paid Payout</th>
                 <th className="text-right">Our Profit</th>
-                <th>Status</th>
+                <th>Received</th>
+                <th>Paid to Sub</th>
                 <th>Documents</th>
                 <th>Remark</th>
               </tr>
@@ -517,7 +557,7 @@ export default function PoliciesPage() {
             <tbody>
               {filteredPolicies.length === 0 ? (
                 <tr>
-                  <td colSpan={36} className="px-4 py-12 text-center">
+                  <td colSpan={37} className="px-4 py-12 text-center">
                     <DocumentIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No policies found</h3>
                     <p className="text-gray-500 mb-4">
@@ -727,13 +767,40 @@ export default function PoliciesPage() {
                         {commission ? formatCurrency(agentCommission - (commission.subAgentCommissionAmount ? Number(commission.subAgentCommissionAmount) : 0)) : '-'}
                       </td>
                       
-                      {/* Status */}
-                      <td className="whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                          commission ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {commission ? 'Paid' : 'Pending'}
-                        </span>
+                      {/* Received from Company Status */}
+                      <td className="whitespace-nowrap text-center">
+                        {commission?.receivedFromCompany ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-700">
+                            ✓ Received
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => commission && handleMarkReceived(commission.id)}
+                            className="px-2 py-0.5 rounded-full text-[10px] bg-orange-100 text-orange-700 hover:bg-orange-200 transition cursor-pointer"
+                            title="Click to mark as received"
+                          >
+                            ⏳ Pending
+                          </button>
+                        )}
+                      </td>
+                      
+                      {/* Paid to Sub-Agent Status */}
+                      <td className="whitespace-nowrap text-center">
+                        {!policy.subAgent ? (
+                          <span className="text-gray-400 text-[10px]">N/A</span>
+                        ) : commission?.paidToSubAgent ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-700">
+                            ✓ Paid
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => commission && handleMarkPaidToSubAgent(commission.id)}
+                            className="px-2 py-0.5 rounded-full text-[10px] bg-red-100 text-red-700 hover:bg-red-200 transition cursor-pointer"
+                            title="Click to mark as paid to sub-agent"
+                          >
+                            ⏳ Due
+                          </button>
+                        )}
                       </td>
                       
                       {/* Documents */}

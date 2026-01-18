@@ -100,7 +100,7 @@ export default function LedgerPage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'subagents'>('all');
-  const [filter, setFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [filter, setFilter] = useState<'all' | 'debit' | 'credit'>('all');
   const [search, setSearch] = useState('');
   
   // Add entry form
@@ -415,208 +415,107 @@ export default function LedgerPage() {
       {/* All Entries Tab */}
       {activeTab === 'all' && (
         <div className="space-y-4">
-          {/* Search & Filter */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <Input
-              type="text"
-              placeholder="Search by policy number, client, company..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full sm:w-80"
-            />
+          {/* Info Banner */}
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-800">
+                    💡 Commission status (Received from Company, Paid to Sub-Agent) can be updated from <strong>All Policies</strong> page.
+                  </p>
+                </div>
+                <Link href="/dashboard/policies">
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                    Go to Policies →
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Client Ledger Entries */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-700">Client Payment Entries</h3>
             <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
-              {(['all', 'pending', 'paid'] as const).map((f) => (
+              {(['all', 'debit', 'credit'] as const).map((f) => (
                 <button
                   key={f}
-                  onClick={() => setFilter(f)}
+                  onClick={() => setFilter(f as any)}
                   className={`px-4 py-2 text-sm font-medium rounded-md capitalize transition ${
                     filter === f 
                       ? 'bg-white shadow text-blue-600' 
                       : 'text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  {f === 'pending' ? 'Pending (बाकी)' : f === 'paid' ? 'Received (जमा)' : 'All'}
+                  {f === 'debit' ? 'Debit (उधार)' : f === 'credit' ? 'Credit (जमा)' : 'All'}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Policies Table */}
-          {filteredPolicies.length === 0 ? (
+          {/* Ledger Entries List */}
+          {filteredEntries.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-gray-500">
-                No policies found
+                No ledger entries found. Use "+ Add Entry" to record client payments.
               </CardContent>
             </Card>
           ) : (
-            <div className="overflow-x-auto bg-white rounded-lg border">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sub-Agent</th>
-                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Premium</th>
-                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Comm.</th>
-                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Agent Share</th>
-                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sub-Agent Share</th>
-                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Received</th>
-                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Sub</th>
-                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPolicies.map((policy) => {
-                    const commission = policy.commissions?.[0];
-                    const isReceivedFromCompany = commission?.receivedFromCompany || false;
-                    const isPaidToSubAgent = commission?.paidToSubAgent || false;
-                    const hasSubAgent = !!policy.subAgent;
-                    const subAgentAmount = Number(commission?.subAgentCommissionAmount || 0);
-                    const agentAmount = Number(commission?.agentCommissionAmount || 0);
-                    const totalAmount = Number(commission?.totalCommissionAmount || 0);
-                    
-                    return (
-                      <tr key={policy.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-3 text-sm text-gray-600 whitespace-nowrap">
-                          {formatDate(policy.createdAt)}
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          <div className="text-sm font-medium text-blue-600">{policy.policyNumber}</div>
-                          <div className="text-xs text-gray-500">{policy.policyType}</div>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{policy.client.name}</div>
-                        </td>
-                        <td className="px-3 py-3 text-sm text-gray-600 whitespace-nowrap max-w-[150px] truncate" title={policy.company.name}>
-                          {policy.company.name}
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          {policy.subAgent ? (
-                            <Link href={`/dashboard/sub-agents/${policy.subAgent.id}`} className="text-sm text-purple-600 hover:underline">
-                              {policy.subAgent.name}
-                            </Link>
-                          ) : (
-                            <span className="text-sm text-gray-400">Direct</span>
+            <div className="space-y-3">
+              {filteredEntries.map((entry) => (
+                <Card key={entry.id} className="hover:shadow-md transition">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          entry.entryType === 'DEBIT' 
+                            ? 'bg-red-100 text-red-600' 
+                            : 'bg-green-100 text-green-600'
+                        }`}>
+                          {entry.entryType === 'DEBIT' ? '↑' : '↓'}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{entry.client?.name || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{entry.description}</p>
+                          {entry.policy && (
+                            <p className="text-xs text-gray-400">Policy: {entry.policy.policyNumber}</p>
                           )}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-gray-900 text-right whitespace-nowrap">
-                          {formatCurrency(Number(policy.premiumAmount))}
-                        </td>
-                        <td className="px-3 py-3 text-sm font-medium text-right whitespace-nowrap text-blue-600">
-                          {formatCurrency(totalAmount)}
-                        </td>
-                        <td className="px-3 py-3 text-sm font-medium text-right whitespace-nowrap text-green-600">
-                          {formatCurrency(agentAmount)}
-                        </td>
-                        <td className="px-3 py-3 text-sm font-medium text-right whitespace-nowrap">
-                          {hasSubAgent ? (
-                            <span className="text-purple-600">{formatCurrency(subAgentAmount)}</span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-3 text-center whitespace-nowrap">
-                          {isReceivedFromCompany ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              ✓ Yes
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                              ⏳ No
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-3 text-center whitespace-nowrap">
-                          {!hasSubAgent ? (
-                            <span className="text-gray-400 text-xs">N/A</span>
-                          ) : isPaidToSubAgent ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              ✓ Paid
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              ⏳ Due
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap relative">
-                          {commission && (!isReceivedFromCompany || (hasSubAgent && !isPaidToSubAgent)) && (
-                            <div className="relative">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenActionId(openActionId === commission.id ? null : commission.id);
-                                }}
-                                className="text-xs"
-                              >
-                                ⚡ Action
-                              </Button>
-                              {openActionId === commission.id && (
-                                <div className="absolute right-0 mt-1 w-56 bg-white rounded-md shadow-lg border z-10">
-                                  {!isReceivedFromCompany && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMarkPaid(commission.id);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 border-b"
-                                    >
-                                      💰 Mark Received from Company
-                                    </button>
-                                  )}
-                                  {hasSubAgent && !isPaidToSubAgent && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMarkPaidToSubAgent(commission.id);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-purple-700 hover:bg-purple-50 flex items-center gap-2"
-                                    >
-                                      💸 Mark Paid to Sub-Agent
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {isReceivedFromCompany && (!hasSubAgent || isPaidToSubAgent) && (
-                            <span className="text-xs text-green-600">✓ Done</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="bg-gray-100">
-                  <tr className="font-semibold">
-                    <td colSpan={6} className="px-3 py-3 text-sm text-gray-700">Total ({filteredPolicies.length} policies)</td>
-                    <td className="px-3 py-3 text-sm text-right text-blue-700">{formatCurrency(totalCommission)}</td>
-                    <td className="px-3 py-3 text-sm text-right text-green-700">
-                      {formatCurrency(filteredPolicies.reduce((sum, p) => sum + Number(p.commissions?.[0]?.agentCommissionAmount || 0), 0))}
-                    </td>
-                    <td className="px-3 py-3 text-sm text-right text-purple-700">
-                      {formatCurrency(filteredPolicies.reduce((sum, p) => sum + Number(p.commissions?.[0]?.subAgentCommissionAmount || 0), 0))}
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <span className="text-xs text-green-600">{filteredPolicies.filter(p => p.commissions?.[0]?.receivedFromCompany).length}</span>
-                      <span className="text-gray-400">/</span>
-                      <span className="text-xs text-orange-600">{filteredPolicies.filter(p => !p.commissions?.[0]?.receivedFromCompany).length}</span>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <span className="text-xs text-green-600">{filteredPolicies.filter(p => p.subAgent && p.commissions?.[0]?.paidToSubAgent).length}</span>
-                      <span className="text-gray-400">/</span>
-                      <span className="text-xs text-red-600">{filteredPolicies.filter(p => p.subAgent && !p.commissions?.[0]?.paidToSubAgent).length}</span>
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-semibold ${
+                          entry.entryType === 'DEBIT' ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {entry.entryType === 'DEBIT' ? '+' : '-'}{formatCurrency(entry.amount)}
+                        </p>
+                        <p className="text-sm text-gray-500">{formatDate(entry.entryDate)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
+
+          {/* Summary */}
+          <Card className="bg-gray-50">
+            <CardContent className="p-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Total Debit (उधार):</span>
+                <span className="font-semibold text-red-600">{formatCurrency(totalDebit)}</span>
+              </div>
+              <div className="flex justify-between text-sm mt-1">
+                <span className="text-gray-600">Total Credit (जमा):</span>
+                <span className="font-semibold text-green-600">{formatCurrency(totalCredit)}</span>
+              </div>
+              <div className="flex justify-between text-sm mt-2 pt-2 border-t">
+                <span className="text-gray-700 font-medium">{balance > 0 ? 'Pending Collection:' : 'Advance:'}</span>
+                <span className={`font-bold ${balance > 0 ? 'text-orange-600' : 'text-blue-600'}`}>
+                  {formatCurrency(Math.abs(balance))}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
