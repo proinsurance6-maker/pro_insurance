@@ -188,12 +188,12 @@ export default function LedgerPage() {
             <thead>
               {/* Section Headers */}
               <tr className="text-white text-sm">
-                <th colSpan={2} className="p-2.5 text-center bg-blue-600 border border-gray-300 font-semibold">Client Details</th>
-                <th colSpan={3} className="p-2.5 text-center bg-green-600 border border-gray-300 font-semibold">Vehicle Section</th>
-                <th colSpan={8} className="p-2.5 text-center bg-purple-600 border border-gray-300 font-semibold">Policy Details</th>
-                <th colSpan={8} className="p-2.5 text-center bg-orange-600 border border-gray-300 font-semibold">Received Commission</th>
-                <th colSpan={6} className="p-2.5 text-center bg-pink-600 border border-gray-300 font-semibold">Partner Section</th>
-                <th colSpan={5} className="p-2.5 text-center bg-teal-600 border border-gray-300 font-semibold">Hisab Section</th>
+                <th colSpan={2} className="p-2.5 text-center bg-blue-400 border border-gray-300 font-semibold">Client Details</th>
+                <th colSpan={3} className="p-2.5 text-center bg-green-500 border border-gray-300 font-semibold">Vehicle Section</th>
+                <th colSpan={8} className="p-2.5 text-center bg-purple-500 border border-gray-300 font-semibold">Policy Details</th>
+                <th colSpan={8} className="p-2.5 text-center bg-orange-400 border border-gray-300 font-semibold">Received Commission</th>
+                <th colSpan={6} className="p-2.5 text-center bg-pink-400 border border-gray-300 font-semibold">Partner Section</th>
+                <th colSpan={5} className="p-2.5 text-center bg-teal-400 border border-gray-300 font-semibold">Hisab Section</th>
               </tr>
               {/* Column Headers */}
               <tr className="bg-gray-100 text-gray-700 text-xs">
