@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ledgerAPI, clientAPI } from '@/lib/api';
+import { ledgerAPI, clientAPI, agentAPI } from '@/lib/api';
 
 interface LedgerEntry {
   id: string;
@@ -13,7 +14,7 @@ interface LedgerEntry {
   amount: number;
   description: string;
   entryDate: string;
-  client: {
+  client?: {
     id: string;
     name: string;
     phone: string;
@@ -38,6 +39,18 @@ interface PendingCollection {
   entriesCount: number;
 }
 
+interface SubAgent {
+  id: string;
+  name: string;
+  phone: string;
+  subAgentCode: string;
+  ledgerBalance: string;
+  isActive: boolean;
+  _count?: {
+    policies: number;
+  };
+}
+
 export default function LedgerPage() {
   const searchParams = useSearchParams();
   const preSelectedClientId = searchParams.get('clientId');
@@ -45,8 +58,9 @@ export default function LedgerPage() {
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [pendingCollections, setPendingCollections] = useState<PendingCollection[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [subAgents, setSubAgents] = useState<SubAgent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'add'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'subagents'>('all');
   const [filter, setFilter] = useState<'all' | 'debit' | 'credit'>('all');
   
   // Add entry form
@@ -60,6 +74,15 @@ export default function LedgerPage() {
     policyId: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  
+  // Sub-agent payout modal
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [selectedSubAgent, setSelectedSubAgent] = useState<SubAgent | null>(null);
+  const [payoutData, setPayoutData] = useState({
+    amount: '',
+    description: '',
+    entryDate: new Date().toISOString().split('T')[0],
+  });
 
   useEffect(() => {
     fetchData();
@@ -67,16 +90,29 @@ export default function LedgerPage() {
 
   const fetchData = async () => {
     try {
-      const [entriesRes, pendingRes, clientsRes] = await Promise.all([
+      const [entriesRes, pendingRes, clientsRes, subAgentsRes] = await Promise.all([
         ledgerAPI.getAll(),
         ledgerAPI.getPending(),
-        clientAPI.getAll()
+        clientAPI.getAll(),
+        agentAPI.getSubAgents()
       ]);
-      setEntries(entriesRes.data.data || []);
-      setPendingCollections(pendingRes.data.data || []);
-      setClients(clientsRes.data.data || []);
+      
+      // Handle different response structures
+      const entriesData = entriesRes.data.data?.entries || entriesRes.data.data || [];
+      const pendingData = pendingRes.data.data?.clients || pendingRes.data.data || [];
+      const clientsData = clientsRes.data.data?.clients || clientsRes.data.data || [];
+      const subAgentsData = subAgentsRes.data.data || [];
+      
+      setEntries(Array.isArray(entriesData) ? entriesData : []);
+      setPendingCollections(Array.isArray(pendingData) ? pendingData : []);
+      setClients(Array.isArray(clientsData) ? clientsData : []);
+      setSubAgents(Array.isArray(subAgentsData) ? subAgentsData : []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
+      setEntries([]);
+      setPendingCollections([]);
+      setClients([]);
+      setSubAgents([]);
     } finally {
       setLoading(false);
     }
@@ -131,6 +167,35 @@ export default function LedgerPage() {
       fetchData();
     } catch (error) {
       console.error('Failed to add entry:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubAgentPayout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSubAgent || !payoutData.amount) return;
+    
+    setSubmitting(true);
+    try {
+      await ledgerAPI.createSubAgentPayout({
+        subAgentId: selectedSubAgent.id,
+        amount: parseFloat(payoutData.amount),
+        description: payoutData.description || 'Commission Payout',
+        entryDate: payoutData.entryDate,
+      });
+      
+      setShowPayoutModal(false);
+      setSelectedSubAgent(null);
+      setPayoutData({
+        amount: '',
+        description: '',
+        entryDate: new Date().toISOString().split('T')[0],
+      });
+      fetchData();
+    } catch (error) {
+      console.error('Failed to create payout:', error);
+      alert('Failed to record payout');
     } finally {
       setSubmitting(false);
     }
@@ -222,6 +287,16 @@ export default function LedgerPage() {
           >
             Pending Collections ({pendingCollections.length})
           </button>
+          <button
+            onClick={() => setActiveTab('subagents')}
+            className={`py-3 border-b-2 font-medium text-sm ${
+              activeTab === 'subagents' 
+                ? 'border-purple-600 text-purple-600' 
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            👥 Sub-Agents ({subAgents.length})
+          </button>
         </div>
       </div>
 
@@ -267,7 +342,7 @@ export default function LedgerPage() {
                           {entry.entryType === 'DEBIT' ? '↑' : '↓'}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{entry.client.name}</p>
+                          <p className="font-medium text-gray-900">{entry.client?.name || 'N/A'}</p>
                           <p className="text-sm text-gray-500">{entry.description}</p>
                           {entry.policy && (
                             <p className="text-xs text-gray-400">Policy: {entry.policy.policyNumber}</p>
@@ -327,6 +402,99 @@ export default function LedgerPage() {
                 </CardContent>
               </Card>
             ))
+          )}
+        </div>
+      )}
+
+      {/* Sub-Agents Tab */}
+      {activeTab === 'subagents' && (
+        <div className="space-y-4">
+          {/* Sub-Agent Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="bg-purple-50 border-purple-200">
+              <CardContent className="p-4">
+                <p className="text-sm text-purple-600">Total Sub-Agents</p>
+                <p className="text-2xl font-bold text-purple-700">{subAgents.length}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-4">
+                <p className="text-sm text-green-600">Total Payable</p>
+                <p className="text-2xl font-bold text-green-700">
+                  {formatCurrency(subAgents.filter(s => Number(s.ledgerBalance) > 0).reduce((sum, s) => sum + Number(s.ledgerBalance), 0))}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="bg-orange-50 border-orange-200">
+              <CardContent className="p-4">
+                <p className="text-sm text-orange-600">Advance Given</p>
+                <p className="text-2xl font-bold text-orange-700">
+                  {formatCurrency(Math.abs(subAgents.filter(s => Number(s.ledgerBalance) < 0).reduce((sum, s) => sum + Number(s.ledgerBalance), 0)))}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sub-Agents List */}
+          {subAgents.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-gray-500">
+                No sub-agents found. Add sub-agents from the Sub-Agents page.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {subAgents.map((subAgent) => {
+                const balance = Number(subAgent.ledgerBalance || 0);
+                const isPayable = balance > 0;
+                const isAdvance = balance < 0;
+                
+                return (
+                  <Card key={subAgent.id} className="hover:shadow-md transition">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            {subAgent.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <Link href={`/dashboard/sub-agents/${subAgent.id}`} className="font-medium text-gray-900 hover:text-blue-600">
+                              {subAgent.name}
+                            </Link>
+                            <p className="text-sm text-gray-500">{subAgent.subAgentCode} • {subAgent.phone}</p>
+                            <p className="text-xs text-gray-400">{subAgent._count?.policies || 0} policies</p>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-4">
+                          <div>
+                            <p className={`text-lg font-bold ${isPayable ? 'text-green-600' : isAdvance ? 'text-orange-600' : 'text-gray-600'}`}>
+                              {isPayable ? '+' : isAdvance ? '-' : ''}{formatCurrency(Math.abs(balance))}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {isPayable ? 'Payable' : isAdvance ? 'Advance' : 'Settled'}
+                            </p>
+                          </div>
+                          <Button 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedSubAgent(subAgent);
+                              setPayoutData(prev => ({
+                                ...prev,
+                                amount: isPayable ? balance.toString() : '',
+                              }));
+                              setShowPayoutModal(true);
+                            }}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            💸 Pay
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
@@ -446,6 +614,88 @@ export default function LedgerPage() {
                     className={`flex-1 ${entryType === 'credit' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
                   >
                     {submitting ? 'Saving...' : entryType === 'credit' ? 'Add Collection' : 'Add Debit'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Sub-Agent Payout Modal */}
+      {showPayoutModal && selectedSubAgent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
+              <CardTitle className="flex justify-between items-center">
+                <span>💸 Pay Sub-Agent</span>
+                <button onClick={() => { setShowPayoutModal(false); setSelectedSubAgent(null); }} className="text-white/80 hover:text-white">
+                  ✕
+                </button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium text-gray-900">{selectedSubAgent.name}</p>
+                <p className="text-sm text-gray-500">{selectedSubAgent.subAgentCode} • {selectedSubAgent.phone}</p>
+                <p className={`text-sm font-medium mt-1 ${Number(selectedSubAgent.ledgerBalance) > 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                  Balance: {formatCurrency(Math.abs(Number(selectedSubAgent.ledgerBalance)))} 
+                  {Number(selectedSubAgent.ledgerBalance) > 0 ? ' (Payable)' : Number(selectedSubAgent.ledgerBalance) < 0 ? ' (Advance)' : ''}
+                </p>
+              </div>
+              
+              <form onSubmit={handleSubAgentPayout} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount (₹) <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    value={payoutData.amount}
+                    onChange={(e) => setPayoutData(prev => ({ ...prev, amount: e.target.value }))}
+                    placeholder="Enter amount"
+                    required
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <Input
+                    value={payoutData.description}
+                    onChange={(e) => setPayoutData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="e.g., Commission payout for Jan 2026"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={payoutData.entryDate}
+                    onChange={(e) => setPayoutData(prev => ({ ...prev, entryDate: e.target.value }))}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => { setShowPayoutModal(false); setSelectedSubAgent(null); }}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submitting || !payoutData.amount}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    {submitting ? 'Processing...' : '💸 Pay Now'}
                   </Button>
                 </div>
               </form>
