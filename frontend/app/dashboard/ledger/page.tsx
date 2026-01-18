@@ -101,18 +101,32 @@ export default function LedgerPage() {
     if (search && !p.policyNumber.toLowerCase().includes(search.toLowerCase()) && 
         !p.client.name.toLowerCase().includes(search.toLowerCase()) &&
         !(p.vehicleNumber || '').toLowerCase().includes(search.toLowerCase())) return false;
+    if (filter === 'received' && !p.commissions?.[0]?.receivedFromCompany) return false;
     if (filter === 'pending' && p.commissions?.[0]?.receivedFromCompany) return false;
-    if (filter === 'done' && !p.commissions?.[0]?.receivedFromCompany) return false;
     return true;
   });
 
   // Get premium paid by label
   const getPaidByLabel = (paidBy?: string) => {
     switch(paidBy) {
-      case 'AGENT': return '🧑‍💼 Agent';
-      case 'SUB_AGENT': return '👥 Sub-Agent';
-      case 'CLIENT': return '👤 Client';
+      case 'AGENT': return 'Agent';
+      case 'SUB_AGENT': return 'Sub-Agent';
+      case 'CLIENT': return 'Client';
       default: return '-';
+    }
+  };
+
+  // Get vehicle type (mock data - should come from backend)
+  const getVehicleType = () => 'Pvt'; // Can be 'Commercial' or 'Pvt'
+  const getVehicleSubType = () => 'Car'; // Can be 'Car', 'Bike', 'Scooter', 'Pickup'
+  
+  // Get policy type display
+  const getPolicyTypeDisplay = (motorType?: string) => {
+    switch(motorType) {
+      case 'COMPREHENSIVE': return 'Package';
+      case 'OD_ONLY': return 'OD';
+      case 'TP_ONLY': return 'TP';
+      default: return 'Package';
     }
   };
 
@@ -164,235 +178,184 @@ export default function LedgerPage() {
         />
         <Button variant={filter==='all'?'default':'outline'} size="sm" onClick={()=>setFilter('all')}>All</Button>
         <Button variant={filter==='received'?'default':'outline'} size="sm" onClick={()=>setFilter('received')}>Received</Button>
-        <Button variant={filter==='pending'?'default':'outline'} size="sm" onClick={()=>setFilter('pending')}>Pending
-        </Card>
-      </div>
-
-      {/* Search + Filter */}
-      <div className="flex flex-wrap gap-2">
-        <Input 
-          placeholder="🔍 Search Policy/Client/Vehicle..." 
-          value={search} 
-          onChange={e => setSearch(e.target.value)}
-          className="w-64"
-        />
-        <Button variant={filter==='all'?'default':'outline'} size="sm" onClick={()=>setFilter('all')}>All</Button>
-        <Button variant={filter==='pending'?'default':'outline'} size="sm" onClick={()=>setFilter('pending')} className={filter==='pending'?'bg-orange-500':''}>⏳ Pending</Button>
-        <Button variant={filter==='done'?'default':'outline'} size="sm" onClick={()=>setFilter('done')} className={filter==='done'?'bg-green-500':''}>✅ Done</Button>
+        <Button variant={filter==='pending'?'default':'outline'} size="sm" onClick={()=>setFilter('pending')}>Pending</Button>
       </div>
 
       {/* Detailed Table */}
-      <Card className="shadow-lg">
+      <Card className="border border-gray-200">
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full text-xs border-collapse" style={{ borderCollapse: 'collapse' }}>
             <thead>
               {/* Section Headers */}
-              <tr className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-                <th colSpan={3} className="p-3 text-center border-r-2 border-blue-400 font-bold text-base">👤 CLIENT DETAILS</th>
-                <th colSpan={5} className="p-3 text-center border-r-2 border-blue-400 font-bold text-base">🚗 VEHICLE & PREMIUM</th>
-                <th colSpan={3} className="p-3 text-center border-r-2 border-blue-400 font-bold text-base">🏢 BROKER COMMISSION</th>
-                <th colSpan={4} className="p-3 text-center border-r-2 border-blue-400 font-bold text-base">👥 SUB-AGENT SECTION</th>
-                <th colSpan={4} className="p-3 text-center font-bold text-base">📊 HISAB SECTION</th>
+              <tr className="text-white text-sm">
+                <th colSpan={2} className="p-2.5 text-center bg-blue-600 border border-gray-300 font-semibold">Client Details</th>
+                <th colSpan={3} className="p-2.5 text-center bg-green-600 border border-gray-300 font-semibold">Vehicle Section</th>
+                <th colSpan={8} className="p-2.5 text-center bg-purple-600 border border-gray-300 font-semibold">Policy Details</th>
+                <th colSpan={8} className="p-2.5 text-center bg-orange-600 border border-gray-300 font-semibold">Received Commission</th>
+                <th colSpan={6} className="p-2.5 text-center bg-pink-600 border border-gray-300 font-semibold">Partner Section</th>
+                <th colSpan={5} className="p-2.5 text-center bg-teal-600 border border-gray-300 font-semibold">Hisab Section</th>
               </tr>
               {/* Column Headers */}
-              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 border-b-2 border-blue-200">
-                {/* Client Details */}
-                <th className="p-3 text-left font-semibold border-r border-gray-200 whitespace-nowrap">Client Name</th>
-                <th className="p-3 text-left font-semibold border-r border-gray-200 whitespace-nowrap">Phone</th>
-                <th className="p-3 text-left font-semibold border-r-2 border-blue-200 whitespace-nowrap">Policy No.</th>
+              <tr className="bg-gray-100 text-gray-700 text-xs">
+                {/* Client Details - FROZEN */}
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap sticky left-0 bg-gray-100 z-10">Entry Date</th>
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap sticky left-[100px] bg-gray-100 z-10">Client Name</th>
                 
-                {/* Vehicle & Premium */}
-                <th className="p-3 text-left font-semibold border-r border-gray-200 whitespace-nowrap">Vehicle No.</th>
-                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">OD Premium</th>
-                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">TP Premium</th>
-                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Net Premium</th>
-                <th className="p-3 text-right font-semibold border-r-2 border-blue-200 whitespace-nowrap">Gross Premium</th>
+                {/* Vehicle Section */}
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Vehicle No.</th>
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Vehicle Type</th>
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Vehicle Sub Type</th>
                 
-                {/* Broker Commission */}
-                <th className="p-3 text-center font-semibold border-r border-gray-200 whitespace-nowrap">Rate %</th>
-                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Amount</th>
-                <th className="p-3 text-center font-semibold border-r-2 border-blue-200 whitespace-nowrap">Received?</th>
+                {/* Policy Details */}
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Policy No.</th>
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Company</th>
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Policy Type</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Gross Premium</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">OD</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">TP</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Net Premium</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Payable Premium</th>
                 
-                {/* Sub-Agent Section */}
-                <th className="p-3 text-left font-semibold border-r border-gray-200 whitespace-nowrap">Sub-Agent</th>
-                <th className="p-3 text-center font-semibold border-r border-gray-200 whitespace-nowrap">Rate %</th>
-                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Amount</th>
-                <th className="p-3 text-center font-semibold border-r-2 border-blue-200 whitespace-nowrap">Paid?</th>
+                {/* Received Commission */}
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Broker Name</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">OD Rate</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">TP Rate</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">Net Rate</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Gross Payout</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">TDS(2%)</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Net Payout</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">Payout Received</th>
+                
+                {/* Partner Section */}
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Partner Name</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">OD Rate</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">TP Rate</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">Net Rate</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Payout</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">Paid</th>
                 
                 {/* Hisab Section */}
-                <th className="p-3 text-center font-semibold border-r border-gray-200 whitespace-nowrap">Paid By</th>
-                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Gross Comm.</th>
-                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Sub-Agent को</th>
-                <th className="p-3 text-right font-semibold whitespace-nowrap">Net Agent Payout</th>
+                <th className="p-2 text-center font-semibold border border-gray-300 whitespace-nowrap">Paid By</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Net Received Payout</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Partner Payout</th>
+                <th className="p-2 text-right font-semibold border border-gray-300 whitespace-nowrap">Net Agent Payout</th>
+                <th className="p-2 text-left font-semibold border border-gray-300 whitespace-nowrap">Remark</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={19} className="p-8 text-center text-gray-400">No data found</td></tr>
+                <tr><td colSpan={32} className="p-8 text-center text-gray-400 border border-gray-300">No data found</td></tr>
               ) : filtered.map((p, idx) => {
                 const c = p.commissions?.[0];
-                const got = c?.receivedFromCompany;
-                const paid = c?.paidToSubAgent;
                 const hasSub = !!p.subAgent;
-                const busy = updating === c?.id;
                 
                 const grossCommission = Number(c?.totalCommissionAmount || 0);
+                const tds = grossCommission * 0.02;
+                const netPayout = grossCommission - tds;
                 const subAgentAmount = Number(c?.subAgentCommissionAmount || 0);
-                const netAgentPayout = grossCommission - subAgentAmount;
+                const netAgentPayout = netPayout - subAgentAmount;
+                
+                const entryDate = new Date(p.createdAt).toLocaleDateString('en-IN');
 
                 return (
-                  <tr key={p.id} className={`border-b border-gray-200 transition-colors ${idx % 2 === 0 ? 'bg-white hover:bg-blue-50' : 'bg-gray-50 hover:bg-blue-50'}`}>
-                    {/* CLIENT DETAILS */}
-                    <td className="p-3 border-r border-gray-200">
-                      <Link href={`/dashboard/clients/${p.client.id}`} className="text-blue-600 hover:text-blue-800 hover:underline font-semibold">
-                        {p.client.name}
-                      </Link>
-                    </td>
-                    <td className="p-3 border-r border-gray-200 text-gray-600">{p.client.phone}</td>
-                    <td className="p-3 border-r-2 border-blue-100">
-                      <span className="font-semibold text-blue-700">{p.policyNumber}</span>
-                      <br/>
-                      <span className="text-gray-500 text-xs">{p.company.name}</span>
-                    </td>
+                  <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {/* CLIENT DETAILS - FROZEN */}
+                    <td className="p-2 border border-gray-300 text-black text-xs sticky left-0 bg-inherit z-10">{entryDate}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs font-medium sticky left-[100px] bg-inherit z-10">{p.client.name}</td>
                     
-                    {/* VEHICLE & PREMIUM */}
-                    <td className="p-3 border-r border-gray-200 font-medium text-gray-700">{p.vehicleNumber || '-'}</td>
-                    <td className="p-3 border-r border-gray-200 text-right text-gray-700">{p.odPremium ? fmt(Number(p.odPremium)) : '-'}</td>
-                    <td className="p-3 border-r border-gray-200 text-right text-gray-700">{p.tpPremium ? fmt(Number(p.tpPremium)) : '-'}</td>
-                    <td className="p-3 border-r border-gray-200 text-right text-gray-700">{p.netPremium ? fmt(Number(p.netPremium)) : '-'}</td>
-                    <td className="p-3 border-r-2 border-blue-100 text-right font-bold text-gray-800">{fmt(Number(p.premiumAmount))}</td>
+                    {/* VEHICLE SECTION */}
+                    <td className="p-2 border border-gray-300 text-black text-xs">{p.vehicleNumber || '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs">{getVehicleType()}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs">{getVehicleSubType()}</td>
                     
-                    {/* BROKER COMMISSION */}
-                    <td className="p-3 border-r border-gray-200 text-center">
-                      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md font-semibold text-xs">
-                        {c?.totalCommissionPercent || '0'}%
-                      </span>
-                    </td>
-                    <td className="p-3 border-r border-gray-200 text-right font-bold text-green-600">
-                      {fmt(grossCommission)}
-                    </td>
-                    <td className="p-3 border-r-2 border-blue-100 text-center">
-                      {busy ? (
-                        <span className="animate-pulse text-xl">⏳</span>
-                      ) : got ? (
-                        <span className="text-2xl cursor-help" title={c?.receivedDate ? `Received: ${new Date(c.receivedDate).toLocaleDateString('en-IN')}` : ''}>✅</span>
-                      ) : (
-                        <button 
-                          onClick={() => c && clickReceived(c.id)}
-                          className="text-2xl hover:scale-125 transition-transform"
-                          title="Click to mark received"
-                        >⏳</button>
-                      )}
-                    </td>
+                    {/* POLICY DETAILS */}
+                    <td className="p-2 border border-gray-300 text-black text-xs">{p.policyNumber}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs">{p.company.name}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs">{getPolicyTypeDisplay(p.motorPolicyType)}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{fmt(Number(p.premiumAmount))}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{p.odPremium ? fmt(Number(p.odPremium)) : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{p.tpPremium ? fmt(Number(p.tpPremium)) : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{p.netPremium ? fmt(Number(p.netPremium)) : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right font-semibold">{fmt(Number(p.premiumAmount))}</td>
                     
-                    {/* SUB-AGENT SECTION */}
-                    <td className="p-3 border-r border-gray-200">
-                      {hasSub ? (
-                        <span className="text-purple-600 font-semibold">{p.subAgent?.name}</span>
-                      ) : <span className="text-gray-300">-</span>}
-                    </td>
-                    <td className="p-3 border-r border-gray-200 text-center">
-                      {hasSub ? (
-                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-md font-semibold text-xs">
-                          {c?.subAgentSharePercent || p.subAgent?.commissionPercentage || '0'}%
-                        </span>
-                      ) : '-'}
-                    </td>
-                    <td className="p-3 border-r border-gray-200 text-right">
-                      {hasSub ? (
-                        <span className="text-purple-600 font-bold">{fmt(subAgentAmount)}</span>
-                      ) : '-'}
-                    </td>
-                    <td className="p-3 border-r-2 border-blue-100 text-center">
-                      {!hasSub ? (
-                        <span className="text-gray-300">—</span>
-                      ) : busy ? (
-                        <span className="animate-pulse text-xl">⏳</span>
-                      ) : paid ? (
-                        <span className="text-2xl cursor-help" title={c?.paidToSubAgentDate ? `Paid: ${new Date(c.paidToSubAgentDate).toLocaleDateString('en-IN')}` : ''}>✅</span>
-                      ) : (
-                        <button 
-                          onClick={() => c && clickPaidSub(c.id)}
-                          className="text-2xl hover:scale-125 transition-transform"
-                          title="Click to mark paid"
-                        >❌</button>
-                      )}
-                    </td>
+                    {/* RECEIVED COMMISSION */}
+                    <td className="p-2 border border-gray-300 text-black text-xs">{p.broker?.name || 'Direct'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{c?.odCommissionPercent || '-'}%</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{c?.tpCommissionPercent || '-'}%</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{c?.netCommissionPercent || c?.totalCommissionPercent || '0'}%</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{fmt(grossCommission)}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{fmt(tds)}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right font-semibold">{fmt(netPayout)}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{c?.receivedFromCompany ? 'Yes' : 'No'}</td>
+                    
+                    {/* PARTNER SECTION */}
+                    <td className="p-2 border border-gray-300 text-black text-xs">{hasSub ? p.subAgent?.name : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{hasSub && c?.subAgentOdPercent ? c.subAgentOdPercent + '%' : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{hasSub && c?.subAgentTpPercent ? c.subAgentTpPercent + '%' : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{hasSub ? (c?.subAgentNetPercent || c?.subAgentSharePercent || '0') + '%' : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{hasSub ? fmt(subAgentAmount) : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{hasSub ? (c?.paidToSubAgent ? 'Yes' : 'No') : '-'}</td>
                     
                     {/* HISAB SECTION */}
-                    <td className="p-3 border-r border-gray-200 text-center">
-                      <span className={`px-2 py-1 rounded-md font-medium text-xs ${
-                        p.premiumPaidBy === 'AGENT' ? 'bg-yellow-100 text-yellow-700' :
-                        p.premiumPaidBy === 'SUB_AGENT' ? 'bg-purple-100 text-purple-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {getPaidByLabel(p.premiumPaidBy)}
-                      </span>
-                    </td>
-                    <td className="p-3 border-r border-gray-200 text-right font-bold text-green-600">
-                      {fmt(grossCommission)}
-                    </td>
-                    <td className="p-3 border-r border-gray-200 text-right text-purple-600 font-semibold">
-                      {hasSub ? fmt(subAgentAmount) : '-'}
-                    </td>
-                    <td className="p-3 text-right">
-                      <span className={`font-bold text-base ${netAgentPayout >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                        {fmt(netAgentPayout)}
-                      </span>
-                    </td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-center">{getPaidByLabel(p.premiumPaidBy)}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{fmt(netPayout)}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right">{hasSub ? fmt(subAgentAmount) : '-'}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs text-right font-semibold">{fmt(netAgentPayout)}</td>
+                    <td className="p-2 border border-gray-300 text-black text-xs">-</td>
                   </tr>
                 );
               })}
             </tbody>
             {/* Totals Row */}
             <tfoot>
-              <tr className="bg-gradient-to-r from-blue-100 to-blue-50 font-bold border-t-2 border-blue-300">
-                <td colSpan={7} className="p-4 text-right text-gray-700 border-r border-blue-200">TOTAL:</td>
-                <td className="p-4 text-right border-r-2 border-blue-200 text-gray-800 text-base">
+              <tr className="bg-gray-200 font-bold">
+                <td colSpan={8} className="p-2 text-right text-black text-xs border border-gray-300">TOTAL:</td>
+                <td className="p-2 text-right text-black text-xs border border-gray-300">
                   {fmt(filtered.reduce((s, p) => s + Number(p.premiumAmount || 0), 0))}
                 </td>
-                <td className="p-4 border-r border-blue-200"></td>
-                <td className="p-4 text-right border-r border-blue-200 text-green-700 text-base">
+                <td colSpan={7} className="p-2 border border-gray-300"></td>
+                <td className="p-2 text-right text-black text-xs border border-gray-300">
                   {fmt(filtered.reduce((s, p) => s + Number(p.commissions?.[0]?.totalCommissionAmount || 0), 0))}
                 </td>
-                <td className="p-4 border-r-2 border-blue-200"></td>
-                <td colSpan={2} className="p-4 border-r border-blue-200"></td>
-                <td className="p-4 text-right border-r border-blue-200 text-purple-600 text-base">
-                  {fmt(filtered.reduce((s, p) => s + Number(p.commissions?.[0]?.subAgentCommissionAmount || 0), 0))}
+                <td className="p-2 text-right text-black text-xs border border-gray-300">
+                  {fmt(filtered.reduce((s, p) => s + (Number(p.commissions?.[0]?.totalCommissionAmount || 0) * 0.02), 0))}
                 </td>
-                <td className="p-4 border-r-2 border-blue-200"></td>
-                <td className="p-4 border-r border-blue-200"></td>
-                <td className="p-4 text-right border-r border-blue-200 text-green-600 text-base">
-                  {fmt(filtered.reduce((s, p) => s + Number(p.commissions?.[0]?.totalCommissionAmount || 0), 0))}
-                </td>
-                <td className="p-4 text-right border-r border-blue-200 text-purple-600 text-base">
-                  {fmt(filtered.reduce((s, p) => s + Number(p.commissions?.[0]?.subAgentCommissionAmount || 0), 0))}
-                </td>
-                <td className="p-4 text-right text-green-700 text-base">
+                <td className="p-2 text-right text-black text-xs border border-gray-300">
                   {fmt(filtered.reduce((s, p) => {
                     const gross = Number(p.commissions?.[0]?.totalCommissionAmount || 0);
-                    const sub = Number(p.commissions?.[0]?.subAgentCommissionAmount || 0);
-                    return s + (gross - sub);
+                    return s + (gross - (gross * 0.02));
                   }, 0))}
                 </td>
+                <td colSpan={4} className="p-2 border border-gray-300"></td>
+                <td className="p-2 text-right text-black text-xs border border-gray-300">
+                  {fmt(filtered.reduce((s, p) => s + Number(p.commissions?.[0]?.subAgentCommissionAmount || 0), 0))}
+                </td>
+                <td colSpan={3} className="p-2 border border-gray-300"></td>
+                <td className="p-2 text-right text-black text-xs border border-gray-300">
+                  {fmt(filtered.reduce((s, p) => {
+                    const gross = Number(p.commissions?.[0]?.totalCommissionAmount || 0);
+                    const net = gross - (gross * 0.02);
+                    const sub = Number(p.commissions?.[0]?.subAgentCommissionAmount || 0);
+                    return s + (net - sub);
+                  }, 0))}
+                </td>
+                <td className="p-2 border border-gray-300"></td>
               </tr>
             </tfoot>
           </table>
         </CardContent>
       </Card>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-sm bg-gray-50 p-3 rounded-lg">
-        <span><span className="text-xl">⏳</span> = Pending (click to ✅)</span>
-        <span><span className="text-xl">✅</span> = Done</span>
-        <span><span className="text-xl">❌</span> = Not paid yet (click to ✅)</span>
+      {/* Info */}
+      <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-200">
+        <strong>Note:</strong> This is a view-only report. TDS calculated at 2%. Entry Date and Client Name columns are frozen for easy scrolling.
       </div>
 
       {/* Sub-Agent Summary */}
       {subAgents.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">👥 Sub-Agents Balance Summary</CardTitle>
+            <CardTitle className="text-base">👥 Partners Balance Summary</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
