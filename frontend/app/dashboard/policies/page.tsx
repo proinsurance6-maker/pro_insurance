@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
-import { policyAPI, commissionAPI, ledgerAPI } from '@/lib/api';
+import { policyAPI, commissionAPI } from '@/lib/api';
 
 interface Policy {
   id: string;
@@ -105,15 +105,6 @@ export default function PoliciesPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [viewDocsModal, setViewDocsModal] = useState<Policy | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [payoutModal, setPayoutModal] = useState<Policy | null>(null);
-  const [payoutForm, setPayoutForm] = useState({
-    receivedFromCompany: '',
-    paidToSubAgent: '',
-    premiumPaidBy: 'client',
-    advanceFromAgent: '',
-    remarks: ''
-  });
-  const [payoutSubmitting, setPayoutSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -814,22 +805,13 @@ export default function PoliciesPage() {
                       
                       {/* Payout Action */}
                       <td className="whitespace-nowrap text-center">
-                        <button
-                          onClick={() => {
-                            setPayoutModal(policy);
-                            setPayoutForm({
-                              receivedFromCompany: commission?.receivedFromCompany ? String(commission.totalCommissionAmount) : '',
-                              paidToSubAgent: commission?.paidToSubAgent ? String(commission.subAgentCommissionAmount || '') : '',
-                              premiumPaidBy: 'client',
-                              advanceFromAgent: '',
-                              remarks: ''
-                            });
-                          }}
-                          className="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
+                        <Link
+                          href={`/dashboard/policies/${policy.id}/payout`}
+                          className="inline-flex p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
                           title="Update Payout/Ledger"
                         >
                           <PayoutIcon className="w-4 h-4" />
-                        </button>
+                        </Link>
                       </td>
                       
                       {/* Remark */}
@@ -995,226 +977,6 @@ export default function PoliciesPage() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payout/Ledger Modal */}
-      {payoutModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-white">💰 Payout / Ledger Update</h2>
-                  <p className="text-blue-100 text-sm">{payoutModal.policyNumber} • {payoutModal.client.name}</p>
-                </div>
-                <button
-                  onClick={() => setPayoutModal(null)}
-                  className="text-white/80 hover:text-white transition p-1 hover:bg-white/10 rounded-lg"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Policy Info Summary */}
-            <div className="px-6 py-3 bg-gray-50 border-b">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Premium:</span>
-                  <span className="ml-2 font-semibold">{formatCurrency(payoutModal.premiumAmount)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Total Commission:</span>
-                  <span className="ml-2 font-semibold text-green-600">
-                    {formatCurrency(payoutModal.commissions?.[0]?.totalCommissionAmount || '0')}
-                  </span>
-                </div>
-                {payoutModal.subAgent && (
-                  <>
-                    <div>
-                      <span className="text-gray-500">Sub-Agent:</span>
-                      <span className="ml-2 font-medium text-purple-600">{payoutModal.subAgent.name}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Sub-Agent Comm:</span>
-                      <span className="ml-2 font-semibold text-purple-600">
-                        {formatCurrency(payoutModal.commissions?.[0]?.subAgentCommissionAmount || '0')}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Form */}
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setPayoutSubmitting(true);
-                try {
-                  const commission = payoutModal.commissions?.[0];
-                  
-                  // Mark received from company
-                  if (payoutForm.receivedFromCompany && !commission?.receivedFromCompany && commission?.id) {
-                    await commissionAPI.markPaid(commission.id);
-                  }
-                  
-                  // Mark paid to sub-agent
-                  if (payoutForm.paidToSubAgent && !commission?.paidToSubAgent && commission?.id && payoutModal.subAgent) {
-                    await commissionAPI.markPaidToSubAgent(commission.id);
-                  }
-                  
-                  // Create ledger entries if advance from agent
-                  if (payoutForm.advanceFromAgent && Number(payoutForm.advanceFromAgent) > 0) {
-                    await ledgerAPI.createCollection({
-                      clientId: payoutModal.client.id,
-                      amount: Number(payoutForm.advanceFromAgent),
-                      description: `Advance for policy ${payoutModal.policyNumber} - ${payoutForm.remarks || 'Agent advance'}`,
-                      entryDate: new Date()
-                    });
-                  }
-                  
-                  await fetchData();
-                  setPayoutModal(null);
-                  alert('✅ Payout updated successfully!');
-                } catch (error) {
-                  console.error('Payout update failed:', error);
-                  alert('Failed to update payout');
-                } finally {
-                  setPayoutSubmitting(false);
-                }
-              }}
-              className="p-6 space-y-4"
-            >
-              {/* Company se mila? */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <label className="flex items-center justify-between">
-                  <div>
-                    <span className="font-medium text-gray-800">🏢 Company से Commission मिला?</span>
-                    <p className="text-xs text-gray-500">Amount: {formatCurrency(payoutModal.commissions?.[0]?.totalCommissionAmount || '0')}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {payoutModal.commissions?.[0]?.receivedFromCompany ? (
-                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">✅ Received</span>
-                    ) : (
-                      <>
-                        <input
-                          type="checkbox"
-                          checked={!!payoutForm.receivedFromCompany}
-                          onChange={(e) => setPayoutForm(prev => ({
-                            ...prev,
-                            receivedFromCompany: e.target.checked ? payoutModal.commissions?.[0]?.totalCommissionAmount || '' : ''
-                          }))}
-                          className="w-5 h-5 text-green-600 rounded"
-                        />
-                        <span className="text-sm text-gray-600">Mark Received</span>
-                      </>
-                    )}
-                  </div>
-                </label>
-              </div>
-
-              {/* Sub-Agent ko diya? */}
-              {payoutModal.subAgent && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <label className="flex items-center justify-between">
-                    <div>
-                      <span className="font-medium text-gray-800">👥 Sub-Agent को Commission दिया?</span>
-                      <p className="text-xs text-gray-500">
-                        {payoutModal.subAgent.name}: {formatCurrency(payoutModal.commissions?.[0]?.subAgentCommissionAmount || '0')}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {payoutModal.commissions?.[0]?.paidToSubAgent ? (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">✅ Paid</span>
-                      ) : (
-                        <>
-                          <input
-                            type="checkbox"
-                            checked={!!payoutForm.paidToSubAgent}
-                            onChange={(e) => setPayoutForm(prev => ({
-                              ...prev,
-                              paidToSubAgent: e.target.checked ? payoutModal.commissions?.[0]?.subAgentCommissionAmount || '' : ''
-                            }))}
-                            className="w-5 h-5 text-purple-600 rounded"
-                          />
-                          <span className="text-sm text-gray-600">Mark Paid</span>
-                        </>
-                      )}
-                    </div>
-                  </label>
-                </div>
-              )}
-
-              {/* Premium kisne pay kiya */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <label className="block">
-                  <span className="font-medium text-gray-800">💳 Premium किसने Pay किया?</span>
-                  <select
-                    value={payoutForm.premiumPaidBy}
-                    onChange={(e) => setPayoutForm(prev => ({ ...prev, premiumPaidBy: e.target.value }))}
-                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="client">Client ने Pay किया</option>
-                    <option value="agent">Agent ने Pay किया (Client से बाद में लेना है)</option>
-                    <option value="subagent">Sub-Agent ने Pay किया</option>
-                    <option value="partial">Partial Payment हुआ</option>
-                  </select>
-                </label>
-              </div>
-
-              {/* Advance from Agent */}
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <label className="block">
-                  <span className="font-medium text-gray-800">💰 Agent से Advance मिला? (Optional)</span>
-                  <p className="text-xs text-gray-500 mb-2">अगर client ने advance दिया तो amount enter करें</p>
-                  <input
-                    type="number"
-                    value={payoutForm.advanceFromAgent}
-                    onChange={(e) => setPayoutForm(prev => ({ ...prev, advanceFromAgent: e.target.value }))}
-                    placeholder="Enter advance amount"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </label>
-              </div>
-
-              {/* Remarks */}
-              <div>
-                <label className="block">
-                  <span className="font-medium text-gray-800">📝 Remarks (Optional)</span>
-                  <input
-                    type="text"
-                    value={payoutForm.remarks}
-                    onChange={(e) => setPayoutForm(prev => ({ ...prev, remarks: e.target.value }))}
-                    placeholder="Any additional notes..."
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPayoutModal(null)}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={payoutSubmitting}
-                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                >
-                  {payoutSubmitting ? 'Updating...' : '✅ Update Payout'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
