@@ -380,22 +380,16 @@ export default function NewPolicyPage() {
     
     const isMotor = formData.policyType === 'Motor Insurance';
     if (isMotor) {
-      // For motor insurance, check if net rate is filled first
+      // For motor insurance, ADD all three: OD + TP + Net (match backend logic)
+      const odComm = (parseFloat(formData.odPremium) || 0) * (parseFloat(formData.odCommissionRate) || 0) / 100;
+      const tpComm = (parseFloat(formData.tpPremium) || 0) * (parseFloat(formData.tpCommissionRate) || 0) / 100;
       const netRate = parseFloat(formData.netCommissionRate) || 0;
-      const netPremium = parseFloat(formData.netPremium || formData.premiumAmount) || 0;
-      
-      if (netRate > 0 && netPremium > 0) {
-        // Use net rate calculation if filled
-        return netPremium * netRate / 100;
-      } else {
-        // Otherwise use OD/TP separate calculations
-        const odComm = (parseFloat(formData.odPremium) || 0) * (parseFloat(formData.odCommissionRate) || 0) / 100;
-        const tpComm = (parseFloat(formData.tpPremium) || 0) * (parseFloat(formData.tpCommissionRate) || 0) / 100;
-        return odComm + tpComm;
-      }
+      const netPremium = parseFloat(formData.netPremium) || 0;
+      const netComm = netPremium > 0 && netRate > 0 ? (netPremium * netRate / 100) : 0;
+      return odComm + tpComm + netComm;
     } else {
-      // Other policies - Net based
-      return (parseFloat(formData.netPremium || formData.premiumAmount) || 0) * (parseFloat(formData.netCommissionRate || formData.commissionRate) || 0) / 100;
+      // Other policies - Use premiumAmount as base (match backend fix)
+      return (parseFloat(formData.premiumAmount) || 0) * (parseFloat(formData.commissionRate) || 0) / 100;
     }
   };
 
@@ -403,34 +397,11 @@ export default function NewPolicyPage() {
   // Commission flow: Broker → Agent keeps X% → Sub-Agent gets rest
   // Calculate agent payout based on manually mentioned rates
   const calculateAgentPayout = () => {
-    if (!formData.subAgentId) return calculateTotalCommission(); // No sub-agent, agent gets all
-    
-    const isMotor = formData.policyType === 'Motor Insurance';
     const totalReceived = calculateTotalCommission();
+    if (!formData.subAgentId) return totalReceived; // No sub-agent, agent gets all
     
-    if (isMotor) {
-      // For Motor: Calculate based on manually mentioned OD/TP rates or Net rate
-      const formDataAny = formData as any;
-      const netRate = parseFloat(formDataAny.subAgentNetRate) || 0;
-      
-      if (netRate > 0) {
-        // Use Net rate calculation for sub-agent payout
-        const netPremium = parseFloat(formData.netPremium || formData.premiumAmount) || 0;
-        const subAgentPayout = netPremium * netRate / 100;
-        return Math.max(0, totalReceived - subAgentPayout);
-      } else {
-        // Use OD/TP separate calculations for sub-agent payout
-        const odRate = parseFloat(formDataAny.subAgentOdRate) || 0;
-        const tpRate = parseFloat(formDataAny.subAgentTpRate) || 0;
-        const odPayout = (parseFloat(formData.odPremium) || 0) * odRate / 100;
-        const tpPayout = (parseFloat(formData.tpPremium) || 0) * tpRate / 100;
-        const subAgentPayout = odPayout + tpPayout;
-        return Math.max(0, totalReceived - subAgentPayout);
-      }
-    } else {
-      // For Non-Motor: No manual rate input implemented yet, agent gets full amount
-      return totalReceived;
-    }
+    const subAgentPayout = calculateSubAgentPayout();
+    return Math.max(0, totalReceived - subAgentPayout);
   };
 
   // Calculate sub-agent payout based on manually mentioned rates
@@ -440,25 +411,22 @@ export default function NewPolicyPage() {
     const isMotor = formData.policyType === 'Motor Insurance';
     
     if (isMotor) {
+      // For Motor: ADD all three - OD + TP + Net (match backend logic)
+      const odRate = parseFloat(formData.subAgentOdRate) || 0;
+      const tpRate = parseFloat(formData.subAgentTpRate) || 0;
       const netRate = parseFloat(formData.subAgentNetRate) || 0;
       
-      if (netRate > 0) {
-        // Use Net rate calculation
-        const netPremium = parseFloat(formData.netPremium || formData.premiumAmount) || 0;
-        return netPremium * netRate / 100;
-      } else {
-        // Use OD/TP separate calculations
-        const odRate = parseFloat(formData.subAgentOdRate) || 0;
-        const tpRate = parseFloat(formData.subAgentTpRate) || 0;
-        const odPayout = (parseFloat(formData.odPremium) || 0) * odRate / 100;
-        const tpPayout = (parseFloat(formData.tpPremium) || 0) * tpRate / 100;
-        return odPayout + tpPayout;
-      }
+      const odPayout = (parseFloat(formData.odPremium) || 0) * odRate / 100;
+      const tpPayout = (parseFloat(formData.tpPremium) || 0) * tpRate / 100;
+      const netPremium = parseFloat(formData.netPremium) || 0;
+      const netPayout = netPremium > 0 && netRate > 0 ? (netPremium * netRate / 100) : 0;
+      
+      return odPayout + tpPayout + netPayout;
     } else {
-      // Non-motor: use subAgentCommissionRate
+      // Non-motor: use subAgentCommissionRate on premiumAmount
       const subAgentRate = parseFloat(formData.subAgentCommissionRate) || 0;
-      const netPremium = parseFloat(formData.netPremium || formData.premiumAmount) || 0;
-      return netPremium * subAgentRate / 100;
+      const premiumAmount = parseFloat(formData.premiumAmount) || 0;
+      return premiumAmount * subAgentRate / 100;
     }
   };
 
