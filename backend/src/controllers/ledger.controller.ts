@@ -379,3 +379,97 @@ export const deleteLedgerEntry = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+
+// ==========================================
+// GET SUB-AGENT LEDGER
+// ==========================================
+export const getSubAgentLedger = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const { subAgentId } = req.params;
+
+    // Verify sub-agent belongs to this agent
+    const subAgent = await prisma.subAgent.findFirst({
+      where: { id: subAgentId, agentId }
+    });
+
+    if (!subAgent) {
+      throw new AppError('Sub-agent not found', 404, 'NOT_FOUND');
+    }
+
+    const entries = await prisma.ledgerEntry.findMany({
+      where: { 
+        agentId,
+        subAgentId 
+      },
+      include: {
+        policy: { select: { id: true, policyNumber: true } }
+      },
+      orderBy: { entryDate: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: entries.map(e => ({
+        ...e,
+        amount: e.amount.toString()
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// CREATE SUB-AGENT PAYOUT
+// ==========================================
+export const createSubAgentPayout = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const { subAgentId, amount, description, entryDate } = req.body;
+
+    if (!subAgentId || !amount) {
+      throw new AppError('Sub-agent ID and amount are required', 400, 'VALIDATION_ERROR');
+    }
+
+    const subAgent = await prisma.subAgent.findFirst({
+      where: { id: subAgentId, agentId }
+    });
+
+    if (!subAgent) {
+      throw new AppError('Sub-agent not found', 404, 'NOT_FOUND');
+    }
+
+    const entry = await prisma.$transaction(async (tx) => {
+      // Create ledger entry for sub-agent payout (DEBIT = money paid out)
+      const ledgerEntry = await tx.ledgerEntry.create({
+        data: {
+          agentId,
+          subAgentId,
+          entryType: 'DEBIT',
+          amount: parseFloat(amount),
+          description: description || 'Commission Payout',
+          entryDate: entryDate ? new Date(entryDate) : new Date(),
+        }
+      });
+
+      // Update sub-agent ledger balance (decrease - money paid out)
+      await tx.subAgent.update({
+        where: { id: subAgentId },
+        data: { ledgerBalance: { decrement: parseFloat(amount) } }
+      });
+
+      return ledgerEntry;
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        ...entry,
+        amount: entry.amount.toString()
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

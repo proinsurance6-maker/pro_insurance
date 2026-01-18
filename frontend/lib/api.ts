@@ -248,6 +248,13 @@ export const ledgerAPI = {
   
   delete: (id: string) =>
     api.delete(`/ledger/${id}`),
+  
+  // Sub-Agent Ledger
+  getSubAgentLedger: (subAgentId: string) =>
+    api.get(`/ledger/sub-agent/${subAgentId}`),
+  
+  createSubAgentPayout: (data: { subAgentId: string; amount: number; description: string; entryDate: string }) =>
+    api.post('/ledger/sub-agent/payout', data),
 };
 
 // ==========================================

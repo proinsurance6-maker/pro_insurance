@@ -6,7 +6,9 @@ import {
   getClientKhata,
   getPendingCollections,
   updateLedgerEntry,
-  deleteLedgerEntry
+  deleteLedgerEntry,
+  getSubAgentLedger,
+  createSubAgentPayout
 } from '../controllers/ledger.controller';
 import { authenticate, requireAgent } from '../middleware/auth';
 
@@ -27,5 +29,9 @@ router.get('/client/:clientId', getClientKhata);
 
 // Pending collections summary
 router.get('/pending', getPendingCollections);
+
+// Sub-Agent Ledger
+router.get('/sub-agent/:subAgentId', getSubAgentLedger);
+router.post('/sub-agent/payout', createSubAgentPayout);
 
 export default router;
