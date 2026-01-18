@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { agentAPI, policyAPI, ledgerAPI } from '@/lib/api';
+import { agentAPI, policyAPI, ledgerAPI, commissionAPI } from '@/lib/api';
 
 interface PolicyDocument {
   id: string;
@@ -103,6 +103,14 @@ export default function SubAgentDetailPage() {
   const [payoutDate, setPayoutDate] = useState(new Date().toISOString().split('T')[0]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Mark paid modal
+  const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
+  const [selectedCommission, setSelectedCommission] = useState<{id: string; amount: string; policyNumber: string} | null>(null);
+  const [markPaidData, setMarkPaidData] = useState({
+    paidDate: new Date().toISOString().split('T')[0],
+    remarks: '',
+  });
+
   useEffect(() => {
     if (params.id) {
       fetchSubAgentData();
@@ -171,6 +179,38 @@ export default function SubAgentDetailPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleMarkPaid = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCommission) return;
+    
+    setSubmitting(true);
+    try {
+      await commissionAPI.markPaidToSubAgent(selectedCommission.id, {
+        paidDate: markPaidData.paidDate,
+        remarks: markPaidData.remarks || undefined,
+      });
+      
+      setShowMarkPaidModal(false);
+      setSelectedCommission(null);
+      setMarkPaidData({ paidDate: new Date().toISOString().split('T')[0], remarks: '' });
+      fetchSubAgentData();
+    } catch (error) {
+      console.error('Failed to mark as paid:', error);
+      alert('Failed to mark commission as paid');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openMarkPaidModal = (commission: PolicyCommission, policyNumber: string) => {
+    setSelectedCommission({
+      id: commission.id,
+      amount: commission.subAgentCommissionAmount,
+      policyNumber,
+    });
+    setShowMarkPaidModal(true);
   };
 
   const formatCurrency = (amount: number | string) => {
@@ -394,8 +434,16 @@ export default function SubAgentDetailPage() {
                         <td className="px-3 py-2 text-center">
                           {commission?.paidToSubAgent ? (
                             <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">✓ Paid</span>
+                          ) : commission ? (
+                            <button
+                              onClick={() => openMarkPaidModal(commission, policy.policyNumber)}
+                              className="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 transition cursor-pointer"
+                              title="Click to mark as paid"
+                            >
+                              Pending
+                            </button>
                           ) : (
-                            <span className="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700">Pending</span>
+                            <span className="text-gray-400">-</span>
                           )}
                         </td>
                         <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{commission?.paidToSubAgentDate ? formatDate(commission.paidToSubAgentDate) : '-'}</td>
@@ -614,6 +662,46 @@ export default function SubAgentDetailPage() {
               <div className="flex gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => setShowPayoutModal(false)} className="flex-1">Cancel</Button>
                 <Button type="submit" disabled={submitting} className="flex-1 bg-green-600 hover:bg-green-700">{submitting ? 'Recording...' : 'Record Payout'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mark Commission Paid Modal */}
+      {showMarkPaidModal && selectedCommission && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-white flex items-center justify-between rounded-t-xl">
+              <h3 className="font-bold text-lg">✓ Mark Commission Paid</h3>
+              <button onClick={() => { setShowMarkPaidModal(false); setSelectedCommission(null); }} className="p-2 hover:bg-white/20 rounded-lg">✕</button>
+            </div>
+            <form onSubmit={handleMarkPaid} className="p-6 space-y-4">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Policy: <span className="font-medium text-gray-900">{selectedCommission.policyNumber}</span></p>
+                <p className="text-sm text-gray-600">Commission: <span className="font-bold text-green-600">{formatCurrency(selectedCommission.amount)}</span></p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Paid Date *</label>
+                <Input 
+                  type="date" 
+                  value={markPaidData.paidDate} 
+                  onChange={(e) => setMarkPaidData(prev => ({ ...prev, paidDate: e.target.value }))} 
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks (optional)</label>
+                <Input 
+                  type="text" 
+                  value={markPaidData.remarks} 
+                  onChange={(e) => setMarkPaidData(prev => ({ ...prev, remarks: e.target.value }))} 
+                  placeholder="e.g., Cash payment, Bank transfer" 
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => { setShowMarkPaidModal(false); setSelectedCommission(null); }} className="flex-1">Cancel</Button>
+                <Button type="submit" disabled={submitting} className="flex-1 bg-blue-600 hover:bg-blue-700">{submitting ? 'Updating...' : '✓ Mark as Paid'}</Button>
               </div>
             </form>
           </div>

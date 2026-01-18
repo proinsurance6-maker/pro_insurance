@@ -275,6 +275,13 @@ export const commissionAPI = {
   
   getSubAgentCommissions: (subAgentId: string) =>
     api.get(`/commissions/sub-agent/${subAgentId}`),
+  
+  // Mark commission as paid to sub-agent
+  markPaidToSubAgent: (id: string, data?: { paidDate?: string; remarks?: string }) =>
+    api.put(`/commissions/${id}/paid-to-subagent`, data || {}),
+  
+  bulkMarkPaidToSubAgent: (commissionIds: string[], paidDate?: string, remarks?: string) =>
+    api.post('/commissions/bulk-paid-to-subagent', { commissionIds, paidDate, remarks }),
 };
 
 // ==========================================

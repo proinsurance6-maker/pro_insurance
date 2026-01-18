@@ -352,3 +352,143 @@ export const getSingleSubAgentCommissions = async (req: Request, res: Response, 
     next(error);
   }
 };
+
+// ==========================================
+// MARK COMMISSION AS PAID TO SUB-AGENT
+// ==========================================
+export const markPaidToSubAgent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const { id } = req.params;
+    const { paidDate, remarks } = req.body;
+
+    const commission = await prisma.commission.findFirst({
+      where: { id, agentId },
+      include: { subAgent: true }
+    });
+
+    if (!commission) {
+      throw new AppError('Commission not found', 404, 'NOT_FOUND');
+    }
+
+    if (!commission.subAgentId) {
+      throw new AppError('This commission has no sub-agent assigned', 400, 'NO_SUBAGENT');
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      // Update commission record
+      const updatedCommission = await tx.commission.update({
+        where: { id },
+        data: { 
+          paidToSubAgent: true,
+          paidToSubAgentDate: paidDate ? new Date(paidDate) : new Date(),
+          remarks: remarks || null
+        },
+        include: {
+          policy: { select: { policyNumber: true } },
+          subAgent: { select: { name: true } }
+        }
+      });
+
+      // Update sub-agent ledger balance (decrease - money paid out)
+      await tx.subAgent.update({
+        where: { id: commission.subAgentId! },
+        data: { ledgerBalance: { decrement: commission.subAgentCommissionAmount || 0 } }
+      });
+
+      // Create ledger entry for the payout
+      await tx.ledgerEntry.create({
+        data: {
+          agentId,
+          subAgentId: commission.subAgentId!,
+          policyId: commission.policyId,
+          entryType: 'DEBIT',
+          amount: commission.subAgentCommissionAmount || 0,
+          description: `Commission paid - ${updatedCommission.policy.policyNumber}`,
+          entryDate: paidDate ? new Date(paidDate) : new Date(),
+        }
+      });
+
+      return updatedCommission;
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...updated,
+        totalCommissionAmount: updated.totalCommissionAmount.toString(),
+        subAgentCommissionAmount: updated.subAgentCommissionAmount?.toString()
+      },
+      message: `Commission marked as paid to ${updated.subAgent?.name}`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// BULK MARK COMMISSIONS AS PAID TO SUB-AGENT
+// ==========================================
+export const bulkMarkPaidToSubAgent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = (req as any).user.userId;
+    const { commissionIds, paidDate, remarks } = req.body;
+
+    if (!commissionIds || !Array.isArray(commissionIds) || commissionIds.length === 0) {
+      throw new AppError('Commission IDs array is required', 400, 'VALIDATION_ERROR');
+    }
+
+    const commissions = await prisma.commission.findMany({
+      where: { 
+        id: { in: commissionIds }, 
+        agentId,
+        paidToSubAgent: false,
+        subAgentId: { not: null }
+      }
+    });
+
+    if (commissions.length === 0) {
+      throw new AppError('No valid unpaid commissions found', 400, 'NO_VALID_COMMISSIONS');
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const commission of commissions) {
+        // Update commission
+        await tx.commission.update({
+          where: { id: commission.id },
+          data: { 
+            paidToSubAgent: true,
+            paidToSubAgentDate: paidDate ? new Date(paidDate) : new Date(),
+            remarks: remarks || null
+          }
+        });
+
+        // Update sub-agent balance
+        await tx.subAgent.update({
+          where: { id: commission.subAgentId! },
+          data: { ledgerBalance: { decrement: commission.subAgentCommissionAmount || 0 } }
+        });
+
+        // Create ledger entry
+        await tx.ledgerEntry.create({
+          data: {
+            agentId,
+            subAgentId: commission.subAgentId!,
+            policyId: commission.policyId,
+            entryType: 'DEBIT',
+            amount: commission.subAgentCommissionAmount || 0,
+            description: `Commission paid`,
+            entryDate: paidDate ? new Date(paidDate) : new Date(),
+          }
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `${commissions.length} commission(s) marked as paid to sub-agents`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
