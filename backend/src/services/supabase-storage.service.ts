@@ -28,6 +28,7 @@ export const uploadDocument = async (
 ): Promise<UploadResult> => {
   // If Supabase not configured, throw error with helpful message
   if (!supabase) {
+    console.error('❌ Supabase not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in environment variables.');
     throw new Error('Supabase not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in environment variables.');
   }
 
@@ -35,6 +36,8 @@ export const uploadDocument = async (
     const ext = originalExtension || filename.split('.').pop() || '';
     const contentType = getContentType(ext);
     const filePath = `${folder}/${filename}`;
+
+    console.log(`📤 Uploading to Supabase: ${filePath}`);
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
@@ -45,7 +48,16 @@ export const uploadDocument = async (
       });
 
     if (error) {
-      console.error('Supabase upload error:', error);
+      console.error('❌ Supabase upload error:', error);
+      
+      // Provide helpful error messages
+      if (error.message.includes('Bucket not found')) {
+        throw new Error('Supabase bucket "policy-documents" not found. Please create it in Supabase Dashboard → Storage → New Bucket. See SUPABASE_SETUP.md for instructions.');
+      }
+      if (error.message.includes('row-level security')) {
+        throw new Error('Supabase bucket policies missing. Please add INSERT policy for "policy-documents" bucket. See SUPABASE_BUCKET_SETUP.sql for SQL script.');
+      }
+      
       throw error;
     }
 
@@ -53,6 +65,8 @@ export const uploadDocument = async (
     const { data: urlData } = supabase.storage
       .from('policy-documents')
       .getPublicUrl(filePath);
+
+    console.log(`✅ Upload successful: ${urlData.publicUrl}`);
 
     return {
       public_id: filePath,
@@ -63,7 +77,7 @@ export const uploadDocument = async (
       bytes: buffer.length,
     };
   } catch (error) {
-    console.error('Upload failed:', error);
+    console.error('❌ Upload failed:', error);
     throw error;
   }
 };
