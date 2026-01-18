@@ -489,22 +489,22 @@ export default function SubAgentDetailPage() {
             </Card>
             <Card className="bg-green-50">
               <CardContent className="p-4 text-center">
-                <p className="text-xl font-bold text-green-600">{formatCurrency(paidCommission + totalDebits)}</p>
+                <p className="text-xl font-bold text-green-600">{formatCurrency(totalDebits)}</p>
                 <p className="text-sm text-gray-600">Total Paid (Debit)</p>
               </CardContent>
             </Card>
             <Card className="bg-orange-50">
               <CardContent className="p-4 text-center">
-                <p className="text-xl font-bold text-orange-600">{formatCurrency(pendingCommission)}</p>
+                <p className="text-xl font-bold text-orange-600">{formatCurrency(totalCommission - totalDebits)}</p>
                 <p className="text-sm text-gray-600">Pending Payout</p>
               </CardContent>
             </Card>
-            <Card className={ledgerBalance < 0 ? 'bg-red-50' : 'bg-purple-50'}>
+            <Card className={(totalCommission - totalDebits) < 0 ? 'bg-red-50' : 'bg-purple-50'}>
               <CardContent className="p-4 text-center">
-                <p className={`text-xl font-bold ${ledgerBalance < 0 ? 'text-red-600' : 'text-purple-600'}`}>
-                  {formatCurrency(Math.abs(ledgerBalance))}
+                <p className={`text-xl font-bold ${(totalCommission - totalDebits) < 0 ? 'text-red-600' : 'text-purple-600'}`}>
+                  {formatCurrency(Math.abs(totalCommission - totalDebits))}
                 </p>
-                <p className="text-sm text-gray-600">{ledgerBalance < 0 ? 'Advance Given' : 'Balance Due'}</p>
+                <p className="text-sm text-gray-600">{(totalCommission - totalDebits) < 0 ? 'Advance Given' : 'Balance Due'}</p>
               </CardContent>
             </Card>
           </div>
@@ -572,9 +572,9 @@ export default function SubAgentDetailPage() {
                   <tfoot className="bg-gray-100 font-semibold">
                     <tr>
                       <td colSpan={3} className="px-4 py-3 text-sm text-gray-700">Total</td>
-                      <td className="px-4 py-3 text-sm text-right text-green-700">{formatCurrency(totalCommission + totalCredits)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-red-700">{formatCurrency(paidCommission + totalDebits)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900">{formatCurrency(pendingCommission - totalDebits)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-green-700">{formatCurrency(totalCommission)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-red-700">{formatCurrency(totalDebits)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-900">{formatCurrency(totalCommission - totalDebits)}</td>
                     </tr>
                   </tfoot>
                 )}

@@ -268,10 +268,10 @@ export const commissionAPI = {
     api.get(`/commissions/company/${companyId}`, { params }),
   
   markPaid: (id: string, receivedDate?: string) =>
-    api.put(`/commissions/${id}/mark-paid`, { receivedDate }),
+    api.put(`/commissions/${id}/paid`, { receivedDate }),
   
   bulkMarkPaid: (commissionIds: string[], receivedDate?: string) =>
-    api.put('/commissions/bulk-mark-paid', { commissionIds, receivedDate }),
+    api.post('/commissions/bulk-paid', { commissionIds, receivedDate }),
   
   getSubAgentCommissions: (subAgentId: string) =>
     api.get(`/commissions/sub-agent/${subAgentId}`),

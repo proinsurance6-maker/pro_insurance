@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ledgerAPI, clientAPI, agentAPI } from '@/lib/api';
+import { ledgerAPI, clientAPI, agentAPI, policyAPI, commissionAPI } from '@/lib/api';
 
 interface LedgerEntry {
   id: string;
@@ -51,6 +51,39 @@ interface SubAgent {
   };
 }
 
+interface Policy {
+  id: string;
+  policyNumber: string;
+  policyType: string;
+  premiumAmount: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  client: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  company: {
+    id: string;
+    name: string;
+  };
+  subAgent?: {
+    id: string;
+    name: string;
+  };
+  broker?: {
+    id: string;
+    name: string;
+  };
+  commissions?: Array<{
+    id: string;
+    totalCommissionAmount: string;
+    receivedFromCompany: boolean;
+    receivedDate?: string;
+  }>;
+}
+
 export default function LedgerPage() {
   const searchParams = useSearchParams();
   const preSelectedClientId = searchParams.get('clientId');
@@ -59,9 +92,11 @@ export default function LedgerPage() {
   const [pendingCollections, setPendingCollections] = useState<PendingCollection[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [subAgents, setSubAgents] = useState<SubAgent[]>([]);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'subagents'>('all');
-  const [filter, setFilter] = useState<'all' | 'debit' | 'credit'>('all');
+  const [filter, setFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [search, setSearch] = useState('');
   
   // Add entry form
   const [showAddModal, setShowAddModal] = useState(false);
@@ -84,17 +119,30 @@ export default function LedgerPage() {
     entryDate: new Date().toISOString().split('T')[0],
   });
 
+  // Action dropdown state
+  const [openActionId, setOpenActionId] = useState<string | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenActionId(null);
+    if (openActionId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openActionId]);
+
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      const [entriesRes, pendingRes, clientsRes, subAgentsRes] = await Promise.all([
+      const [entriesRes, pendingRes, clientsRes, subAgentsRes, policiesRes] = await Promise.all([
         ledgerAPI.getAll(),
         ledgerAPI.getPending(),
         clientAPI.getAll(),
-        agentAPI.getSubAgents()
+        agentAPI.getSubAgents(),
+        policyAPI.getAll()
       ]);
       
       // Handle different response structures
@@ -102,17 +150,20 @@ export default function LedgerPage() {
       const pendingData = pendingRes.data.data?.clients || pendingRes.data.data || [];
       const clientsData = clientsRes.data.data?.clients || clientsRes.data.data || [];
       const subAgentsData = subAgentsRes.data.data || [];
+      const policiesData = policiesRes.data.data?.policies || policiesRes.data.data || [];
       
       setEntries(Array.isArray(entriesData) ? entriesData : []);
       setPendingCollections(Array.isArray(pendingData) ? pendingData : []);
       setClients(Array.isArray(clientsData) ? clientsData : []);
       setSubAgents(Array.isArray(subAgentsData) ? subAgentsData : []);
+      setPolicies(Array.isArray(policiesData) ? policiesData : []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       setEntries([]);
       setPendingCollections([]);
       setClients([]);
       setSubAgents([]);
+      setPolicies([]);
     } finally {
       setLoading(false);
     }
@@ -201,6 +252,37 @@ export default function LedgerPage() {
     }
   };
 
+  // Mark commission as received from company
+  const handleMarkPaid = async (commissionId: string) => {
+    try {
+      await commissionAPI.markPaid(commissionId);
+      fetchData(); // Refresh all data
+      setOpenActionId(null);
+    } catch (error) {
+      console.error('Failed to mark paid:', error);
+      alert('Failed to update status');
+    }
+  };
+
+  // Filter policies by paid status
+  const filteredPolicies = policies.filter(policy => {
+    // Search filter
+    const matchesSearch = !search || 
+      policy.policyNumber.toLowerCase().includes(search.toLowerCase()) ||
+      policy.client.name.toLowerCase().includes(search.toLowerCase()) ||
+      policy.company.name.toLowerCase().includes(search.toLowerCase());
+    
+    // Paid status filter
+    const commission = policy.commissions?.[0];
+    const isPaid = commission?.receivedFromCompany || false;
+    const matchesFilter = 
+      filter === 'all' ||
+      (filter === 'paid' && isPaid) ||
+      (filter === 'pending' && !isPaid);
+    
+    return matchesSearch && matchesFilter;
+  });
+
   const filteredEntries = entries.filter(entry => {
     if (filter === 'all') return true;
     return entry.entryType.toLowerCase() === filter;
@@ -215,6 +297,19 @@ export default function LedgerPage() {
     .reduce((sum, e) => sum + Number(e.amount), 0);
   
   const balance = totalDebit - totalCredit;
+
+  // Commission summary from policies
+  const totalCommission = policies.reduce((sum, p) => {
+    const comm = p.commissions?.[0];
+    return sum + (comm ? Number(comm.totalCommissionAmount) : 0);
+  }, 0);
+
+  const receivedCommission = policies.reduce((sum, p) => {
+    const comm = p.commissions?.[0];
+    return sum + (comm?.receivedFromCompany ? Number(comm.totalCommissionAmount) : 0);
+  }, 0);
+
+  const pendingCommission = totalCommission - receivedCommission;
 
   if (loading) {
     return (
@@ -240,25 +335,25 @@ export default function LedgerPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-red-50 border-red-200">
+        <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
-            <p className="text-sm text-red-600">Total Debit (उधार)</p>
-            <p className="text-2xl font-bold text-red-700">{formatCurrency(totalDebit)}</p>
+            <p className="text-sm text-blue-600">Total Commission</p>
+            <p className="text-2xl font-bold text-blue-700">{formatCurrency(totalCommission)}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4">
-            <p className="text-sm text-green-600">Total Credit (जमा)</p>
-            <p className="text-2xl font-bold text-green-700">{formatCurrency(totalCredit)}</p>
+            <p className="text-sm text-green-600">Received (जमा)</p>
+            <p className="text-2xl font-bold text-green-700">{formatCurrency(receivedCommission)}</p>
           </CardContent>
         </Card>
-        <Card className={balance > 0 ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'}>
+        <Card className={pendingCommission > 0 ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-200'}>
           <CardContent className="p-4">
-            <p className={`text-sm ${balance > 0 ? 'text-orange-600' : 'text-blue-600'}`}>
-              {balance > 0 ? 'Pending Collection (बाकी)' : 'Advance (अग्रिम)'}
+            <p className={`text-sm ${pendingCommission > 0 ? 'text-orange-600' : 'text-gray-600'}`}>
+              Pending (बाकी)
             </p>
-            <p className={`text-2xl font-bold ${balance > 0 ? 'text-orange-700' : 'text-blue-700'}`}>
-              {formatCurrency(Math.abs(balance))}
+            <p className={`text-2xl font-bold ${pendingCommission > 0 ? 'text-orange-700' : 'text-gray-700'}`}>
+              {formatCurrency(pendingCommission)}
             </p>
           </CardContent>
         </Card>
@@ -303,64 +398,141 @@ export default function LedgerPage() {
       {/* All Entries Tab */}
       {activeTab === 'all' && (
         <div className="space-y-4">
-          {/* Filter */}
-          <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
-            {(['all', 'debit', 'credit'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 text-sm font-medium rounded-md capitalize transition ${
-                  filter === f 
-                    ? 'bg-white shadow text-blue-600' 
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                {f === 'debit' ? 'Debit (उधार)' : f === 'credit' ? 'Credit (जमा)' : 'All'}
-              </button>
-            ))}
+          {/* Search & Filter */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <Input
+              type="text"
+              placeholder="Search by policy number, client, company..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full sm:w-80"
+            />
+            <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
+              {(['all', 'pending', 'paid'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md capitalize transition ${
+                    filter === f 
+                      ? 'bg-white shadow text-blue-600' 
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  {f === 'pending' ? 'Pending (बाकी)' : f === 'paid' ? 'Received (जमा)' : 'All'}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Entries List */}
-          {filteredEntries.length === 0 ? (
+          {/* Policies Table */}
+          {filteredPolicies.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-gray-500">
-                No entries found
+                No policies found
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {filteredEntries.map((entry) => (
-                <Card key={entry.id} className="hover:shadow-md transition">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          entry.entryType === 'DEBIT' 
-                            ? 'bg-red-100 text-red-600' 
-                            : 'bg-green-100 text-green-600'
-                        }`}>
-                          {entry.entryType === 'DEBIT' ? '↑' : '↓'}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{entry.client?.name || 'N/A'}</p>
-                          <p className="text-sm text-gray-500">{entry.description}</p>
-                          {entry.policy && (
-                            <p className="text-xs text-gray-400">Policy: {entry.policy.policyNumber}</p>
+            <div className="overflow-x-auto bg-white rounded-lg border">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Premium</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredPolicies.map((policy) => {
+                    const commission = policy.commissions?.[0];
+                    const isPaid = commission?.receivedFromCompany || false;
+                    
+                    return (
+                      <tr key={policy.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                          {formatDate(policy.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="text-sm font-medium text-blue-600">{policy.policyNumber}</div>
+                          <div className="text-xs text-gray-500">{policy.policyType}</div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{policy.client.name}</div>
+                          <div className="text-xs text-gray-500">{policy.client.phone}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                          {policy.company.name}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                          {formatCurrency(Number(policy.premiumAmount))}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                          {commission ? formatCurrency(Number(commission.totalCommissionAmount)) : '₹0'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            isPaid 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-orange-100 text-orange-800'
+                          }`}>
+                            {isPaid ? '✓ Received' : '⏳ Pending'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap relative">
+                          {commission && !isPaid && (
+                            <div className="relative">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenActionId(openActionId === commission.id ? null : commission.id);
+                                }}
+                                className="text-xs"
+                              >
+                                Action ▾
+                              </Button>
+                              {openActionId === commission.id && (
+                                <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-10">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMarkPaid(commission.id);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2"
+                                  >
+                                    ✓ Mark as Received
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-semibold ${
-                          entry.entryType === 'DEBIT' ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {entry.entryType === 'DEBIT' ? '+' : '-'}{formatCurrency(entry.amount)}
-                        </p>
-                        <p className="text-sm text-gray-500">{formatDate(entry.entryDate)}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                          {isPaid && (
+                            <span className="text-xs text-gray-500">
+                              {commission?.receivedDate ? formatDate(commission.receivedDate) : '-'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-gray-50">
+                  <tr className="font-semibold">
+                    <td colSpan={5} className="px-4 py-3 text-sm text-gray-700">Total</td>
+                    <td className="px-4 py-3 text-sm text-blue-700">{formatCurrency(totalCommission)}</td>
+                    <td colSpan={2} className="px-4 py-3 text-sm">
+                      <span className="text-green-600">{formatCurrency(receivedCommission)}</span>
+                      <span className="text-gray-400 mx-1">/</span>
+                      <span className="text-orange-600">{formatCurrency(pendingCommission)}</span>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           )}
         </div>
