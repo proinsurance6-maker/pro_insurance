@@ -187,54 +187,54 @@ export default function LedgerPage() {
       </div>
 
       {/* Detailed Table */}
-      <Card>
+      <Card className="shadow-lg">
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm border-collapse">
             <thead>
               {/* Section Headers */}
-              <tr className="bg-gray-800 text-white">
-                <th colSpan={3} className="p-2 text-center border-r border-gray-600 font-bold">👤 CLIENT DETAILS</th>
-                <th colSpan={5} className="p-2 text-center border-r border-gray-600 font-bold">🚗 VEHICLE & PREMIUM</th>
-                <th colSpan={3} className="p-2 text-center border-r border-gray-600 font-bold">🏢 BROKER COMMISSION</th>
-                <th colSpan={4} className="p-2 text-center border-r border-gray-600 font-bold">👥 SUB-AGENT SECTION</th>
-                <th colSpan={4} className="p-2 text-center font-bold">📊 HISAB SECTION</th>
+              <tr className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                <th colSpan={3} className="p-3 text-center border-r-2 border-blue-400 font-bold text-base">👤 CLIENT DETAILS</th>
+                <th colSpan={5} className="p-3 text-center border-r-2 border-blue-400 font-bold text-base">🚗 VEHICLE & PREMIUM</th>
+                <th colSpan={3} className="p-3 text-center border-r-2 border-blue-400 font-bold text-base">🏢 BROKER COMMISSION</th>
+                <th colSpan={4} className="p-3 text-center border-r-2 border-blue-400 font-bold text-base">👥 SUB-AGENT SECTION</th>
+                <th colSpan={4} className="p-3 text-center font-bold text-base">📊 HISAB SECTION</th>
               </tr>
               {/* Column Headers */}
-              <tr className="bg-gray-100 text-gray-700">
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 border-b-2 border-blue-200">
                 {/* Client Details */}
-                <th className="p-2 text-left font-semibold border-r whitespace-nowrap">Client Name</th>
-                <th className="p-2 text-left font-semibold border-r whitespace-nowrap">Phone</th>
-                <th className="p-2 text-left font-semibold border-r border-gray-400 whitespace-nowrap">Policy No.</th>
+                <th className="p-3 text-left font-semibold border-r border-gray-200 whitespace-nowrap">Client Name</th>
+                <th className="p-3 text-left font-semibold border-r border-gray-200 whitespace-nowrap">Phone</th>
+                <th className="p-3 text-left font-semibold border-r-2 border-blue-200 whitespace-nowrap">Policy No.</th>
                 
                 {/* Vehicle & Premium */}
-                <th className="p-2 text-left font-semibold border-r whitespace-nowrap">Vehicle No.</th>
-                <th className="p-2 text-right font-semibold border-r whitespace-nowrap">OD Premium</th>
-                <th className="p-2 text-right font-semibold border-r whitespace-nowrap">TP Premium</th>
-                <th className="p-2 text-right font-semibold border-r whitespace-nowrap">Net Premium</th>
-                <th className="p-2 text-right font-semibold border-r border-gray-400 whitespace-nowrap">Gross Premium</th>
+                <th className="p-3 text-left font-semibold border-r border-gray-200 whitespace-nowrap">Vehicle No.</th>
+                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">OD Premium</th>
+                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">TP Premium</th>
+                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Net Premium</th>
+                <th className="p-3 text-right font-semibold border-r-2 border-blue-200 whitespace-nowrap">Gross Premium</th>
                 
                 {/* Broker Commission */}
-                <th className="p-2 text-center font-semibold border-r whitespace-nowrap">Rate %</th>
-                <th className="p-2 text-right font-semibold border-r whitespace-nowrap">Amount</th>
-                <th className="p-2 text-center font-semibold border-r border-gray-400 whitespace-nowrap">Received?</th>
+                <th className="p-3 text-center font-semibold border-r border-gray-200 whitespace-nowrap">Rate %</th>
+                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Amount</th>
+                <th className="p-3 text-center font-semibold border-r-2 border-blue-200 whitespace-nowrap">Received?</th>
                 
                 {/* Sub-Agent Section */}
-                <th className="p-2 text-left font-semibold border-r whitespace-nowrap">Sub-Agent</th>
-                <th className="p-2 text-center font-semibold border-r whitespace-nowrap">Rate %</th>
-                <th className="p-2 text-right font-semibold border-r whitespace-nowrap">Amount</th>
-                <th className="p-2 text-center font-semibold border-r border-gray-400 whitespace-nowrap">Paid?</th>
+                <th className="p-3 text-left font-semibold border-r border-gray-200 whitespace-nowrap">Sub-Agent</th>
+                <th className="p-3 text-center font-semibold border-r border-gray-200 whitespace-nowrap">Rate %</th>
+                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Amount</th>
+                <th className="p-3 text-center font-semibold border-r-2 border-blue-200 whitespace-nowrap">Paid?</th>
                 
                 {/* Hisab Section */}
-                <th className="p-2 text-center font-semibold border-r whitespace-nowrap">Paid By</th>
-                <th className="p-2 text-right font-semibold border-r whitespace-nowrap">Gross Comm.</th>
-                <th className="p-2 text-right font-semibold border-r whitespace-nowrap">Sub-Agent को</th>
-                <th className="p-2 text-right font-semibold whitespace-nowrap">Net Agent Payout</th>
+                <th className="p-3 text-center font-semibold border-r border-gray-200 whitespace-nowrap">Paid By</th>
+                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Gross Comm.</th>
+                <th className="p-3 text-right font-semibold border-r border-gray-200 whitespace-nowrap">Sub-Agent को</th>
+                <th className="p-3 text-right font-semibold whitespace-nowrap">Net Agent Payout</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {filtered.length === 0 ? (
                 <tr><td colSpan={19} className="p-8 text-center text-gray-400">No data found</td></tr>
-              ) : filtered.map(p => {
+              ) : filtered.map((p, idx) => {
                 const c = p.commissions?.[0];
                 const got = c?.receivedFromCompany;
                 const paid = c?.paidToSubAgent;
