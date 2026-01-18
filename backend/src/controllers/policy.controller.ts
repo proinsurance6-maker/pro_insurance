@@ -697,16 +697,38 @@ export const scanDocument = async (req: Request, res: Response, next: NextFuncti
     if (isPDF) {
       try {
         const pdfData = await pdfParse(file.buffer);
-        const extractedData = await extractPolicyFromText(pdfData.text);
         
-        return res.json({
-          success: true,
-          data: extractedData,
-          message: 'PDF processed successfully! Please verify the extracted details.'
-        });
+        // Only proceed with text extraction if we got meaningful text
+        if (pdfData.text && pdfData.text.trim().length > 50) {
+          try {
+            const extractedData = await extractPolicyFromText(pdfData.text);
+            
+            return res.json({
+              success: true,
+              data: extractedData,
+              message: 'PDF processed successfully! Please verify the extracted details.'
+            });
+          } catch (textErr) {
+            console.warn('PDF text extraction failed, falling back to image-based extraction...');
+            // Fall through to image-based extraction below
+          }
+        } else {
+          console.warn('PDF text extraction yielded insufficient data, using image-based extraction...');
+          // Fall through to image-based extraction below
+        }
       } catch (err) {
-        throw new AppError('Failed to extract data from PDF. Please try uploading a clear image instead.', 400, 'PDF_PARSE_ERROR');
+        console.warn('PDF parsing failed:', (err as any).message);
+        // Fall through to image-based extraction below
       }
+      
+      // Fallback: Try image-based extraction on PDF
+      // Note: This requires pdf2pic or similar library to convert PDF to image
+      // For now, we'll inform user to upload image instead
+      throw new AppError(
+        '📄 PDF upload detected: This PDF appears to be image-based or has unsearchable text. Please upload a clear JPG/PNG image of the policy instead for better OCR extraction.',
+        400,
+        'PDF_TEXT_EXTRACTION_FAILED'
+      );
     }
 
     // Convert buffer to base64
@@ -728,14 +750,9 @@ export const scanDocument = async (req: Request, res: Response, next: NextFuncti
     if (error.message?.includes('rate limit')) {
       return next(new AppError('Too many requests. Please try again in a minute.', 429, 'RATE_LIMIT'));
     }
-    next(error);
-  }
-};
-
-// ==========================================
-// PARSE EXCEL FILE
-// ==========================================
-export const parseExcel = async (req: Request, res: Response, next: NextFunction) => {
+    if (error.message?.includes('PDF') || error.message?.includes('text extraction')) {
+      return next(error); // Pass through the improved error message
+    }
   try {
     const agentId = (req as any).user.userId;
     const file = (req as any).file;
