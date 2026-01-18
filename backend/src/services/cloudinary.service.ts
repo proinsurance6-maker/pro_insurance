@@ -56,7 +56,7 @@ export const uploadDocument = async (
 ): Promise<UploadResult> => {
   return new Promise((resolve, reject) => {
     // For PDFs and raw files, include extension in public_id for proper download
-    const publicId = originalExtension ? `${filename}.${originalExtension}` : filename;
+    const publicId = originalExtension ? `${filename}` : filename;
     
     cloudinary.uploader.upload_stream(
       {
@@ -73,9 +73,17 @@ export const uploadDocument = async (
           console.error('Cloudinary upload error:', error);
           reject(error);
         } else if (result) {
+          // For raw files (PDFs), modify URL to include fl_attachment for proper download
+          let secureUrl = result.secure_url;
+          if (resourceType === 'raw' && originalExtension === 'pdf') {
+            // Add fl_attachment:filename.pdf to force browser to download with correct name
+            const downloadFilename = `${filename}.${originalExtension}`;
+            secureUrl = secureUrl.replace('/upload/', `/upload/fl_attachment:${downloadFilename}/`);
+          }
+          
           resolve({
             public_id: result.public_id,
-            secure_url: result.secure_url,
+            secure_url: secureUrl,
             original_filename: result.original_filename || filename,
             format: result.format || originalExtension || '',
             resource_type: result.resource_type,
@@ -189,6 +197,49 @@ export const generateSecureUrl = (
     sign_url: true,
     expires_at: expiresAt,
   });
+};
+
+// ==========================================
+// GENERATE DOWNLOAD URL WITH PROPER FILENAME
+// ==========================================
+export const generateDownloadUrl = (
+  publicId: string,
+  resourceType: 'image' | 'raw' = 'raw',
+  format?: string
+): string => {
+  // For raw files (PDFs), use the fl_attachment flag to force download with proper filename
+  const options: any = {
+    resource_type: resourceType,
+    flags: 'attachment',
+  };
+  
+  // Add format if provided
+  if (format) {
+    options.format = format;
+  }
+  
+  return cloudinary.url(publicId, options);
+};
+
+// ==========================================
+// GET PROPER URL FOR DOCUMENT (VIEW OR DOWNLOAD)
+// ==========================================
+export const getDocumentUrl = (
+  secureUrl: string,
+  format?: string,
+  forceDownload: boolean = false
+): string => {
+  if (!secureUrl) return secureUrl;
+  
+  // For PDFs, add fl_attachment to force proper download with extension
+  if (format === 'pdf' || secureUrl.includes('/raw/')) {
+    // Insert fl_attachment flag before /upload/ in the URL
+    if (forceDownload && !secureUrl.includes('fl_attachment')) {
+      return secureUrl.replace('/upload/', '/upload/fl_attachment/');
+    }
+  }
+  
+  return secureUrl;
 };
 
 export default cloudinary;

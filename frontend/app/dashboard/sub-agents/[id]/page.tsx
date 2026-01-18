@@ -548,20 +548,41 @@ export default function SubAgentDetailPage() {
               <button onClick={() => setShowDocViewer(false)} className="p-2 hover:bg-white/20 rounded-lg">✕</button>
             </div>
             <div className="p-6 overflow-y-auto max-h-[60vh]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {selectedDocs.map((doc) => (
-                  <a key={doc.id} href={doc.documentUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition">
-                    <div className="text-3xl">
-                      {doc.documentType.includes('POLICY') ? '📋' : doc.documentType.includes('AADHAR') ? '🪪' : doc.documentType.includes('PAN') ? '💳' : doc.documentType.includes('RC') ? '🚗' : '📄'}
+              <div className="grid grid-cols-1 gap-3">
+                {selectedDocs.map((doc) => {
+                  const isPdf = doc.documentUrl?.includes('/raw/') || doc.documentName?.toLowerCase().endsWith('.pdf');
+                  const downloadUrl = doc.documentUrl?.replace('/upload/', '/upload/fl_attachment/');
+                  const fileName = doc.documentName || `${doc.documentType}.pdf`;
+                  
+                  return (
+                    <div key={doc.id} className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="text-3xl">
+                        {doc.documentType.includes('POLICY') ? '📋' : doc.documentType.includes('AADHAR') ? '🪪' : doc.documentType.includes('PAN') ? '💳' : doc.documentType.includes('RC') ? '🚗' : '📄'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{doc.documentName || doc.documentType}</p>
+                        <p className="text-sm text-gray-500">{doc.documentType}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <a 
+                          href={doc.documentUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
+                        >
+                          👁 View
+                        </a>
+                        <a 
+                          href={downloadUrl}
+                          download={fileName}
+                          className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition flex items-center gap-1"
+                        >
+                          ⬇ Download
+                        </a>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{doc.documentName || doc.documentType}</p>
-                      <p className="text-sm text-gray-500">{doc.documentType}</p>
-                    </div>
-                    <span className="text-blue-600">↗</span>
-                  </a>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
