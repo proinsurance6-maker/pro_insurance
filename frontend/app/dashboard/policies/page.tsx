@@ -957,7 +957,7 @@ export default function PoliciesPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full relative z-[10000]">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Delete</h3>
