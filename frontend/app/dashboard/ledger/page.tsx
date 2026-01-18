@@ -249,6 +249,7 @@ export default function LedgerPage() {
                 const c = p.commissions?.[0];
                 const hasSub = !!p.subAgent;
                 
+                // Commission amounts are already in rupees (string from DB)
                 const grossCommission = Number(c?.totalCommissionAmount || 0);
                 const tds = grossCommission * 0.02;
                 const netPayout = grossCommission - tds;
