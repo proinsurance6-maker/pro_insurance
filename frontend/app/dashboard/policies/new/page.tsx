@@ -1168,9 +1168,34 @@ export default function NewPolicyPage() {
                       type="text"
                       value={clientSearch}
                       onChange={(e) => {
-                        setClientSearch(e.target.value);
+                        const searchValue = e.target.value;
+                        setClientSearch(searchValue);
                         setShowClientDropdown(true);
-                        setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
+                        
+                        // Auto-select if exact match found
+                        if (searchValue.trim().length >= 3) {
+                          const exactMatch = clients.find(c => 
+                            c.name.toLowerCase() === searchValue.toLowerCase().trim() ||
+                            c.phone === searchValue.trim()
+                          );
+                          
+                          if (exactMatch) {
+                            // Auto-select the client
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              clientId: exactMatch.id, 
+                              clientName: exactMatch.name 
+                            }));
+                            setClientSearch(exactMatch.name);
+                            setShowClientDropdown(false);
+                            setSuccess(`✅ Client "${exactMatch.name}" auto-selected`);
+                            setTimeout(() => setSuccess(''), 2000);
+                          } else {
+                            setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
+                          }
+                        } else {
+                          setFormData(prev => ({ ...prev, clientId: '', clientName: '' }));
+                        }
                       }}
                       onFocus={() => setShowClientDropdown(true)}
                       placeholder="Search client by name or phone..."
