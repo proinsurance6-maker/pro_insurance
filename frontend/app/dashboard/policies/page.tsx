@@ -573,10 +573,14 @@ export default function PoliciesPage() {
                   const expired = isExpired(policy.endDate);
                   const commission = policy.commissions?.[0];
                   const docsCount = policy.documents?.length || 0;
+                  
+                  // Commission calculations
                   const totalCommission = commission ? Number(commission.totalCommissionAmount || 0) : 0;
-                  const agentCommission = commission ? Number(commission.agentCommissionAmount || 0) : 0;
-                  const tdsAmount = agentCommission * 0.05; // 5% TDS
-                  const netAmount = agentCommission - tdsAmount;
+                  const tdsAmount = totalCommission * 0.02; // 2% TDS on total commission
+                  const netReceivedPayout = totalCommission - tdsAmount; // Your payout after TDS
+                  const subAgentCommission = commission?.subAgentCommissionAmount ? Number(commission.subAgentCommissionAmount) : 0;
+                  const ourProfit = netReceivedPayout - subAgentCommission; // Final agent profit after sub-agent share
+                  
                   const commissionPercent = Number(policy.premiumAmount) > 0 
                     ? ((totalCommission / Number(policy.premiumAmount)) * 100).toFixed(2)
                     : '0';
@@ -722,19 +726,19 @@ export default function PoliciesPage() {
                         {commission?.netCommissionPercent ? `${commission.netCommissionPercent}%` : commissionPercent ? `${commissionPercent}%` : '-'}
                       </td>
                       
-                      {/* Received Payout (Agent Commission) */}
+                      {/* Received Payout (Total Commission from Broker) */}
                       <td className="whitespace-nowrap text-right font-semibold text-green-600">
-                        {commission ? formatCurrency(commission.agentCommissionAmount) : '-'}
+                        {commission ? formatCurrency(totalCommission) : '-'}
                       </td>
                       
-                      {/* TDS */}
+                      {/* TDS (2% on Total Commission) */}
                       <td className="whitespace-nowrap text-right text-red-600">
                         {commission ? formatCurrency(tdsAmount) : '-'}
                       </td>
                       
-                      {/* Net Payout (After TDS) */}
+                      {/* Net Payout (Your Payout = Total - TDS, before sub-agent) */}
                       <td className="whitespace-nowrap text-right font-semibold text-green-700">
-                        {commission ? formatCurrency(netAmount) : '-'}
+                        {commission ? formatCurrency(netReceivedPayout) : '-'}
                       </td>
                       
                       {/* Sub-Agent */}
@@ -762,9 +766,9 @@ export default function PoliciesPage() {
                         {commission?.subAgentCommissionAmount ? formatCurrency(commission.subAgentCommissionAmount) : '-'}
                       </td>
                       
-                      {/* Our Profit (Agent keeps after paying sub-agent) */}
+                      {/* Our Profit (Final Agent Profit = Net Payout - Sub-Agent Share) */}
                       <td className="whitespace-nowrap text-right font-semibold text-emerald-600">
-                        {commission ? formatCurrency(agentCommission - (commission.subAgentCommissionAmount ? Number(commission.subAgentCommissionAmount) : 0)) : '-'}
+                        {commission ? formatCurrency(ourProfit) : '-'}
                       </td>
                       
                       {/* Received from Company Status */}
