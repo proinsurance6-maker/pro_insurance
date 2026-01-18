@@ -753,6 +753,14 @@ export const scanDocument = async (req: Request, res: Response, next: NextFuncti
     if (error.message?.includes('PDF') || error.message?.includes('text extraction')) {
       return next(error); // Pass through the improved error message
     }
+    next(error);
+  }
+};
+
+// ==========================================
+// PARSE EXCEL FILE
+// ==========================================
+export const parseExcel = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const agentId = (req as any).user.userId;
     const file = (req as any).file;
