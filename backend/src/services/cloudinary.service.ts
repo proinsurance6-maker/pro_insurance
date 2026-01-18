@@ -76,9 +76,8 @@ export const uploadDocument = async (
           // For raw files (PDFs), modify URL to include fl_attachment for proper download
           let secureUrl = result.secure_url;
           if (resourceType === 'raw' && originalExtension === 'pdf') {
-            // Add fl_attachment:filename.pdf to force browser to download with correct name
-            const downloadFilename = `${filename}.${originalExtension}`;
-            secureUrl = secureUrl.replace('/upload/', `/upload/fl_attachment:${downloadFilename}/`);
+            // Add fl_attachment flag to force browser to download with correct name
+            secureUrl = secureUrl.replace('/upload/', '/upload/fl_attachment/');
           }
           
           resolve({
