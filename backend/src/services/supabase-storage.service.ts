@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
+// Initialize Supabase client (optional - falls back to Cloudinary if not configured)
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Only create client if both URL and key are provided
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 export interface UploadResult {
   public_id: string;
@@ -25,6 +26,11 @@ export const uploadDocument = async (
   resourceType: 'image' | 'raw' | 'video' | 'auto' = 'auto',
   originalExtension?: string
 ): Promise<UploadResult> => {
+  // If Supabase not configured, throw error with helpful message
+  if (!supabase) {
+    throw new Error('Supabase not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in environment variables.');
+  }
+
   try {
     const ext = originalExtension || filename.split('.').pop() || '';
     const contentType = getContentType(ext);
@@ -131,6 +137,11 @@ export const uploadPolicyDocuments = async (files: {
 // DELETE DOCUMENT FROM SUPABASE
 // ==========================================
 export const deleteDocument = async (publicId: string): Promise<boolean> => {
+  if (!supabase) {
+    console.warn('Supabase not configured - cannot delete document');
+    return false;
+  }
+
   try {
     const { error } = await supabase.storage
       .from('policy-documents')

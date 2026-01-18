@@ -4,8 +4,14 @@ import { AppError } from '../middleware/errorHandler';
 import { parse } from 'csv-parse/sync';
 import * as XLSX from 'xlsx';
 import { extractPolicyFromImage, extractPolicyFromText } from '../services/ocr.service';
-import { uploadPolicyDocuments } from '../services/supabase-storage.service';
+import { uploadPolicyDocuments as uploadToSupabase } from '../services/supabase-storage.service';
+import { uploadPolicyDocuments as uploadToCloudinary } from '../services/cloudinary.service';
 import pdfParse from 'pdf-parse';
+
+// Use Supabase if configured, otherwise fallback to Cloudinary
+const uploadPolicyDocuments = process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY 
+  ? uploadToSupabase 
+  : uploadToCloudinary;
 
 // ==========================================
 // GET ALL POLICIES
