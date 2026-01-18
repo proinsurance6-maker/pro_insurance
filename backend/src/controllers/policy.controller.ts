@@ -4,7 +4,7 @@ import { AppError } from '../middleware/errorHandler';
 import { parse } from 'csv-parse/sync';
 import * as XLSX from 'xlsx';
 import { extractPolicyFromImage, extractPolicyFromText } from '../services/ocr.service';
-import { uploadPolicyDocuments } from '../services/cloudinary.service';
+import { uploadPolicyDocuments } from '../services/supabase-storage.service';
 import pdfParse from 'pdf-parse';
 
 // ==========================================
