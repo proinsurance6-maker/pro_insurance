@@ -73,16 +73,10 @@ export const uploadDocument = async (
           console.error('Cloudinary upload error:', error);
           reject(error);
         } else if (result) {
-          // For raw files (PDFs), modify URL to include fl_attachment for proper download
-          let secureUrl = result.secure_url;
-          if (resourceType === 'raw' && originalExtension === 'pdf') {
-            // Add fl_attachment flag to force browser to download with correct name
-            secureUrl = secureUrl.replace('/upload/', '/upload/fl_attachment/');
-          }
-          
+          // Return secure_url as-is - no transformation needed for raw files
           resolve({
             public_id: result.public_id,
-            secure_url: secureUrl,
+            secure_url: result.secure_url,
             original_filename: result.original_filename || filename,
             format: result.format || originalExtension || '',
             resource_type: result.resource_type,

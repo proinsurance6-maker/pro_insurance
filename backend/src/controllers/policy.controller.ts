@@ -198,9 +198,10 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
       }
       totalCommissionAmount = odCommissionAmount + tpCommissionAmount + netCommissionAmount;
     } else {
-      // Other policies - Net/Premium based commission
-      const commissionBase = netPremium || premiumAmount;
-      const rate = netCommissionRate || commissionPercent || 15;
+      // Other policies - Always use premiumAmount as base (NOT netPremium)
+      // netPremium is for display/reference only, commission is on gross premium
+      const commissionBase = premiumAmount;
+      const rate = commissionPercent || 15;
       totalCommissionAmount = (commissionBase * rate) / 100;
       netCommissionAmount = totalCommissionAmount;
       totalRate = rate; // Update total rate to reflect actual commission rate used
