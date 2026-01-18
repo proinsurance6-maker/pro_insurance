@@ -71,6 +71,7 @@ interface Policy {
   subAgent?: {
     id: string;
     name: string;
+    subAgentCode?: string;
   };
   broker?: {
     id: string;
@@ -79,8 +80,12 @@ interface Policy {
   commissions?: Array<{
     id: string;
     totalCommissionAmount: string;
+    agentCommissionAmount: string;
+    subAgentCommissionAmount?: string;
     receivedFromCompany: boolean;
     receivedDate?: string;
+    paidToSubAgent?: boolean;
+    paidToSubAgentDate?: string;
   }>;
 }
 
@@ -264,6 +269,18 @@ export default function LedgerPage() {
     }
   };
 
+  // Mark commission as paid to sub-agent
+  const handleMarkPaidToSubAgent = async (commissionId: string) => {
+    try {
+      await commissionAPI.markPaidToSubAgent(commissionId);
+      fetchData(); // Refresh all data
+      setOpenActionId(null);
+    } catch (error) {
+      console.error('Failed to mark paid to sub-agent:', error);
+      alert('Failed to update status');
+    }
+  };
+
   // Filter policies by paid status
   const filteredPolicies = policies.filter(policy => {
     // Search filter
@@ -436,54 +453,96 @@ export default function LedgerPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Premium</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sub-Agent</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Premium</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Comm.</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Agent Share</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sub-Agent Share</th>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Received</th>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Sub</th>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredPolicies.map((policy) => {
                     const commission = policy.commissions?.[0];
-                    const isPaid = commission?.receivedFromCompany || false;
+                    const isReceivedFromCompany = commission?.receivedFromCompany || false;
+                    const isPaidToSubAgent = commission?.paidToSubAgent || false;
+                    const hasSubAgent = !!policy.subAgent;
+                    const subAgentAmount = Number(commission?.subAgentCommissionAmount || 0);
+                    const agentAmount = Number(commission?.agentCommissionAmount || 0);
+                    const totalAmount = Number(commission?.totalCommissionAmount || 0);
                     
                     return (
                       <tr key={policy.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                        <td className="px-3 py-3 text-sm text-gray-600 whitespace-nowrap">
                           {formatDate(policy.createdAt)}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-sm font-medium text-blue-600">{policy.policyNumber}</div>
                           <div className="text-xs text-gray-500">{policy.policyType}</div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{policy.client.name}</div>
-                          <div className="text-xs text-gray-500">{policy.client.phone}</div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                        <td className="px-3 py-3 text-sm text-gray-600 whitespace-nowrap max-w-[150px] truncate" title={policy.company.name}>
                           {policy.company.name}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          {policy.subAgent ? (
+                            <Link href={`/dashboard/sub-agents/${policy.subAgent.id}`} className="text-sm text-purple-600 hover:underline">
+                              {policy.subAgent.name}
+                            </Link>
+                          ) : (
+                            <span className="text-sm text-gray-400">Direct</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-900 text-right whitespace-nowrap">
                           {formatCurrency(Number(policy.premiumAmount))}
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
-                          {commission ? formatCurrency(Number(commission.totalCommissionAmount)) : '₹0'}
+                        <td className="px-3 py-3 text-sm font-medium text-right whitespace-nowrap text-blue-600">
+                          {formatCurrency(totalAmount)}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            isPaid 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-orange-100 text-orange-800'
-                          }`}>
-                            {isPaid ? '✓ Received' : '⏳ Pending'}
-                          </span>
+                        <td className="px-3 py-3 text-sm font-medium text-right whitespace-nowrap text-green-600">
+                          {formatCurrency(agentAmount)}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap relative">
-                          {commission && !isPaid && (
+                        <td className="px-3 py-3 text-sm font-medium text-right whitespace-nowrap">
+                          {hasSubAgent ? (
+                            <span className="text-purple-600">{formatCurrency(subAgentAmount)}</span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-center whitespace-nowrap">
+                          {isReceivedFromCompany ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              ✓ Yes
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                              ⏳ No
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-center whitespace-nowrap">
+                          {!hasSubAgent ? (
+                            <span className="text-gray-400 text-xs">N/A</span>
+                          ) : isPaidToSubAgent ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              ✓ Paid
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              ⏳ Due
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap relative">
+                          {commission && (!isReceivedFromCompany || (hasSubAgent && !isPaidToSubAgent)) && (
                             <div className="relative">
                               <Button
                                 size="sm"
@@ -494,42 +553,65 @@ export default function LedgerPage() {
                                 }}
                                 className="text-xs"
                               >
-                                Action ▾
+                                ⚡ Action
                               </Button>
                               {openActionId === commission.id && (
-                                <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-10">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleMarkPaid(commission.id);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2"
-                                  >
-                                    ✓ Mark as Received
-                                  </button>
+                                <div className="absolute right-0 mt-1 w-56 bg-white rounded-md shadow-lg border z-10">
+                                  {!isReceivedFromCompany && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkPaid(commission.id);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 border-b"
+                                    >
+                                      💰 Mark Received from Company
+                                    </button>
+                                  )}
+                                  {hasSubAgent && !isPaidToSubAgent && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkPaidToSubAgent(commission.id);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-sm text-purple-700 hover:bg-purple-50 flex items-center gap-2"
+                                    >
+                                      💸 Mark Paid to Sub-Agent
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </div>
                           )}
-                          {isPaid && (
-                            <span className="text-xs text-gray-500">
-                              {commission?.receivedDate ? formatDate(commission.receivedDate) : '-'}
-                            </span>
+                          {isReceivedFromCompany && (!hasSubAgent || isPaidToSubAgent) && (
+                            <span className="text-xs text-green-600">✓ Done</span>
                           )}
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
-                <tfoot className="bg-gray-50">
+                <tfoot className="bg-gray-100">
                   <tr className="font-semibold">
-                    <td colSpan={5} className="px-4 py-3 text-sm text-gray-700">Total</td>
-                    <td className="px-4 py-3 text-sm text-blue-700">{formatCurrency(totalCommission)}</td>
-                    <td colSpan={2} className="px-4 py-3 text-sm">
-                      <span className="text-green-600">{formatCurrency(receivedCommission)}</span>
-                      <span className="text-gray-400 mx-1">/</span>
-                      <span className="text-orange-600">{formatCurrency(pendingCommission)}</span>
+                    <td colSpan={6} className="px-3 py-3 text-sm text-gray-700">Total ({filteredPolicies.length} policies)</td>
+                    <td className="px-3 py-3 text-sm text-right text-blue-700">{formatCurrency(totalCommission)}</td>
+                    <td className="px-3 py-3 text-sm text-right text-green-700">
+                      {formatCurrency(filteredPolicies.reduce((sum, p) => sum + Number(p.commissions?.[0]?.agentCommissionAmount || 0), 0))}
                     </td>
+                    <td className="px-3 py-3 text-sm text-right text-purple-700">
+                      {formatCurrency(filteredPolicies.reduce((sum, p) => sum + Number(p.commissions?.[0]?.subAgentCommissionAmount || 0), 0))}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-xs text-green-600">{filteredPolicies.filter(p => p.commissions?.[0]?.receivedFromCompany).length}</span>
+                      <span className="text-gray-400">/</span>
+                      <span className="text-xs text-orange-600">{filteredPolicies.filter(p => !p.commissions?.[0]?.receivedFromCompany).length}</span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-xs text-green-600">{filteredPolicies.filter(p => p.subAgent && p.commissions?.[0]?.paidToSubAgent).length}</span>
+                      <span className="text-gray-400">/</span>
+                      <span className="text-xs text-red-600">{filteredPolicies.filter(p => p.subAgent && !p.commissions?.[0]?.paidToSubAgent).length}</span>
+                    </td>
+                    <td></td>
                   </tr>
                 </tfoot>
               </table>
