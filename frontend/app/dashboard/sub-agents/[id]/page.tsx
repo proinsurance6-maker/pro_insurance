@@ -20,6 +20,12 @@ interface Policy {
   company: {
     name: string;
   };
+  documents?: Array<{
+    id: string;
+    documentType: string;
+    documentName: string;
+    documentUrl: string;
+  }>;
 }
 
 interface Commission {
@@ -258,42 +264,69 @@ export default function SubAgentDetailPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Policy No</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Client</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Company</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Type</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Premium</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {policies.map((policy) => (
-                    <tr key={policy.id} className="hover:bg-gray-50 transition">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(policy.startDate)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+            <div className="space-y-3">
+              {policies.map((policy) => (
+                <div key={policy.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
+                  {/* Main Row */}
+                  <div className="p-4 bg-white hover:bg-gray-50">
+                    <div className="grid grid-cols-6 gap-4 items-center">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Date</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(policy.startDate)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Policy No</p>
                         <Link 
                           href={`/dashboard/policies/${policy.id}`}
-                          className="text-sm font-medium text-gray-900 hover:text-blue-600"
+                          className="text-sm font-medium text-blue-600 hover:text-blue-700 truncate"
                         >
                           {policy.policyNumber}
                         </Link>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{policy.client.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{policy.company.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{policy.policyType}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-right text-gray-900">
-                        {formatCurrency(policy.premiumAmount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Client</p>
+                        <p className="text-sm text-gray-900 truncate">{policy.client.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Company</p>
+                        <p className="text-sm text-gray-600 truncate">{policy.company.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Type</p>
+                        <p className="text-sm text-gray-600">{policy.policyType}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Premium</p>
+                        <p className="text-sm font-medium text-gray-900">{formatCurrency(policy.premiumAmount)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Documents Section */}
+                  {policy.documents && policy.documents.length > 0 && (
+                    <div className="bg-gray-50 border-t border-gray-200 p-4">
+                      <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                        📄 Attached Documents ({policy.documents.length})
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {policy.documents.map((doc) => (
+                          <a
+                            key={doc.id}
+                            href={doc.documentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition text-xs font-medium text-gray-700"
+                            title={`Download ${doc.documentName}`}
+                          >
+                            {doc.documentType === 'POLICY_PDF' || doc.documentType === 'POLICYCOPY' ? '📋' : '📑'}
+                            <span className="truncate max-w-[150px]">{doc.documentName || doc.documentType}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
