@@ -325,7 +325,7 @@ export const createPolicy = async (req: Request, res: Response, next: NextFuncti
       await tx.renewal.create({
         data: {
           policyId: newPolicy.id,
-          renewalDate: new Date(endDate)
+          renewalDate: new Date(new Date(endDate).getTime() - 24 * 60 * 60 * 1000) // 1 day before end date
         }
       });
 
@@ -636,7 +636,7 @@ export const renewPolicy = async (req: Request, res: Response, next: NextFunctio
       await tx.renewal.create({
         data: {
           policyId: policy.id,
-          renewalDate: new Date(newEndDate)
+          renewalDate: new Date(new Date(newEndDate).getTime() - 24 * 60 * 60 * 1000) // 1 day before end date
         }
       });
 
@@ -974,11 +974,11 @@ export const bulkCreatePolicies = async (req: Request, res: Response, next: Next
             }
           });
 
-          // Create renewal
+          // Create renewal (1 day before policy end date)
           await tx.renewal.create({
             data: {
               policyId: policy.id,
-              renewalDate: endDate
+              renewalDate: new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 day before end date
             }
           });
 
