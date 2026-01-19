@@ -113,6 +113,8 @@ export default function NewPolicyPage() {
   const [showSubAgentForm, setShowSubAgentForm] = useState(false);
   const [excelData, setExcelData] = useState<any[]>([]);
   const [excelFileName, setExcelFileName] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [savedPolicyNumber, setSavedPolicyNumber] = useState('');
   
   // New client form data
   const [newClientData, setNewClientData] = useState({
@@ -742,10 +744,15 @@ export default function NewPolicyPage() {
       };
 
       await policyAPI.create(policyData, Object.keys(files).length > 0 ? files : undefined);
-      setSuccess('✅ Policy created successfully with documents uploaded!');
-      setTimeout(() => router.push('/dashboard/policies'), 2000);
+      
+      // Show success modal instead of auto-redirect
+      setSavedPolicyNumber(formData.policyNumber);
+      setShowSuccessModal(true);
+      
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to create policy');
+      // Scroll to top to show error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -2175,6 +2182,63 @@ export default function NewPolicyPage() {
       {entryMode === 'excel' && error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mt-4">
           {error}
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Success Header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-6 text-center">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Policy Saved Successfully!</h2>
+              <p className="text-green-100 text-sm">Policy #{savedPolicyNumber}</p>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-6 text-center">
+              <p className="text-gray-600 mb-6">
+                Your policy has been successfully created and saved to the database.
+              </p>
+              
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => router.push('/dashboard/policies')}
+                  className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-lg flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  View All Policies
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    // Reset form for new policy
+                    window.location.reload();
+                  }}
+                  className="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Another Policy
+                </button>
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="w-full px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       </div>
