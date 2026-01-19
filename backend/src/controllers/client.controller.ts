@@ -136,12 +136,15 @@ export const createClient = async (req: Request, res: Response, next: NextFuncti
       throw new AppError('Name is required', 400, 'VALIDATION_ERROR');
     }
 
-    const existing = phone ? await prisma.client.findFirst({
-      where: { phone, agentId }
-    }) : null;
-
-    if (existing) {
-      throw new AppError('Client with this phone already exists', 400, 'DUPLICATE_PHONE');
+    // Only check for duplicates if phone is provided
+    if (phone && phone.trim()) {
+      const existing = await prisma.client.findFirst({
+        where: { phone, agentId }
+      });
+      
+      if (existing) {
+        throw new AppError('Client with this phone already exists', 400, 'DUPLICATE_PHONE');
+      }
     }
 
     const agent = await prisma.agent.findUnique({ where: { id: agentId } });
@@ -153,7 +156,7 @@ export const createClient = async (req: Request, res: Response, next: NextFuncti
         agentId,
         clientCode,
         name,
-        phone,
+        phone: phone && phone.trim() ? phone : null,
         email,
         address,
         panNumber,
