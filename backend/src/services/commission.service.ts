@@ -1,16 +1,29 @@
 import prisma from '../utils/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 
+/**
+ * Commission Flow in Insurance Book SaaS:
+ * 
+ * Broker/Company → USER (Main Agent) → Sub-Agent
+ *     (pays)           (receives & pays)    (receives)
+ * 
+ * - totalCommissionAmount: Total received FROM broker
+ * - subAgentCommissionAmount: Amount payable TO sub-agent
+ * - agentCommissionAmount: USER's PROFIT (keeps after paying sub-agent)
+ * 
+ * Example: Broker pays ₹1,500 → Sub-agent gets ₹900 → User keeps ₹600
+ */
+
 interface CommissionCalculation {
-  totalCommissionAmount: number;
-  agentCommissionAmount: number;
-  subAgentCommissionAmount: number;
+  totalCommissionAmount: number;      // Total from broker
+  agentCommissionAmount: number;      // User's profit (net keep)
+  subAgentCommissionAmount: number;   // Payable to sub-agent
 }
 
 /**
  * Calculate commission amounts for a policy
  * @param premiumAmount - The premium amount of the policy
- * @param commissionRate - The commission rate percentage
+ * @param commissionRate - The commission rate percentage FROM broker
  * @param subAgentId - Optional sub-agent ID for commission split
  * @returns Commission breakdown
  */
@@ -19,12 +32,14 @@ export const calculateCommission = async (
   commissionRate: number,
   subAgentId?: string
 ): Promise<CommissionCalculation> => {
+  // Total commission received from broker
   const totalCommissionAmount = (premiumAmount * commissionRate) / 100;
   
+  // By default, user keeps all commission
   let agentCommissionAmount = totalCommissionAmount;
   let subAgentCommissionAmount = 0;
 
-  // If sub-agent is involved, split commission
+  // If sub-agent brought the business, split commission
   if (subAgentId) {
     const subAgent = await prisma.subAgent.findUnique({
       where: { id: subAgentId },
@@ -32,15 +47,17 @@ export const calculateCommission = async (
 
     if (subAgent && subAgent.commissionPercentage) {
       const subAgentPercentage = Number(subAgent.commissionPercentage);
+      // Calculate sub-agent's share
       subAgentCommissionAmount = (totalCommissionAmount * subAgentPercentage) / 100;
+      // User keeps the remaining amount (profit)
       agentCommissionAmount = totalCommissionAmount - subAgentCommissionAmount;
     }
   }
 
   return {
     totalCommissionAmount,
-    agentCommissionAmount,
-    subAgentCommissionAmount,
+    agentCommissionAmount,      // USER's PROFIT
+    subAgentCommissionAmount,   // Payable to sub-agent
   };
 };
 

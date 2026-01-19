@@ -5,7 +5,29 @@ Multi-tenant SaaS for insurance agents (India). **Backend:** Express 5 + Prisma 
 
 **Tech Stack:** PostgreSQL + Prisma ORM | JWT Auth | Supabase/Cloudinary Storage | node-cron Jobs | Axios + React Query
 
-## 🔒 CRITICAL: Multi-Tenancy Security
+## � Business Model (CRITICAL - Read First!)
+**User = Main Agent = Business Owner** who runs the insurance agency.
+
+**Commission Flow:**
+```
+Broker (PolicyBazaar) → USER (Main Agent) → Sub-Agent
+     [pays commission]     [receives & pays]   [receives payout]
+```
+
+**Key Entities:**
+- **User/Agent:** Business owner using this software (receives from broker, pays to sub-agent)
+- **Broker:** Source of policies (PolicyBazaar, MitPro, Probus) - pays commission TO user
+- **Sub-Agent:** Sales partner who brings business - receives commission FROM user
+- **User Profit:** `brokerCommission - subAgentPayout`
+
+**Commission Fields:**
+- `totalCommissionAmount` - Total received FROM broker
+- `subAgentCommissionAmount` - Amount payable TO sub-agent  
+- `agentCommissionAmount` - **USER'S PROFIT** (what they keep)
+
+📖 **See [BUSINESS_MODEL.md](BUSINESS_MODEL.md) for complete details**
+
+## �🔒 CRITICAL: Multi-Tenancy Security
 **Every agent-owned query MUST filter by `agentId`** to prevent cross-tenant data leaks:
 ```typescript
 // ✅ CORRECT - see broker.controller.ts, policy.controller.ts

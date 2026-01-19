@@ -1,29 +1,40 @@
-# 🏢 Insurance Broker Management System
+# 🏢 Insurance Book - Insurance Agent Management System
 
-A comprehensive full-stack application for managing insurance policies, sub-brokers, commissions, and automated renewal tracking across multiple insurance companies.
+A comprehensive SaaS platform for insurance agents in India to manage their business, policies, sub-agents, commissions, and automated renewals.
+
+## 💼 Business Model
+
+**Target User:** Insurance agents who run their own insurance agency
+
+**Key Relationships:**
+- **Broker → User:** User receives commission from brokers (PolicyBazaar, MitPro, Probus)
+- **User → Sub-Agent:** User pays commission to sub-agents who bring business
+- **User Profit:** Difference between broker commission and sub-agent payout
+
+For detailed business model, see [BUSINESS_MODEL.md](BUSINESS_MODEL.md)
 
 ## 📋 Features
 
-### For Sub-Brokers
-- 📊 Dashboard with key metrics (policies, commissions, renewals)
-- 📝 Policy management (view, add, update)
-- 💰 Commission tracking (earned, pending, paid)
-- 🔔 Renewal reminders and calendar view
-- 📈 Reports and analytics
+### For Master Agents (Business Owners)
+- 📊 Dashboard with business metrics (revenue, expenses, profit)
+- 📝 Policy management (create, track, update)
+- 💰 Commission tracking (received from brokers, paid to sub-agents)
+- 👥 Sub-agent management with individual ledgers
+- 🔔 Automated renewal reminders
+- 📈 Financial reports and analytics
+- 📒 Smart Ledger (Hisab-Kitab) with 3-tab view
 
-### For Admins
-- 👥 Manage sub-brokers (create, update, view performance)
-- 🏢 Manage insurance companies
-- 📤 Bulk policy upload via CSV/Excel
-- ⚙️ Configure commission rules (tiered structure)
-- 📊 System-wide reports and analytics
-- 🔍 View all transactions across brokers
+### For Sub-Agents (via separate login)
+- 📊 Personal dashboard with their commission earnings
+- 📝 View policies they brought
+- 💰 Track pending and paid commissions
+- 🔔 Renewal notifications
 
 ### Automated Features
-- ✅ Auto-calculation of commissions on policy creation
+- ✅ Auto-calculation of commissions (broker and sub-agent splits)
 - ✅ Auto-generation of renewal records
 - ✅ Automated renewal reminder emails (30, 15, 7, 1 days before expiry)
-- ✅ Commission tier-based calculations
+- ✅ Multi-tenant data isolation for security
 
 ## 🛠️ Technology Stack
 
