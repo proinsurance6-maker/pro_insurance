@@ -595,7 +595,7 @@ export default function PoliciesPage() {
                     : '0';
                   
                   return (
-                    <tr key={policy.id}>
+                    <tr key={policy.id} className="border-b">
                       {/* Action */}
                       <td className="whitespace-nowrap">
                         <div className="flex items-center gap-1">
