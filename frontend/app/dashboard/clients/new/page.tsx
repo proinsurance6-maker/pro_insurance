@@ -27,7 +27,13 @@ export default function NewClientPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clean name field by removing prefixes
+    if (name === 'name') {
+      const cleanedValue = value.replace(/^(Mr\.?|Mrs\.?|Miss|Ms\.?|Dr\.?)\s+/i, '');
+      setFormData(prev => ({ ...prev, [name]: cleanedValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   // Clean name by removing prefixes
