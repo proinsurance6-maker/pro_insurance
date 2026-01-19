@@ -1,0 +1,83 @@
+      {activeTab === 'ledger' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium text-gray-900">Sub-Agent Ledger / Khata</h3>
+            <div className="text-sm">
+              <span className="font-medium">Current Balance: </span>
+              <span className={`font-bold text-lg ${ledgerBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {formatCurrency(Math.abs(ledgerBalance))}
+                <span className="text-xs ml-1">{ledgerBalance < 0 ? '(Dr)' : '(Cr)'}</span>
+              </span>
+            </div>
+          </div>
+          
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Description</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Reference</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Debit (Dr)</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Credit (Cr)</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {ledgerEntries.length === 0 ? (
+                      <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">No ledger entries found</td></tr>
+                    ) : (
+                      (() => {
+                        let runningBalance = 0;
+                        return ledgerEntries.map((entry) => {
+                          const amount = Number(entry.amount);
+                          runningBalance += entry.entryType === 'CREDIT' ? amount : -amount;
+                          return (
+                            <tr key={entry.id} className="hover:bg-gray-50 transition">
+                              <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{formatDate(entry.entryDate)}</td>
+                              <td className="px-4 py-3 text-sm">
+                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${
+                                  entry.entryType === 'CREDIT' 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-red-100 text-red-700'
+                                }`}>
+                                  {entry.entryType === 'CREDIT' ? '💰 Credit' : '💸 Debit'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{entry.description}</td>
+                              <td className="px-4 py-3 text-sm">
+                                {entry.policy ? (
+                                  <Link href={`/dashboard/policies/${entry.policy.id}`} className="text-blue-600 hover:text-blue-700">
+                                    {entry.policy.policyNumber}
+                                  </Link>
+                                ) : (
+                                  <span className="text-gray-500">{entry.reference || '-'}</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right font-medium text-red-600">
+                                {entry.entryType === 'DEBIT' ? formatCurrency(amount) : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right font-medium text-green-600">
+                                {entry.entryType === 'CREDIT' ? formatCurrency(amount) : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right font-bold">
+                                <span className={runningBalance < 0 ? 'text-red-600' : 'text-green-600'}>
+                                  {formatCurrency(Math.abs(runningBalance))}
+                                  <span className="text-xs ml-1">{runningBalance < 0 ? 'Dr' : 'Cr'}</span>
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
