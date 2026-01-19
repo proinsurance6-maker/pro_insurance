@@ -592,21 +592,21 @@ export default function PoliciesPage() {
                         <div className="flex items-center gap-1">
                           <button 
                             onClick={() => setViewDocsModal(policy)}
-                            className="p-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition" 
+                            className="p-1 border border-purple-300 text-purple-600 rounded hover:bg-purple-50 transition" 
                             title="View Documents"
                           >
                             <DocumentIcon className="w-3 h-3" />
                           </button>
                           <Link
                             href={`/dashboard/policies/new?edit=${policy.id}`}
-                            className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition" 
+                            className="p-1 border border-green-300 text-green-600 rounded hover:bg-green-50 transition" 
                             title="Edit"
                           >
                             <EditIcon className="w-3 h-3" />
                           </Link>
                           <button 
                             onClick={() => setDeleteConfirm(policy.id)}
-                            className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition" 
+                            className="p-1 border border-red-300 text-red-600 rounded hover:bg-red-50 transition" 
                             title="Delete"
                           >
                             <TrashIcon className="w-3 h-3" />
@@ -811,7 +811,7 @@ export default function PoliciesPage() {
                       <td className="whitespace-nowrap text-center">
                         <Link
                           href={`/dashboard/policies/${policy.id}/payout`}
-                          className="inline-flex p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
+                          className="inline-flex p-1.5 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 transition"
                           title="Update Payout/Ledger"
                         >
                           <PayoutIcon className="w-4 h-4" />

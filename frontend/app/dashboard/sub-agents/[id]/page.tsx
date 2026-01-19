@@ -92,6 +92,7 @@ export default function SubAgentDetailPage() {
   const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'info' | 'policies' | 'ledger'>('info');
+  const [ledgerSubTab, setLedgerSubTab] = useState<'all' | 'receivable' | 'paid'>('all');
   
   const [showDocViewer, setShowDocViewer] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<PolicyDocument[]>([]);
@@ -480,6 +481,7 @@ export default function SubAgentDetailPage() {
 
       {activeTab === 'ledger' && (
         <div className="space-y-4">
+          {/* Ledger Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-blue-50">
               <CardContent className="p-4 text-center">
@@ -489,98 +491,297 @@ export default function SubAgentDetailPage() {
             </Card>
             <Card className="bg-green-50">
               <CardContent className="p-4 text-center">
-                <p className="text-xl font-bold text-green-600">{formatCurrency(totalDebits)}</p>
+                <p className="text-xl font-bold text-green-600">{formatCurrency(paidCommission)}</p>
                 <p className="text-sm text-gray-600">Total Paid (Debit)</p>
               </CardContent>
             </Card>
             <Card className="bg-orange-50">
               <CardContent className="p-4 text-center">
-                <p className="text-xl font-bold text-orange-600">{formatCurrency(totalCommission - totalDebits)}</p>
+                <p className="text-xl font-bold text-orange-600">{formatCurrency(pendingCommission)}</p>
                 <p className="text-sm text-gray-600">Pending Payout</p>
               </CardContent>
             </Card>
-            <Card className={(totalCommission - totalDebits) < 0 ? 'bg-red-50' : 'bg-purple-50'}>
+            <Card className={pendingCommission < 0 ? 'bg-red-50' : 'bg-purple-50'}>
               <CardContent className="p-4 text-center">
-                <p className={`text-xl font-bold ${(totalCommission - totalDebits) < 0 ? 'text-red-600' : 'text-purple-600'}`}>
-                  {formatCurrency(Math.abs(totalCommission - totalDebits))}
+                <p className={`text-xl font-bold ${pendingCommission < 0 ? 'text-red-600' : 'text-purple-600'}`}>
+                  {formatCurrency(Math.abs(pendingCommission))}
                 </p>
-                <p className="text-sm text-gray-600">{(totalCommission - totalDebits) < 0 ? 'Advance Given' : 'Balance Due'}</p>
+                <p className="text-sm text-gray-600">{pendingCommission < 0 ? 'Overpaid' : 'Balance Due'}</p>
               </CardContent>
             </Card>
           </div>
 
-          <div className="flex justify-end">
-            <Button onClick={() => setShowPayoutModal(true)} className="bg-green-600 hover:bg-green-700">
-              + Record Payout
-            </Button>
+          {/* Ledger Sub-Tabs */}
+          <div className="border-b bg-gray-50 rounded-t-lg">
+            <div className="flex space-x-1 p-1">
+              {(['all', 'receivable', 'paid'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setLedgerSubTab(tab)}
+                  className={`flex-1 py-2.5 px-4 rounded-md font-medium text-sm transition ${
+                    ledgerSubTab === tab 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                  }`}
+                >
+                  {tab === 'all' && `📊 All Policies (${policies.length})`}
+                  {tab === 'receivable' && `⏳ Receivable Payout (${policies.filter(p => p.commissions?.[0] && !p.commissions[0].paidToSubAgent).length})`}
+                  {tab === 'paid' && `✅ Paid Payout (${policies.filter(p => p.commissions?.[0]?.paidToSubAgent).length})`}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <Card>
-            <CardContent className="p-0">
-              <table className="min-w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase border-b">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase border-b">Description</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase border-b">Policy</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-green-700 uppercase border-b">Credit</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-red-700 uppercase border-b">Debit</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase border-b">Balance</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {policies.map((policy, idx) => {
-                    const commission = policy.commissions?.[0];
-                    if (!commission) return null;
-                    const prevCommissions = policies.slice(0, idx + 1).reduce((sum, p) => {
-                      const c = p.commissions?.[0];
-                      return sum + Number(c?.subAgentCommissionAmount || 0);
-                    }, 0);
-                    return (
-                      <tr key={`comm-${policy.id}`} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-900">{formatDate(policy.startDate)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          Commission - {policy.client.name}
-                          {commission.paidToSubAgent && <span className="ml-2 text-xs text-green-600">(Paid)</span>}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <Link href={`/dashboard/policies/${policy.id}`} className="text-blue-600 hover:underline">{policy.policyNumber}</Link>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right font-medium text-green-600">{formatCurrency(commission.subAgentCommissionAmount)}</td>
-                        <td className="px-4 py-3 text-sm text-right text-gray-400">-</td>
-                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">{formatCurrency(prevCommissions)}</td>
+          {/* All Policies Tab */}
+          {ledgerSubTab === 'all' && (
+            <Card>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase border-b border-gray-600">Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase border-b border-gray-600">Policy No</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase border-b border-gray-600">Client</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase border-b border-gray-600">Premium</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase border-b border-gray-600">Commission %</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase border-b border-gray-600">Commission ₹</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase border-b border-gray-600">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase border-b border-gray-600">Paid Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase border-b border-gray-600">Remarks</th>
                       </tr>
-                    );
-                  })}
-                  {ledgerEntries.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900">{formatDate(entry.entryDate)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{entry.description}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {entry.policy ? <Link href={`/dashboard/policies/${entry.policy.id}`} className="text-blue-600 hover:underline">{entry.policy.policyNumber}</Link> : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right font-medium text-green-600">{entry.entryType === 'CREDIT' ? formatCurrency(entry.amount) : '-'}</td>
-                      <td className="px-4 py-3 text-sm text-right font-medium text-red-600">{entry.entryType === 'DEBIT' ? formatCurrency(entry.amount) : '-'}</td>
-                      <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">-</td>
-                    </tr>
-                  ))}
-                  {policies.length === 0 && ledgerEntries.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No ledger entries found</td></tr>
-                  )}
-                </tbody>
-                {(policies.length > 0 || ledgerEntries.length > 0) && (
-                  <tfoot className="bg-gray-100 font-semibold">
-                    <tr>
-                      <td colSpan={3} className="px-4 py-3 text-sm text-gray-700">Total</td>
-                      <td className="px-4 py-3 text-sm text-right text-green-700">{formatCurrency(totalCommission)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-red-700">{formatCurrency(totalDebits)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900">{formatCurrency(totalCommission - totalDebits)}</td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
-            </CardContent>
-          </Card>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {policies.length === 0 ? (
+                        <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-500">No policies found</td></tr>
+                      ) : (
+                        policies.map((policy) => {
+                          const commission = policy.commissions?.[0];
+                          const isPaid = commission?.paidToSubAgent;
+                          return (
+                            <tr key={policy.id} className={`hover:bg-gray-50 transition ${isPaid ? 'bg-green-50/30' : ''}`}>
+                              <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{formatDate(policy.startDate)}</td>
+                              <td className="px-4 py-3 text-sm">
+                                <Link href={`/dashboard/policies/${policy.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                                  {policy.policyNumber}
+                                </Link>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 max-w-[150px] truncate" title={policy.client.name}>{policy.client.name}</td>
+                              <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">{formatCurrency(policy.premiumAmount)}</td>
+                              <td className="px-4 py-3 text-sm text-center text-gray-600">
+                                {commission?.subAgentOdPercent && commission?.subAgentTpPercent 
+                                  ? `OD:${commission.subAgentOdPercent}% TP:${commission.subAgentTpPercent}%`
+                                  : commission?.subAgentNetPercent 
+                                  ? `${commission.subAgentNetPercent}%`
+                                  : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right font-bold text-green-600">
+                                {commission ? formatCurrency(commission.subAgentCommissionAmount) : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-center">
+                                {isPaid ? (
+                                  <span className="px-3 py-1 text-xs rounded-full bg-green-100 text-green-700 font-medium">✓ Paid</span>
+                                ) : commission ? (
+                                  <button
+                                    onClick={() => openMarkPaidModal(commission, policy.policyNumber)}
+                                    className="px-3 py-1 text-xs rounded-full bg-orange-100 text-orange-700 font-medium hover:bg-orange-200 transition cursor-pointer"
+                                    title="Click to mark as paid"
+                                  >
+                                    ⏳ Pending
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                                {commission?.paidToSubAgentDate ? formatDate(commission.paidToSubAgentDate) : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-500 max-w-[120px] truncate" title={commission?.remarks || ''}>
+                                {commission?.remarks || '-'}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                    {policies.length > 0 && (
+                      <tfoot className="bg-gradient-to-r from-gray-100 to-gray-50 font-bold">
+                        <tr>
+                          <td colSpan={3} className="px-4 py-3 text-sm text-gray-900 uppercase">Total</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">{formatCurrency(totalPremium)}</td>
+                          <td className="px-4 py-3"></td>
+                          <td className="px-4 py-3 text-sm text-right text-green-700">{formatCurrency(totalCommission)}</td>
+                          <td colSpan={3}></td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Receivable Payout Tab */}
+          {ledgerSubTab === 'receivable' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium text-orange-600">{policies.filter(p => p.commissions?.[0] && !p.commissions[0].paidToSubAgent).length}</span> pending payment(s) • 
+                  <span className="ml-2 font-bold text-orange-600">{formatCurrency(pendingCommission)}</span> total due
+                </div>
+                <Button onClick={() => setShowPayoutModal(true)} className="bg-green-600 hover:bg-green-700">
+                  💰 Record Payout
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-gradient-to-r from-orange-600 to-orange-500 text-white">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Policy No</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Client</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Premium</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Due Amount</th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold uppercase">Days Pending</th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold uppercase">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {policies.filter(p => p.commissions?.[0] && !p.commissions[0].paidToSubAgent).length === 0 ? (
+                          <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">🎉 All payments are up to date!</td></tr>
+                        ) : (
+                          policies.filter(p => p.commissions?.[0] && !p.commissions[0].paidToSubAgent).map((policy) => {
+                            const commission = policy.commissions![0];
+                            const daysPending = Math.floor((Date.now() - new Date(policy.startDate).getTime()) / (1000 * 60 * 60 * 24));
+                            return (
+                              <tr key={policy.id} className="hover:bg-orange-50/50 transition">
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{formatDate(policy.startDate)}</td>
+                                <td className="px-4 py-3 text-sm">
+                                  <Link href={`/dashboard/policies/${policy.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                                    {policy.policyNumber}
+                                  </Link>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">{policy.client.name}</td>
+                                <td className="px-4 py-3 text-sm text-right text-gray-900">{formatCurrency(policy.premiumAmount)}</td>
+                                <td className="px-4 py-3 text-sm text-right font-bold text-orange-600">
+                                  {formatCurrency(commission.subAgentCommissionAmount)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-center">
+                                  <span className={`px-2 py-1 text-xs rounded-full ${
+                                    daysPending > 30 ? 'bg-red-100 text-red-700' : 
+                                    daysPending > 15 ? 'bg-orange-100 text-orange-700' : 
+                                    'bg-yellow-100 text-yellow-700'
+                                  }`}>
+                                    {daysPending} days
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <button
+                                    onClick={() => openMarkPaidModal(commission, policy.policyNumber)}
+                                    className="px-4 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition"
+                                  >
+                                    ✓ Mark Paid
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                      {policies.filter(p => p.commissions?.[0] && !p.commissions[0].paidToSubAgent).length > 0 && (
+                        <tfoot className="bg-orange-50 font-bold">
+                          <tr>
+                            <td colSpan={4} className="px-4 py-3 text-sm text-gray-900 uppercase">Total Receivable</td>
+                            <td className="px-4 py-3 text-sm text-right text-orange-700">{formatCurrency(pendingCommission)}</td>
+                            <td colSpan={2}></td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Paid Payout Tab */}
+          {ledgerSubTab === 'paid' && (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <span className="font-medium text-green-600">{policies.filter(p => p.commissions?.[0]?.paidToSubAgent).length}</span> payment(s) completed • 
+                <span className="ml-2 font-bold text-green-600">{formatCurrency(paidCommission)}</span> total paid
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-gradient-to-r from-green-600 to-green-500 text-white">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Policy Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Policy No</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Client</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Premium</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Paid Amount</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Paid Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Remarks</th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold uppercase">Receipt</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {policies.filter(p => p.commissions?.[0]?.paidToSubAgent).length === 0 ? (
+                          <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">No payments made yet</td></tr>
+                        ) : (
+                          policies.filter(p => p.commissions?.[0]?.paidToSubAgent).map((policy) => {
+                            const commission = policy.commissions![0];
+                            return (
+                              <tr key={policy.id} className="hover:bg-green-50/30 transition">
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{formatDate(policy.startDate)}</td>
+                                <td className="px-4 py-3 text-sm">
+                                  <Link href={`/dashboard/policies/${policy.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                                    {policy.policyNumber}
+                                  </Link>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">{policy.client.name}</td>
+                                <td className="px-4 py-3 text-sm text-right text-gray-900">{formatCurrency(policy.premiumAmount)}</td>
+                                <td className="px-4 py-3 text-sm text-right font-bold text-green-600">
+                                  {formatCurrency(commission.subAgentCommissionAmount)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                                  {commission.paidToSubAgentDate ? formatDate(commission.paidToSubAgentDate) : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 max-w-[150px] truncate" title={commission.remarks || ''}>
+                                  {commission.remarks || '-'}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <button 
+                                    className="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-lg hover:bg-blue-200 transition"
+                                    title="Print receipt (Coming soon)"
+                                  >
+                                    🖨️ Print
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                      {policies.filter(p => p.commissions?.[0]?.paidToSubAgent).length > 0 && (
+                        <tfoot className="bg-green-50 font-bold">
+                          <tr>
+                            <td colSpan={4} className="px-4 py-3 text-sm text-gray-900 uppercase">Total Paid</td>
+                            <td className="px-4 py-3 text-sm text-right text-green-700">{formatCurrency(paidCommission)}</td>
+                            <td colSpan={3}></td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       )}
 

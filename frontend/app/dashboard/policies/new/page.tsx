@@ -191,6 +191,8 @@ export default function NewPolicyPage() {
     premiumPaidByAgent: false, // Agent paid premium for client
     receivedAdvanceFromAgent: false, // Received advance from sub-agent
     advanceAmount: '', // Advance amount received
+    payoutPaid: false, // Payout to sub-agent completed
+    ledgerRemark: '', // AI-readable ledger remark
     holderName: '',
     vehicleNumber: '',
     remarks: '',
@@ -1750,99 +1752,6 @@ export default function NewPolicyPage() {
                 )}
               </div>
 
-              {/* Motor Insurance: Premium Payment & Advance Options */}
-              {formData.policyType === 'Motor Insurance' && formData.subAgentId && (
-                <div className="mt-4 bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
-                  <h4 className="text-xs font-semibold text-blue-700 uppercase mb-3 flex items-center gap-2">
-                    <span className="text-base">💰</span> Payment & Ledger Adjustment
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Premium Paid By Agent */}
-                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-                      <div className="flex items-center gap-3 mb-2">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={formData.premiumPaidByAgent}
-                            onChange={(e) => setFormData(prev => ({ ...prev, premiumPaidByAgent: e.target.checked }))}
-                            className="w-4 h-4 text-amber-600 rounded"
-                          />
-                          <span className="text-sm font-medium text-amber-800">Premium Paid By You?</span>
-                        </label>
-                      </div>
-                      {formData.premiumPaidByAgent && (
-                        <div className="text-xs text-amber-700 bg-amber-100 rounded p-2 mt-2">
-                          <p className="font-medium mb-1">💡 Ledger Adjustment:</p>
-                          <p>Gross Premium (₹{formData.premiumAmount || 0}) − Sub-Agent Payout (₹{calculateSubAgentPayout().toFixed(0)}) = <span className="font-bold text-red-600">₹{(parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()).toFixed(0)}</span></p>
-                          <p className="mt-1 text-amber-600">This amount will be added to Sub-Agent's <strong>DUE</strong> in ledger.</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Received Advance */}
-                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                      <div className="flex items-center gap-3 mb-2">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={formData.receivedAdvanceFromAgent}
-                            onChange={(e) => setFormData(prev => ({ ...prev, receivedAdvanceFromAgent: e.target.checked, advanceAmount: e.target.checked ? prev.advanceAmount : '' }))}
-                            className="w-4 h-4 text-green-600 rounded"
-                          />
-                          <span className="text-sm font-medium text-green-800">Received Advance?</span>
-                        </label>
-                      </div>
-                      {formData.receivedAdvanceFromAgent && (
-                        <div className="mt-2">
-                          <div className="flex items-center gap-2">
-                            <label className="text-xs text-gray-600">Amount:</label>
-                            <Input
-                              type="number"
-                              name="advanceAmount"
-                              value={formData.advanceAmount}
-                              onChange={handleChange}
-                              placeholder="Enter advance amount"
-                              className="h-8 text-sm flex-1"
-                            />
-                          </div>
-                          <p className="text-xs text-green-600 mt-2">
-                            ✓ This advance (₹{formData.advanceAmount || 0}) will be <strong>deducted</strong> from Sub-Agent's pending dues.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Ledger Summary Preview */}
-                  {(formData.premiumPaidByAgent || formData.receivedAdvanceFromAgent) && (
-                    <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                      <h5 className="text-xs font-semibold text-gray-700 uppercase mb-2">📊 Sub-Agent Ledger Preview</h5>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div className="text-center p-2 bg-red-50 rounded-lg">
-                          <p className="text-xs text-gray-500">Amount Due</p>
-                          <p className="font-bold text-red-600">
-                            ₹{formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()).toFixed(0) : '0'}
-                          </p>
-                        </div>
-                        <div className="text-center p-2 bg-green-50 rounded-lg">
-                          <p className="text-xs text-gray-500">Advance Received</p>
-                          <p className="font-bold text-green-600">₹{formData.advanceAmount || '0'}</p>
-                        </div>
-                        <div className="text-center p-2 bg-blue-50 rounded-lg">
-                          <p className="text-xs text-gray-500">Net Balance</p>
-                          <p className="font-bold text-blue-600">
-                            ₹{(
-                              (formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()) : 0) -
-                              parseFloat(formData.advanceAmount || '0')
-                            ).toFixed(0)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Commission Preview */}
               {(formData.odCommissionRate || formData.tpCommissionRate || formData.netCommissionRate || formData.commissionRate || formData.brokerCommissionAmount) && (
                 <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-xl p-4 shadow-sm">
@@ -1863,6 +1772,138 @@ export default function NewPolicyPage() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* Ledger & Payment Adjustment Section (New) */}
+              {formData.subAgentId && (
+                <div className="mt-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 border-2 border-purple-200 shadow-md">
+                  <h4 className="text-sm font-bold text-purple-800 uppercase mb-4 flex items-center gap-2">
+                    <span className="text-lg">📒</span> Ledger & Payment Tracking
+                  </h4>
+                  
+                  {/* Payment Checkboxes */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    {/* Premium Paid By Agent */}
+                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-300">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.premiumPaidByAgent}
+                          onChange={(e) => setFormData(prev => ({ ...prev, premiumPaidByAgent: e.target.checked }))}
+                          className="w-4 h-4 text-amber-600 rounded"
+                        />
+                        <span className="text-sm font-semibold text-amber-800">💰 Premium Paid By You?</span>
+                      </label>
+                      {formData.premiumPaidByAgent && (
+                        <div className="text-xs text-amber-700 bg-amber-100 rounded p-2 mt-2">
+                          <p className="font-medium">Debit: ₹{(parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()).toFixed(0)}</p>
+                          <p className="text-amber-600 mt-1">Added to Sub-Agent's DUE</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Received Advance */}
+                    <div className="bg-green-50 rounded-lg p-3 border border-green-300">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.receivedAdvanceFromAgent}
+                          onChange={(e) => setFormData(prev => ({ ...prev, receivedAdvanceFromAgent: e.target.checked, advanceAmount: e.target.checked ? prev.advanceAmount : '' }))}
+                          className="w-4 h-4 text-green-600 rounded"
+                        />
+                        <span className="text-sm font-semibold text-green-800">💵 Received Advance?</span>
+                      </label>
+                      {formData.receivedAdvanceFromAgent && (
+                        <div className="mt-2">
+                          <Input
+                            type="number"
+                            name="advanceAmount"
+                            value={formData.advanceAmount}
+                            onChange={handleChange}
+                            placeholder="Amount"
+                            className="h-8 text-sm"
+                          />
+                          <p className="text-xs text-green-600 mt-1">Credit: Deducted from dues</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payout Paid (NEW) */}
+                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-300">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.payoutPaid}
+                          onChange={(e) => setFormData(prev => ({ ...prev, payoutPaid: e.target.checked }))}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <span className="text-sm font-semibold text-blue-800">✅ Payout Paid?</span>
+                      </label>
+                      {formData.payoutPaid && (
+                        <div className="text-xs text-blue-700 bg-blue-100 rounded p-2 mt-2">
+                          <p className="font-medium">Debit: ₹{calculateSubAgentPayout().toFixed(0)}</p>
+                          <p className="text-blue-600 mt-1">Commission settled</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ledger Remark (NEW - AI Enabled) */}
+                  <div className="bg-white rounded-lg p-4 border-2 border-dashed border-purple-300">
+                    <label className="block text-sm font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                      <span>✨</span> Ledger Remark (AI-Enabled)
+                      <span className="text-xs font-normal text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">Auto-analyzed</span>
+                    </label>
+                    <textarea
+                      name="ledgerRemark"
+                      value={formData.ledgerRemark}
+                      onChange={handleChange}
+                      placeholder="Example: 'Paid ₹5000 cash to sub-agent on 15th Jan' or 'Received ₹3000 advance via UPI' - AI will auto-create ledger entries"
+                      rows={3}
+                      className="w-full px-3 py-2 text-sm border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-purple-600 mt-2">
+                      💡 <strong>Smart AI:</strong> Mention amounts, dates, payment methods - system will auto-create ledger entries
+                    </p>
+                  </div>
+
+                  {/* Ledger Summary Preview */}
+                  {(formData.premiumPaidByAgent || formData.receivedAdvanceFromAgent || formData.payoutPaid) && (
+                    <div className="mt-4 bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-4 text-white">
+                      <h5 className="text-xs font-bold uppercase mb-3 flex items-center gap-2">
+                        <span>📊</span> Sub-Agent Ledger Impact
+                      </h5>
+                      <div className="grid grid-cols-4 gap-3 text-sm">
+                        <div className="text-center p-3 bg-red-900/40 rounded-lg border border-red-700">
+                          <p className="text-xs text-red-300 mb-1">Premium Due</p>
+                          <p className="font-bold text-red-400">
+                            ₹{formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()).toFixed(0) : '0'}
+                          </p>
+                        </div>
+                        <div className="text-center p-3 bg-green-900/40 rounded-lg border border-green-700">
+                          <p className="text-xs text-green-300 mb-1">Advance Rcvd</p>
+                          <p className="font-bold text-green-400">₹{formData.advanceAmount || '0'}</p>
+                        </div>
+                        <div className="text-center p-3 bg-orange-900/40 rounded-lg border border-orange-700">
+                          <p className="text-xs text-orange-300 mb-1">Comm. Paid</p>
+                          <p className="font-bold text-orange-400">
+                            ₹{formData.payoutPaid ? calculateSubAgentPayout().toFixed(0) : '0'}
+                          </p>
+                        </div>
+                        <div className="text-center p-3 bg-blue-900/40 rounded-lg border border-blue-700">
+                          <p className="text-xs text-blue-300 mb-1">Net Balance</p>
+                          <p className="font-bold text-blue-400">
+                            ₹{(
+                              (formData.premiumPaidByAgent ? (parseFloat(formData.premiumAmount || '0') - calculateSubAgentPayout()) : 0) -
+                              parseFloat(formData.advanceAmount || '0') -
+                              (formData.payoutPaid ? calculateSubAgentPayout() : 0)
+                            ).toFixed(0)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
