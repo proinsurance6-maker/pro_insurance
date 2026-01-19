@@ -77,18 +77,23 @@ Insurance Company/Broker
 ### Example Calculation
 **Scenario:** Motor Insurance Policy  
 - **Premium:** ₹10,000
-- **Broker Commission Rate:** 15% = ₹1,500
-- **Sub-Agent Share:** 60% = ₹900
-- **User Profit:** ₹1,500 - ₹900 = ₹600
+- **Broker Commission Rate:** 15% (decided by broker) = ₹1,500
+- **Sub-Agent Commission:** 10% (decided by USER per policy) = ₹1,000
+- **User Profit:** ₹1,500 - ₹1,000 = ₹500
 
 **In Database:**
 ```typescript
 {
-  totalCommissionAmount: 1500,      // From Broker
-  subAgentCommissionAmount: 900,    // Payable to Sub-Agent
-  agentCommissionAmount: 600        // User's PROFIT (Net Keep)
+  totalCommissionAmount: 1500,      // From Broker (15% of premium)
+  subAgentCommissionAmount: 1000,   // TO Sub-Agent (10% of premium - USER decides)
+  agentCommissionAmount: 500        // User's PROFIT (Net Keep)
 }
 ```
+
+**IMPORTANT:** 
+- Broker rate varies per policy (PolicyBazaar 15%, MitPro 12%, etc.)
+- Sub-agent rate is SET BY USER for each policy (not a fixed percentage)
+- User manually decides how much to pay sub-agent when creating policy
 
 ---
 
@@ -121,23 +126,25 @@ Insurance Company/Broker
 
 ### Step 2: Auto-Calculate Commissions
 ```typescript
-// Broker pays: 15% of ₹10,000 = ₹1,500
-totalCommissionAmount = 1500
+// USER MANUALLY ENTERS THESE RATES:
+// - Broker Commission: 15% (or ₹1,500 fixed amount)
+// - Sub-agent Commission: 10% (USER decides - not fixed per sub-agent)
 
-// Sub-agent gets: 60% of ₹1,500 = ₹900
-subAgentCommissionAmount = 900
-
-// User keeps: ₹1,500 - ₹900 = ₹600
-agentCommissionAmount = 600
+// System calculates:
+totalCommissionAmount = 1500      // From broker
+subAgentCommissionAmount = 1000   // User-defined rate (10% of premium)
+agentCommissionAmount = 500       // Auto-calculated: 1500 - 1000
 ```
 
 ### Step 3: Ledger Impact
 **Sub-Agent Ledger:**
-- CREDIT: ₹900 (commission earned)
+- CREDIT: ₹1,000 (commission earned - as per USER's rate)
 - Status: Receivable until marked as paid
 
 **User Profit:**
-- Net earning from this policy: ₹600
+- Net earning from this policy: ₹500
+
+**KEY POINT:** User has full flexibility to decide sub-agent commission per policy!
 
 ---
 
@@ -229,18 +236,26 @@ User Keeps: ₹1,500 (100%)
 ```
 Premium: ₹10,000
 Broker Commission: 15% = ₹1,500
-Sub-Agent Share: 60% = ₹900
-User Keeps: ₹600 (40%)
+Sub-Agent Rate: 10% (USER decides) = ₹1,000
+User Keeps: ₹500
 ```
+**Note:** User can give 5%, 10%, 15% - any rate they want per policy!
 
 ### Scenario 3: Motor Policy (OD + TP)
 ```
-OD Premium: ₹8,000 @ 15% = ₹1,200
-TP Premium: ₹2,000 @ 5% = ₹100
+OD Premium: ₹8,000
+  - Broker Rate: 15% = ₹1,200
+  - Sub-Agent Rate: 8% (USER decides) = ₹640
+  
+TP Premium: ₹2,000
+  - Broker Rate: 5% = ₹100  
+  - Sub-Agent Rate: 3% (USER decides) = ₹60
+
 Total Commission: ₹1,300
-Sub-Agent (60%): ₹780
-User Keeps: ₹520
+Total to Sub-Agent: ₹700
+User Keeps: ₹600
 ```
+**Note:** User can set DIFFERENT rates for OD and TP for sub-agent!
 
 ---
 
@@ -249,14 +264,20 @@ User Keeps: ₹520
 **Remember:**
 - **User = Main Agent = Business Owner** (YOU)
 - **Broker = Source of Commission** (PolicyBazaar) → Pays YOU
+  - Rate varies per policy (15%, 12%, 10% etc.)
 - **Sub-Agent = Your Sales Partner** → YOU pay them
-- **User Profit = Broker Commission - Sub-Agent Payout**
+  - Rate decided by YOU for each policy (flexible)
+- **User Profit = Broker Commission - Sub-Agent Commission**
 
 **Commission Direction:**
 ```
 Broker → [USER] → Sub-Agent
        RECEIVES  PAYS
 ```
+
+**Flexibility:**
+- Broker rate: Different per policy (set by broker/company)
+- Sub-agent rate: **USER DECIDES** for every policy (manual input)
 
 ---
 

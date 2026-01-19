@@ -21,9 +21,14 @@ Broker (PolicyBazaar) → USER (Main Agent) → Sub-Agent
 - **User Profit:** `brokerCommission - subAgentPayout`
 
 **Commission Fields:**
-- `totalCommissionAmount` - Total received FROM broker
-- `subAgentCommissionAmount` - Amount payable TO sub-agent  
-- `agentCommissionAmount` - **USER'S PROFIT** (what they keep)
+- `totalCommissionAmount` - Total received FROM broker (varies per policy)
+- `subAgentCommissionAmount` - Amount payable TO sub-agent (USER decides per policy)
+- `agentCommissionAmount` - **USER'S PROFIT** (auto-calculated: total - subAgent)
+
+**CRITICAL:** 
+- Broker rates vary per policy (PolicyBazaar 15%, MitPro 12%, etc.)
+- Sub-agent rates are **NOT fixed** - USER decides rate for EACH policy
+- User has full flexibility to set different rates per policy
 
 📖 **See [BUSINESS_MODEL.md](BUSINESS_MODEL.md) for complete details**
 

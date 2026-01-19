@@ -7,11 +7,19 @@ import { Decimal } from '@prisma/client/runtime/library';
  * Broker/Company → USER (Main Agent) → Sub-Agent
  *     (pays)           (receives & pays)    (receives)
  * 
- * - totalCommissionAmount: Total received FROM broker
- * - subAgentCommissionAmount: Amount payable TO sub-agent
- * - agentCommissionAmount: USER's PROFIT (keeps after paying sub-agent)
+ * IMPORTANT:
+ * - Broker commission rate: VARIES per policy (PolicyBazaar 15%, MitPro 12%, etc.)
+ * - Sub-agent commission rate: USER DECIDES per policy (manual input in form)
+ * - No fixed percentage for sub-agents - USER has full flexibility!
  * 
- * Example: Broker pays ₹1,500 → Sub-agent gets ₹900 → User keeps ₹600
+ * - totalCommissionAmount: Total received FROM broker
+ * - subAgentCommissionAmount: Amount payable TO sub-agent (USER-defined)
+ * - agentCommissionAmount: USER's PROFIT (auto-calculated: total - subAgent)
+ * 
+ * Example: 
+ *   Broker pays ₹1,500 (15% of premium)
+ *   User sets sub-agent rate at 10% = ₹1,000
+ *   User keeps ₹500 (auto-calculated)
  */
 
 interface CommissionCalculation {
@@ -22,9 +30,14 @@ interface CommissionCalculation {
 
 /**
  * Calculate commission amounts for a policy
+ * 
+ * NOTE: This function is for legacy support. 
+ * In current implementation, sub-agent rates are SET BY USER per policy (manual input).
+ * User decides commission rate for each policy individually.
+ * 
  * @param premiumAmount - The premium amount of the policy
  * @param commissionRate - The commission rate percentage FROM broker
- * @param subAgentId - Optional sub-agent ID for commission split
+ * @param subAgentId - Optional sub-agent ID (rate comes from policy form, not sub-agent profile)
  * @returns Commission breakdown
  */
 export const calculateCommission = async (
