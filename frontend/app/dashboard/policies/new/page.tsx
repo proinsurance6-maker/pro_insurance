@@ -244,9 +244,9 @@ export default function NewPolicyPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    // Clean holderName field by removing prefixes
+    // Clean holderName field by removing prefixes (with or without space)
     if (name === 'holderName') {
-      const cleanedValue = value.replace(/^(Mr\.?|Mrs\.?|Miss|Ms\.?|Dr\.?)\s+/i, '');
+      const cleanedValue = value.replace(/^(Mr\.?|Mrs\.?|Miss|Ms\.?|Dr\.?)\s*/i, '');
       setFormData(prev => ({ ...prev, [name]: cleanedValue }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -1335,7 +1335,7 @@ export default function NewPolicyPage() {
                       placeholder="Client Name *" 
                       value={newClientData.name} 
                       onChange={(e) => {
-                        const cleanedValue = e.target.value.replace(/^(Mr\.?|Mrs\.?|Miss|Ms\.?|Dr\.?)\s+/i, '');
+                        const cleanedValue = e.target.value.replace(/^(Mr\.?|Mrs\.?|Miss|Ms\.?|Dr\.?)\s*/i, '');
                         setNewClientData(prev => ({ ...prev, name: cleanedValue }));
                       }} 
                       className="h-10 text-sm" 
