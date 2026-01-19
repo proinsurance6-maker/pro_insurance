@@ -70,6 +70,7 @@ export default function LedgerPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'received' | 'pending'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'receivable' | 'paid'>('all');
 
   useEffect(() => { fetchData(); }, []);
 
@@ -101,6 +102,12 @@ export default function LedgerPage() {
     if (search && !p.policyNumber.toLowerCase().includes(search.toLowerCase()) && 
         !p.client.name.toLowerCase().includes(search.toLowerCase()) &&
         !(p.vehicleNumber || '').toLowerCase().includes(search.toLowerCase())) return false;
+    
+    // Tab-based filtering
+    if (activeTab === 'receivable' && (!p.subAgent || p.commissions?.[0]?.paidToSubAgent)) return false;
+    if (activeTab === 'paid' && (!p.subAgent || !p.commissions?.[0]?.paidToSubAgent)) return false;
+    
+    // Legacy filter buttons (All/Received/Pending)
     if (filter === 'received' && !p.commissions?.[0]?.receivedFromCompany) return false;
     if (filter === 'pending' && p.commissions?.[0]?.receivedFromCompany) return false;
     return true;
@@ -138,6 +145,27 @@ export default function LedgerPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-800">📒 Commission Ledger (View Only)</h1>
         <p className="text-gray-500 text-sm">Complete Hisab-Kitab Report</p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b bg-gray-50 rounded-t-lg">
+        <div className="flex space-x-1 p-1">
+          {(['all', 'receivable', 'paid'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2.5 px-4 rounded-md font-medium text-sm transition ${
+                activeTab === tab 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+              }`}
+            >
+              {tab === 'all' && `📊 All Policies (${policies.length})`}
+              {tab === 'receivable' && `⏳ Sub-Agent Receivable (${policies.filter(p => p.subAgent && !p.commissions?.[0]?.paidToSubAgent).length})`}
+              {tab === 'paid' && `✅ Sub-Agent Paid (${policies.filter(p => p.subAgent && p.commissions?.[0]?.paidToSubAgent).length})`}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 4 Summary Cards */}
