@@ -30,6 +30,11 @@ export default function NewClientPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Clean name by removing prefixes
+  const cleanName = (name: string) => {
+    return name.replace(/^(Mr\.?|Mrs\.?|Miss|Ms\.?|Dr\.?)\s+/i, '').trim();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -38,6 +43,7 @@ export default function NewClientPage() {
     try {
       await clientAPI.create({
         ...formData,
+        name: cleanName(formData.name),
         dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined,
       });
       router.push('/dashboard/clients');

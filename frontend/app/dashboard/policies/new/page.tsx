@@ -264,12 +264,19 @@ export default function NewPolicyPage() {
     client.phone.includes(clientSearch)
   );
 
+  // Clean name by removing prefixes
+  const cleanName = (name: string) => {
+    return name.replace(/^(Mr\.?|Mrs\.?|Miss|Ms\.?|Dr\.?)\s+/i, '').trim();
+  };
+
   // Create new client inline
   const handleCreateClient = async () => {
     if (!newClientData.name) {
       setError('Client name is required');
       return;
     }
+    
+    const cleanedName = cleanName(newClientData.name);
     
     // If this is a family member of existing client
     if (newClientData.isFamilyMember && newClientData.linkedClientId) {
@@ -281,7 +288,7 @@ export default function NewPolicyPage() {
       try {
         // Create family member under the linked client
         const familyMemberData = {
-          name: newClientData.name,
+          name: cleanedName,
           relationship: newClientData.relationship,
           phone: newClientData.phone,
           email: newClientData.email
@@ -296,7 +303,7 @@ export default function NewPolicyPage() {
             ...prev, 
             clientId: linkedClient.id, 
             clientName: linkedClient.name,
-            holderName: newClientData.name // Family member is the policy holder
+            holderName: cleanedName // Family member is the policy holder
           }));
           setClientSearch(linkedClient.name);
         }
@@ -317,7 +324,10 @@ export default function NewPolicyPage() {
     // Regular new client creation
     setCreatingClient(true);
     try {
-      const response = await clientAPI.create(newClientData);
+      const response = await clientAPI.create({
+        ...newClientData,
+        name: cleanedName
+      });
       const newClient = response.data.data;
       // Add to list and select
       setClients(prev => [newClient, ...prev]);
