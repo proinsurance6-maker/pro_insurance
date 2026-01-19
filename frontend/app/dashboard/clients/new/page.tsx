@@ -87,7 +87,7 @@ export default function NewClientPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mobile Number <span className="text-red-500">*</span>
+                    Mobile Number
                   </label>
                   <Input
                     name="phone"
@@ -97,7 +97,6 @@ export default function NewClientPage() {
                       phone: e.target.value.replace(/\D/g, '').slice(0, 10) 
                     }))}
                     placeholder="9876543210"
-                    required
                     maxLength={10}
                   />
                 </div>

@@ -266,8 +266,8 @@ export default function NewPolicyPage() {
 
   // Create new client inline
   const handleCreateClient = async () => {
-    if (!newClientData.name || !newClientData.phone) {
-      setError('Client name and phone are required');
+    if (!newClientData.name) {
+      setError('Client name is required');
       return;
     }
     
@@ -1322,7 +1322,7 @@ export default function NewPolicyPage() {
                       className="h-10 text-sm" 
                     />
                     <Input 
-                      placeholder="Phone Number *" 
+                      placeholder="Phone Number" 
                       value={newClientData.phone} 
                       onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))} 
                       className="h-10 text-sm" 

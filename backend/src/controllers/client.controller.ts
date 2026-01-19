@@ -132,13 +132,13 @@ export const createClient = async (req: Request, res: Response, next: NextFuncti
     const agentId = (req as any).user.userId;
     const { name, phone, email, address, dateOfBirth, panNumber, aadhaarNumber, familyMembers } = req.body;
 
-    if (!name || !phone) {
-      throw new AppError('Name and phone are required', 400, 'VALIDATION_ERROR');
+    if (!name) {
+      throw new AppError('Name is required', 400, 'VALIDATION_ERROR');
     }
 
-    const existing = await prisma.client.findFirst({
+    const existing = phone ? await prisma.client.findFirst({
       where: { phone, agentId }
-    });
+    }) : null;
 
     if (existing) {
       throw new AppError('Client with this phone already exists', 400, 'DUPLICATE_PHONE');
