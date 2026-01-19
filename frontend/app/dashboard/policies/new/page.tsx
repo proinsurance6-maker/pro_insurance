@@ -611,9 +611,79 @@ export default function NewPolicyPage() {
     }
   };
 
+  // Validate and highlight missing required fields
+  const validateForm = () => {
+    const errors: { field: string; message: string; element?: string }[] = [];
+    
+    // Required fields validation
+    if (!formData.clientId) {
+      errors.push({ field: 'clientId', message: 'Client is required', element: 'clientSearch' });
+    }
+    if (!formData.companyId) {
+      errors.push({ field: 'companyId', message: 'Company is required' });
+    }
+    if (!formData.policyNumber) {
+      errors.push({ field: 'policyNumber', message: 'Policy Number is required' });
+    }
+    if (!formData.policyType) {
+      errors.push({ field: 'policyType', message: 'Policy Type is required' });
+    }
+    if (!formData.premiumAmount || parseFloat(formData.premiumAmount) <= 0) {
+      errors.push({ field: 'premiumAmount', message: 'Premium Amount is required' });
+    }
+    if (!formData.startDate) {
+      errors.push({ field: 'startDate', message: 'Start Date is required' });
+    }
+    if (!formData.endDate) {
+      errors.push({ field: 'endDate', message: 'End Date is required' });
+    }
+    
+    // Motor-specific validation
+    if (formData.policyType === 'Motor Insurance') {
+      if (!formData.motorPolicyType) {
+        errors.push({ field: 'motorPolicyType', message: 'Motor Policy Type is required' });
+      }
+      if (!formData.vehicleNumber) {
+        errors.push({ field: 'vehicleNumber', message: 'Vehicle Number is required for Motor Insurance' });
+      }
+    }
+    
+    return errors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Validate form
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      // Show first error
+      setError(validationErrors[0].message);
+      
+      // Scroll to first error field and highlight it
+      const firstErrorField = validationErrors[0].element || validationErrors[0].field;
+      const errorElement = document.getElementsByName(firstErrorField)[0] as HTMLElement;
+      
+      if (errorElement) {
+        // Add red border class
+        errorElement.classList.add('border-red-500', 'border-2', 'ring-2', 'ring-red-200');
+        
+        // Scroll to element
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Focus the field
+        errorElement.focus();
+        
+        // Remove highlight after 3 seconds
+        setTimeout(() => {
+          errorElement.classList.remove('border-red-500', 'border-2', 'ring-2', 'ring-red-200');
+        }, 3000);
+      }
+      
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -1148,6 +1218,7 @@ export default function NewPolicyPage() {
                     </label>
                     <Input
                       type="text"
+                      name="clientSearch"
                       value={clientSearch}
                       onChange={(e) => {
                         const searchValue = e.target.value;
@@ -2077,13 +2148,24 @@ export default function NewPolicyPage() {
               <Button type="button" variant="outline" onClick={() => router.back()} className="h-11 px-6">
                 ← Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={loading || !formData.clientId || !formData.companyId || !formData.policyNumber}
-                className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
-              >
-                {loading ? '⏳ Saving...' : '💾 Save Policy'}
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                {(!formData.clientId || !formData.companyId || !formData.policyNumber) && (
+                  <p className="text-xs text-red-600 font-medium">
+                    Missing: {[
+                      !formData.clientId && 'Client',
+                      !formData.companyId && 'Company',
+                      !formData.policyNumber && 'Policy Number'
+                    ].filter(Boolean).join(', ')}
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  disabled={loading || !formData.clientId || !formData.companyId || !formData.policyNumber}
+                  className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? '⏳ Saving...' : '💾 Save Policy'}
+                </Button>
+              </div>
             </div>
           </form>
         </div>
