@@ -1065,7 +1065,7 @@ export default function NewPolicyPage() {
 
       {/* Manual Form - show for manual mode */}
       {entryMode === 'manual' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           <form onSubmit={handleSubmit}>
             {/* Error/Success Messages */}
             {error && (
@@ -1081,10 +1081,10 @@ export default function NewPolicyPage() {
             )}
 
             {/* Section: Client Details */}
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">1</span>
-                Client Details
+            <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-6 border-b border-gray-200">
+              <h3 className="text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent uppercase tracking-wide mb-5 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-200">1</span>
+                👤 Client Details
               </h3>
               
               {/* Policy Holder Name - First */}
@@ -1446,10 +1446,10 @@ export default function NewPolicyPage() {
             </div>
 
             {/* Section: Policy Details */}
-            <div className="p-6 border-b">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">2</span>
-                Policy Details
+            <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 p-6 border-b border-gray-200">
+              <h3 className="text-base font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent uppercase tracking-wide mb-5 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-green-200">2</span>
+                📋 Policy Details
               </h3>
               
               {/* Row 1: Proposal Type, Policy Type, Motor Type (if motor) */}
@@ -1652,10 +1652,10 @@ export default function NewPolicyPage() {
             </div>
 
             {/* Section: Premium Details */}
-            <div className="p-6 border-b bg-gradient-to-r from-amber-50 to-orange-50">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">3</span>
-                Premium Details
+            <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 p-6 border-b border-gray-200">
+              <h3 className="text-base font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent uppercase tracking-wide mb-5 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-amber-200">3</span>
+                💰 Premium Details
               </h3>
               
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -1686,10 +1686,10 @@ export default function NewPolicyPage() {
             </div>
 
             {/* Section: Broker & Sub-Agent */}
-            <div className="p-6 border-b">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-gradient-to-br from-purple-500 to-violet-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">4</span>
-                Broker & Sub-Agent
+            <div className="bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 p-6 border-b border-gray-200">
+              <h3 className="text-base font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent uppercase tracking-wide mb-5 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-purple-200">4</span>
+                🤝 Broker & Sub-Agent
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1767,10 +1767,10 @@ export default function NewPolicyPage() {
             </div>
 
             {/* Section: Commission Rates */}
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">5</span>
-                Commission Rates
+            <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 p-6 border-b border-gray-200">
+              <h3 className="text-base font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent uppercase tracking-wide mb-5 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-200">5</span>
+                💸 Commission Rates
               </h3>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1999,10 +1999,10 @@ export default function NewPolicyPage() {
             </div>
 
             {/* Section: Documents */}
-            <div className="p-6 border-b">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-gray-600 text-xs">6</span>
-                Documents
+            <div className="bg-gradient-to-r from-slate-50 via-gray-50 to-zinc-50 p-6 border-b border-gray-200">
+              <h3 className="text-base font-bold bg-gradient-to-r from-slate-600 to-zinc-600 bg-clip-text text-transparent uppercase tracking-wide mb-5 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-slate-500 to-zinc-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-slate-200">6</span>
+                📁 Documents
               </h3>
               
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -2135,24 +2135,24 @@ export default function NewPolicyPage() {
             </div>
 
             {/* Section: Remarks */}
-            <div className="p-6">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-gray-600 text-xs">7</span>
-                Remarks
+            <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-red-50 p-6">
+              <h3 className="text-base font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent uppercase tracking-wide mb-5 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-rose-200">7</span>
+                📝 Remarks
               </h3>
               <textarea
                 name="remarks"
                 value={formData.remarks || ''}
                 onChange={handleChange}
-                placeholder="Add any notes..."
+                placeholder="Add any notes or special instructions..."
                 rows={2}
-                className="w-full p-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full p-3 text-sm border-2 border-gray-200 rounded-xl bg-white focus:ring-4 focus:ring-rose-100 focus:border-rose-400 transition-all resize-none"
               />
             </div>
 
             {/* Sticky Footer with Action Buttons */}
-            <div className="sticky bottom-0 bg-white border-t p-4 flex items-center justify-between">
-              <Button type="button" variant="outline" onClick={() => router.back()} className="h-11 px-6">
+            <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-slate-50 border-t-2 border-gray-200 p-5 flex items-center justify-between shadow-2xl">
+              <Button type="button" variant="outline" onClick={() => router.back()} className="h-12 px-8 border-2 hover:bg-gray-100 font-medium">
                 ← Cancel
               </Button>
               <div className="flex flex-col items-end gap-1">
@@ -2168,9 +2168,9 @@ export default function NewPolicyPage() {
                 <Button
                   type="submit"
                   disabled={loading || !formData.clientId || !formData.companyId || !formData.policyNumber}
-                  className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-12 px-10 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
-                  {loading ? '⏳ Saving...' : '💾 Save Policy'}
+                  {loading ? '⏳ Saving Policy...' : '✅ Save Policy'}
                 </Button>
               </div>
             </div>
