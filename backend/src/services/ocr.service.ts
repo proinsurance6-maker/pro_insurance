@@ -72,45 +72,58 @@ const extractWithOpenAI = async (
   mimeType: string
 ): Promise<ExtractedPolicyData> => {
 
-  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Carefully analyze ALL pages of this insurance policy document and extract EVERY detail.
+  const prompt = `You are an expert Indian insurance document analyzer with deep knowledge of policy formats from all major Indian insurers (Reliance, National Insurance, TATA AIG, ICICI Lombard, HDFC ERGO, Bajaj Allianz, etc).
 
-IMPORTANT: Scan the ENTIRE document thoroughly. Look for tables, schedules, and all sections.
+CRITICAL: Carefully read ALL text, tables, and sections in this insurance document. Pay special attention to:
+- Policy schedule tables
+- Premium breakup tables  
+- Vehicle/insured details sections
+- Policy period/validity sections
+- Header and footer information
 
-Return ONLY a valid JSON object with these exact keys (use null if not found):
+Extract data and return ONLY a valid JSON object with these exact keys (use null if not found):
+
 {
-  "policyNumber": "the policy number/ID (look for 'Policy No', 'Policy Number', 'Certificate No')",
-  "holderName": "name of the policy holder/insured person (look for 'Name', 'Insured Name', 'Proposer')",
-  "policyType": "type of insurance - return 'Motor Insurance' for any vehicle/car/bike policy",
-  "motorPolicyType": "MUST detect: 'OD_ONLY' for Standalone Own Damage, 'TP_ONLY' for Standalone Third Party/Liability Only, 'COMPREHENSIVE' for Package/Comprehensive with both OD and TP",
-  "companyName": "FULL insurance company name (e.g., 'TATA AIG General Insurance', 'ICICI Lombard', 'Bajaj Allianz')",
-  "premiumAmount": total premium amount payable (look for 'Total Premium', 'Total Amount Payable', 'Gross Premium'),
-  "odPremium": OD/Own Damage premium amount (look for 'Total Own Damage Premium', 'OD Premium', 'Section A' premium),
-  "tpPremium": TP/Third Party/Liability premium amount (look for 'TP Premium', 'Third Party Premium', 'Liability Premium'),
-  "netPremium": Net premium before GST (look for 'Net Premium', 'Premium before tax', usually OD+TP or basic premium),
-  "sumAssured": IDV or Sum Insured value (look for 'IDV', 'Insured Declared Value', 'Sum Insured', 'Sum Assured'),
-  "startDate": "policy START/COMMENCEMENT date in YYYY-MM-DD format",
-  "endDate": "policy END/EXPIRY date in YYYY-MM-DD format",
-  "vehicleNumber": "vehicle registration number (look for 'Registration No', 'Reg No', 'Vehicle No' - format like 'UP 16 EC 5046' or 'MH01AB1234')",
-  "planName": "policy plan name if mentioned"
+  "policyNumber": "Policy number/certificate number (look for: 'Policy No', 'Policy Number', 'Certificate No', 'Certificate Number')",
+  "holderName": "Full name of policy holder (look for: 'Name of the Insured', 'Proposer Name', 'Insured Person', 'Policy Holder', 'Name of the Proposer', 'Member 1' name)",
+  "policyType": "Insurance type: 'Travel Insurance' for travel policies, 'Motor Insurance' for vehicle/car policies, 'Health Insurance' for health/medical",
+  "motorPolicyType": "For Motor only: 'COMPREHENSIVE' for package/bundled OD+TP, 'OD_ONLY' for standalone own damage, 'TP_ONLY' for liability only",
+  "companyName": "FULL company name from header/logo (e.g., 'Reliance General Insurance', 'National Insurance Company Ltd', 'TATA AIG')",
+  "premiumAmount": "TOTAL premium payable - the final amount (look for: 'Total Premium', 'NET PAYABLE', 'Gross Premium', 'Total Amount Payable', 'TOTAL PREMIUM' - remove ₹/Rs, return number only)",
+  "odPremium": "Own Damage premium for Motor (look for: 'Basic OD Premium', 'OD Total', 'Total OD Premium' in premium breakup table)",
+  "tpPremium": "Third Party premium for Motor (look for: 'Basic TP Premium', 'TP Total', 'Total TP Premium', 'Liability Premium' in premium breakup table)",
+  "netPremium": "Net premium before GST (look for: 'Net Premium', 'Total Premium before tax/GST')",
+  "sumAssured": "Sum insured/IDV value (for Motor look for 'IDV' in vehicle details, for Health/Travel look for coverage amount or 'Sum Insured')",
+  "startDate": "Policy START date in YYYY-MM-DD format",
+  "endDate": "Policy END/EXPIRY date in YYYY-MM-DD format",
+  "vehicleNumber": "Vehicle registration number for Motor (look in 'Vehicle Details', format: HR-06-AN-7813, MH01AB1234, etc)",
+  "planName": "Policy plan/product name (e.g., 'Travel Care Policy', 'Private Car 1 Year Liability', 'Silver Plan')"
 }
 
-CRITICAL DATE EXTRACTION RULES:
-1. startDate = Policy START date (look for: 'Policy Start Date', 'Valid From', 'Period From', 'Risk Commencement Date', 'Policy Period From', 'Commencement Date', 'Inception Date')
-2. endDate = Policy END/EXPIRY date (look for: 'Policy End Date', 'Valid Till', 'Valid Upto', 'Expiry Date', 'Period To', 'Policy Period To', 'Valid To')
-3. IGNORE 'Login Date', 'Issue Date', 'Date of Issue', 'Transaction Date' - these are NOT start/end dates
-4. If policy shows "From: 05-Feb-2026 To: 04-Feb-2027", then startDate=2026-02-05, endDate=2027-02-04
-5. Convert ALL dates to YYYY-MM-DD format (e.g., 05/02/2026 or 05-Feb-2026 → 2026-02-05)
-6. endDate is typically 1 year after startDate for annual policies
+🔴 CRITICAL DATE EXTRACTION RULES:
+1. Policy Period section shows: "From DD/MM/YYYY Hrs on DD/MM/YYYY To DD/MM/YYYY" 
+   - First date after "From" = startDate
+   - Date after "To" = endDate
+2. Example: "From 00:00 Hrs on 15/02/2026 To 14/02/2028 midnight" → startDate: 2026-02-15, endDate: 2028-02-14
+3. Convert dates: DD/MM/YYYY → YYYY-MM-DD, DD-Mon-YYYY → YYYY-MM-DD
+4. IGNORE these dates: "Policy Issue Date", "Date of Birth", "Login Date", "Transaction Date"
+5. For "Policy Period" look for complete text like "From...To" format
 
-OTHER EXTRACTION RULES:
-1. For VEHICLE NUMBER: Look in 'Vehicle Details' section. Format is usually STATE CODE + DISTRICT + LETTERS + NUMBERS (e.g., UP 16 EC 5046)
-2. For OD PREMIUM: In Schedule of Premium, find 'Total Own Damage Premium' or 'Section A' total
-3. For NET PREMIUM: Find 'Net Premium (A+B)' or 'Premium before GST/Tax'
-4. For COMPANY NAME: Look at header/logo area - extract FULL name like 'TATA AIG General Insurance Company'
-5. For motorPolicyType: If title says 'Standalone Own Damage' → OD_ONLY, 'Standalone TP' → TP_ONLY, 'Comprehensive/Package' → COMPREHENSIVE
-6. Remove ALL currency symbols (₹, Rs, INR) - return ONLY numbers
+🔴 PREMIUM EXTRACTION RULES (Indian Insurance Format):
+1. For TOTAL PREMIUM: Look at bottom of premium table - "Total Premium", "NET PAYABLE", "Total Amount Payable"
+2. For Motor OD Premium: In "OD Premium Breakup" section, find row "OD Total (Rounded Off)" or "Basic OD Premium"  
+3. For Motor TP Premium: In "TP Premium Breakup" section, find "TP Total (Rounded Off)" or "Basic TP Premium"
+4. Remove ALL ₹, Rs, INR symbols and commas - return clean number (e.g., ₹4,108 → 4108)
 
-Be thorough - scan every table and section in the document.`;
+🔴 VEHICLE DETAILS (Motor Insurance):
+1. Registration No/Reg No in "Vehicle Details" section
+2. Format: State(2) + District(2) + Letters + Numbers (e.g., HR-06-AN-7813)
+
+🔴 COMPANY NAME:
+1. Look at header/top of document for full company name
+2. Common formats: "Reliance General Insurance Co. Ltd", "National Insurance Company Ltd", "The Oriental Insurance Company Ltd"
+
+Scan tables carefully - premium details are usually in tabular format with multiple rows and columns.`;
 
   if (!openai) {
     throw new Error('OpenAI client not initialized');
@@ -143,6 +156,9 @@ Be thorough - scan every table and section in the document.`;
 
     const content = response.choices[0]?.message?.content || '{}';
     
+    // Log raw AI response for debugging
+    console.log('🤖 OpenAI Raw Response:', content);
+    
     // Extract JSON from response (handle potential markdown code blocks)
     let jsonStr = content;
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -152,6 +168,8 @@ Be thorough - scan every table and section in the document.`;
 
     // Parse and validate the response
     const extracted = JSON.parse(jsonStr.trim());
+    
+    console.log('✅ Extracted Data:', extracted);
 
     return {
       policyNumber: extracted.policyNumber || null,
@@ -185,47 +203,60 @@ const extractWithGemini = async (
   mimeType: string
 ): Promise<ExtractedPolicyData> => {
   
-  const prompt = `You are an expert insurance document analyzer for Indian insurance policies. Carefully analyze ALL pages of this insurance policy document and extract EVERY detail.
+  const prompt = `You are an expert Indian insurance document analyzer with deep knowledge of policy formats from all major Indian insurers (Reliance, National Insurance, TATA AIG, ICICI Lombard, HDFC ERGO, Bajaj Allianz, etc).
 
-IMPORTANT: Scan the ENTIRE document thoroughly. Look for tables, schedules, and all sections.
+CRITICAL: Carefully read ALL text, tables, and sections in this insurance document. Pay special attention to:
+- Policy schedule tables
+- Premium breakup tables  
+- Vehicle/insured details sections
+- Policy period/validity sections
+- Header and footer information
 
-Return ONLY a valid JSON object with these exact keys (use null if not found):
+Extract data and return ONLY a valid JSON object with these exact keys (use null if not found):
+
 {
-  "policyNumber": "the policy number/ID (look for 'Policy No', 'Policy Number', 'Certificate No')",
-  "holderName": "name of the policy holder/insured person (look for 'Name', 'Insured Name', 'Proposer', 'Policyholder Name')",
-  "policyType": "DETECT TYPE: 'Health Insurance' for health/medical/hospitalization policies, 'Motor Insurance' for vehicle/car/bike policies, 'Life Insurance' for life/term policies, 'Travel Insurance' for travel policies",
-  "motorPolicyType": "Only for Motor: 'OD_ONLY' for Standalone Own Damage, 'TP_ONLY' for Standalone Third Party, 'COMPREHENSIVE' for Package/Comprehensive",
-  "policySource": "DETECT: 'PORT' if document mentions 'ported' or 'portability', 'RENEWAL' if 'renewal' mentioned, 'NEW' for fresh/new policy",
-  "policyPeriod": "Policy duration (e.g., '1 Year', '5 Years', '2 Years') - look for 'Policy Period', 'Term'",
-  "companyName": "FULL insurance company name from header/logo (e.g., 'Niva Bupa Health Insurance', 'TATA AIG General Insurance')",
-  "premiumAmount": total premium amount payable (look for 'Total Premium', 'Gross Premium', 'Total Amount Payable'),
-  "odPremium": OD/Own Damage premium (for Motor only),
-  "tpPremium": TP/Third Party premium (for Motor only),
-  "netPremium": Net premium before GST/taxes,
-  "sumAssured": "Sum Insured value - if 'Unlimited' or 'Base Sum Insured: Unlimited', return 'Unlimited'. Otherwise return the number. Look for 'Sum Assured', 'Sum Insured', 'Base Sum Insured', 'IDV'",
-  "startDate": "policy START/COMMENCEMENT date in YYYY-MM-DD format",
-  "endDate": "policy END/EXPIRY date in YYYY-MM-DD format",
-  "vehicleNumber": "vehicle registration number (for Motor only)",
-  "planName": "policy plan/product name (e.g., 'ReAssure 3.0', 'Optima Secure')"
+  "policyNumber": "Policy number/certificate number (look for: 'Policy No', 'Policy Number', 'Certificate No', 'Certificate Number')",
+  "holderName": "Full name of policy holder (look for: 'Name of the Insured', 'Proposer Name', 'Insured Person', 'Policy Holder', 'Name of the Proposer', 'Member 1' name)",
+  "policyType": "Insurance type: 'Travel Insurance' for travel policies, 'Motor Insurance' for vehicle/car policies, 'Health Insurance' for health/medical",
+  "motorPolicyType": "For Motor only: 'COMPREHENSIVE' for package/bundled OD+TP, 'OD_ONLY' for standalone own damage, 'TP_ONLY' for liability only",
+  "policySource": "DETECT: 'PORT' if ported, 'RENEWAL' if renewal, 'FRESH' for new policy",
+  "policyPeriod": "Duration (e.g., '1 Year', '5 Years')",
+  "companyName": "FULL company name from header/logo (e.g., 'Reliance General Insurance', 'National Insurance Company Ltd', 'TATA AIG')",
+  "premiumAmount": "TOTAL premium payable - the final amount (look for: 'Total Premium', 'NET PAYABLE', 'Gross Premium', 'Total Amount Payable', 'TOTAL PREMIUM' - remove ₹/Rs, return number only)",
+  "odPremium": "Own Damage premium for Motor (look for: 'Basic OD Premium', 'OD Total', 'Total OD Premium' in premium breakup table)",
+  "tpPremium": "Third Party premium for Motor (look for: 'Basic TP Premium', 'TP Total', 'Total TP Premium', 'Liability Premium' in premium breakup table)",
+  "netPremium": "Net premium before GST (look for: 'Net Premium', 'Total Premium before tax/GST')",
+  "sumAssured": "Sum insured/IDV value (for Motor look for 'IDV' in vehicle details, for Health/Travel look for coverage amount or 'Sum Insured')",
+  "startDate": "Policy START date in YYYY-MM-DD format",
+  "endDate": "Policy END/EXPIRY date in YYYY-MM-DD format",
+  "vehicleNumber": "Vehicle registration number for Motor (look in 'Vehicle Details', format: HR-06-AN-7813, MH01AB1234, etc)",
+  "planName": "Policy plan/product name (e.g., 'Travel Care Policy', 'Private Car 1 Year Liability', 'Silver Plan')"
 }
 
-CRITICAL DATE EXTRACTION RULES:
-1. startDate = Policy START date (look for: 'Policy Start Date', 'Valid From', 'Period From', 'Risk Commencement Date', 'Policy Period From', 'Commencement Date', 'Inception Date', 'From')
-2. endDate = Policy END/EXPIRY date (look for: 'Policy End Date', 'Valid Till', 'Valid Upto', 'Expiry Date', 'Period To', 'Policy Period To', 'Valid To', 'To')
-3. IGNORE 'Login Date', 'Issue Date', 'Date of Issue', 'Transaction Date' - these are NOT start/end dates
-4. If policy shows "From: 05-Feb-2026 To: 04-Feb-2027", then startDate=2026-02-05, endDate=2027-02-04
-5. Convert ALL dates to YYYY-MM-DD format (e.g., 05/02/2026 or 05-Feb-2026 → 2026-02-05)
-6. endDate is typically 1 year after startDate for annual policies
+🔴 CRITICAL DATE EXTRACTION RULES:
+1. Policy Period section shows: "From DD/MM/YYYY Hrs on DD/MM/YYYY To DD/MM/YYYY" 
+   - First date after "From" = startDate
+   - Date after "To" = endDate
+2. Example: "From 00:00 Hrs on 15/02/2026 To 14/02/2028 midnight" → startDate: 2026-02-15, endDate: 2028-02-14
+3. Convert dates: DD/MM/YYYY → YYYY-MM-DD, DD-Mon-YYYY → YYYY-MM-DD
+4. IGNORE these dates: "Policy Issue Date", "Date of Birth", "Login Date", "Transaction Date"
+5. For "Policy Period" look for complete text like "From...To" format
 
-OTHER EXTRACTION RULES:
-1. POLICY TYPE: Look at company name - 'Health Insurance' in name = Health Insurance, 'General Insurance' with vehicle = Motor Insurance
-2. SUM ASSURED: If document says 'Unlimited' or 'Base Sum Insured: Unlimited', return string "Unlimited"
-3. POLICY PERIOD: Look for duration like '5-Year', 'Policy Period: 5 Year'
-4. PORTABILITY: If document mentions policy was 'ported from' another company, policySource = 'PORT'
-5. Remove ALL currency symbols (₹, Rs, INR) from premium values - return ONLY numbers
-6. COMPANY NAME: Extract full name from header/logo area
+🔴 PREMIUM EXTRACTION RULES (Indian Insurance Format):
+1. For TOTAL PREMIUM: Look at bottom of premium table - "Total Premium", "NET PAYABLE", "Total Amount Payable"
+2. For Motor OD Premium: In "OD Premium Breakup" section, find row "OD Total (Rounded Off)" or "Basic OD Premium"  
+3. For Motor TP Premium: In "TP Premium Breakup" section, find "TP Total (Rounded Off)" or "Basic TP Premium"
+4. Remove ALL ₹, Rs, INR symbols and commas - return clean number (e.g., ₹4,108 → 4108)
 
-Be thorough - scan every table and section in the document.`;
+🔴 VEHICLE DETAILS (Motor Insurance):
+1. Registration No/Reg No in "Vehicle Details" section
+2. Format: State(2) + District(2) + Letters + Numbers (e.g., HR-06-AN-7813)
+
+🔴 COMPANY NAME:
+1. Look at header/top of document for full company name
+2. Common formats: "Reliance General Insurance Co. Ltd", "National Insurance Company Ltd", "The Oriental Insurance Company Ltd"
+
+Scan tables carefully - premium details are usually in tabular format with multiple rows and columns.`;
 
   try {
     const model = gemini!.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -243,6 +274,9 @@ Be thorough - scan every table and section in the document.`;
     const response = await result.response;
     const content = response.text();
     
+    // Log raw AI response for debugging
+    console.log('🤖 Gemini Raw Response:', content);
+    
     // Extract JSON from response
     let jsonStr = content;
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -251,6 +285,8 @@ Be thorough - scan every table and section in the document.`;
     }
 
     const extracted = JSON.parse(jsonStr.trim());
+    
+    console.log('✅ Gemini Extracted Data:', extracted);
 
     return {
       policyNumber: extracted.policyNumber || null,
