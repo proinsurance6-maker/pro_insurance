@@ -246,7 +246,13 @@ export default function NewPolicyPage() {
   };
 
   const handleClientSelect = (client: Client) => {
-    setFormData(prev => ({ ...prev, clientId: client.id, clientName: client.name }));
+    setFormData(prev => ({ 
+      ...prev, 
+      clientId: client.id, 
+      clientName: client.name,
+      // Auto-fill holder name if empty
+      holderName: prev.holderName || client.name
+    }));
     setClientSearch(client.name);
     setShowClientDropdown(false);
   };
@@ -1047,12 +1053,18 @@ export default function NewPolicyPage() {
                       <div
                         key={client.id}
                         onClick={() => {
+                          // Set holder name
                           setFormData(prev => ({ ...prev, holderName: client.name }));
+                          // Auto-select client in the client selection area
                           setClientType('existing');
                           setShowNewClientForm(false);
                           setFormData(prev => ({ ...prev, clientId: client.id, clientName: client.name }));
                           setClientSearch(client.name);
                           setShowHolderSuggestions(false);
+                          setShowClientDropdown(false);
+                          // Show success message
+                          setSuccess(`✅ Client "${client.name}" auto-selected`);
+                          setTimeout(() => setSuccess(''), 2000);
                         }}
                         className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition"
                       >
