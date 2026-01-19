@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { policyAPI, commissionAPI } from '@/lib/api';
+import EmptyState from '@/components/dashboard/empty-state';
 
 interface Policy {
   id: string;
@@ -87,6 +89,7 @@ const POLICY_TYPES = [
 ];
 
 export default function PoliciesPage() {
+  const router = useRouter();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [brokers, setBrokers] = useState<any[]>([]);
@@ -557,15 +560,21 @@ export default function PoliciesPage() {
             <tbody>
               {filteredPolicies.length === 0 ? (
                 <tr>
-                  <td colSpan={37} className="px-4 py-12 text-center">
-                    <DocumentIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No policies found</h3>
-                    <p className="text-gray-500 mb-4">
-                      {search || policyType !== 'All' ? 'Try different filters' : 'Get started by adding your first policy'}
-                    </p>
-                    <Link href="/dashboard/policies/new">
-                      <Button>Add Policy</Button>
-                    </Link>
+                  <td colSpan={37} className="px-4">
+                    <div className="min-h-[600px] flex items-center justify-center">
+                      <EmptyState
+                        title={search || policyType !== 'All' || companyId || brokerId || subAgentId 
+                          ? "No Policies Match Your Filters" 
+                          : "No Policies Found"}
+                        description={search || policyType !== 'All' || companyId || brokerId || subAgentId
+                          ? "Try adjusting your filters to find what you're looking for."
+                          : "You haven't added any policies yet. Start by creating your first policy."}
+                        action={{
+                          label: "Add New Policy",
+                          onClick: () => router.push('/dashboard/policies/new')
+                        }}
+                      />
+                    </div>
                   </td>
                 </tr>
               ) : (
