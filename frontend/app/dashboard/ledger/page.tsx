@@ -379,27 +379,6 @@ export default function LedgerPage() {
       <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-200">
         <strong>Note:</strong> This is a view-only report. TDS calculated at 2%. Entry Date and Client Name columns are frozen for easy scrolling.
       </div>
-
-      {/* Sub-Agent Summary */}
-      {subAgents.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">👥 Partners Balance Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {subAgents.map(s => (
-                <div key={s.id} className={`p-2 rounded border ${Number(s.ledgerBalance) > 0 ? 'bg-purple-50 border-purple-200' : 'bg-gray-50'}`}>
-                  <p className="font-medium text-sm">{s.name}</p>
-                  <p className={`font-bold ${Number(s.ledgerBalance) > 0 ? 'text-purple-600' : 'text-gray-400'}`}>
-                    {fmt(Number(s.ledgerBalance))}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
